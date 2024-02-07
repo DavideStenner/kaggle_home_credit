@@ -1,0 +1,15 @@
+__pycache__
+.venv
+data/original_data/*
+!data/original_data/
+src/*.egg-info/*
+test/*
+data/local/*
+data/parquet_dataset/*
+!data/parquet_dataset/
+!experiment/
+experiment/*
+config/params_*.json
+eda/*
+!eda/
+!.gitkeep
