@@ -1,0 +1,7 @@
+{
+    "PATH_ORIGINAL_DATA": "data/original_data/home-credit-credit-risk-model-stability",
+    "PATH_PARQUET_DATA": "data/parquet_dataset",
+    "PATH_EXPERIMENT": "experiment",
+    "N_FOLD": 5,
+    "TARGET_COL": ""
+}
