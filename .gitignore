@@ -14,4 +14,6 @@ experiment/*
 config/params_*.json
 eda/*
 !eda/
+log/*
+|log/
 !.gitkeep
