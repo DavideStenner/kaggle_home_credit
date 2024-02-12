@@ -4,5 +4,6 @@
     "PATH_MAPPER_DATA": "data/mapper_dataset",
     "PATH_EXPERIMENT": "experiment",
     "N_FOLD": 5,
-    "TARGET_COL": ""
+    "TARGET_COL": "target",
+    "DEPTH_0": ["static_0", "static_cb_0"]
 }
