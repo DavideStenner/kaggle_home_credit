@@ -1,10 +1,14 @@
+import os
+import json
 import warnings
 
 import polars as pl
 import polars.selectors as cs
 
-from typing import Mapping, Union,Tuple
+from typing import Mapping, Union, Tuple, Dict
 from tqdm import tqdm
+
+from src.utils.import_file import read_multiple_parquet
 
 TYPE_MAPPING: Mapping[str, pl.DataType] = {
     "float64": pl.Float64,
@@ -32,7 +36,7 @@ TYPE_MAPPING_REVERSE = {
 
 def get_mapper_categorical(
         data: Union[pl.LazyFrame, pl.DataFrame], 
-        check_cat_length: int = 1000,
+        check_cat_length: int = 255,
         message_error: str = 'Categories {col} has over {num_different_cat_values} different values.'
     ) -> Mapping[str, int]:
     """
@@ -64,7 +68,7 @@ def get_mapper_categorical(
         }
         num_different_cat_values = len(mapper_mask_col[col].values())
         if  num_different_cat_values > check_cat_length:
-            warnings.warn(
+            print(
                 message_error.format(
                     col=col, 
                     num_different_cat_values=num_different_cat_values
@@ -138,3 +142,106 @@ def get_mapper_numerical(
         mapper_column[col] =type_mapping_reverse[pl.Date]
     
     return mapper_column
+
+
+def get_mapper_statistic(
+        data: Union[pl.LazyFrame, pl.DataFrame] 
+    ) -> Mapping[str, int]:
+
+    mapper_statistic = {}
+    lazy_mode = isinstance(data, pl.LazyFrame)
+
+    for col in data.columns:
+        
+        null_values = (
+            (
+                data.select(col).null_count().collect().item()/
+                data.select(pl.count()).collect().item()
+            )
+            if lazy_mode
+            else data.select(col).null_count().item()/data.shape[0]
+        )
+        
+        mapper_statistic[col] = null_values    
+    return mapper_statistic
+
+def get_mapping_info(
+        config: Dict[str, str],
+        file_name_list: list[str]=[
+            'static_0', 'static_cb_0',
+            'applprev_1', 'other_1', 'tax_registry_a_1',
+            'tax_registry_b_1', 'tax_registry_c_1', 'credit_bureau_a_1',
+            'credit_bureau_b_1', 'deposit_1', 'person_1', 'debitcard_1',
+            'applprev_2', 'person_2', 'credit_bureau_a_2', 'credit_bureau_b_2',
+        ]
+    ) -> None:
+    
+    mapper_col_all_file = {}
+    mapper_mask_all_file = {}
+    mapper_statistic_all_file = {}
+    
+    for file_name in file_name_list:
+        print(f'\nStarting {file_name}\n')
+        data = read_multiple_parquet(
+            f'*/*_{file_name}*.parquet',
+            root_dir=config['PATH_ORIGINAL_DATA'], 
+            scan=False
+        )
+        size_begin = data.estimated_size('mb')
+        mapper_mask_col = get_mapper_categorical(data, check_cat_length=255)
+
+        #replace categorical before downcasting
+        data = data.with_columns(
+            [
+                pl.col(col).replace(mapping_dict, default=None).cast(pl.UInt64)
+                for col, mapping_dict in mapper_mask_col.items()
+            ]
+        )
+        
+        mapper_column = get_mapper_numerical(data=data, type_mapping_reverse=TYPE_MAPPING_REVERSE)
+
+        mapper_column_cast = {
+            col: TYPE_MAPPING[dtype_str]
+            for col, dtype_str in mapper_column.items()
+        }
+        data = data.with_columns(
+            [
+                pl.col(col).cast(mapper_column_cast[col])
+                for col in data.columns
+            ]
+        )
+        size_end = data.estimated_size('mb')
+        
+        percent = 100 * (size_begin - size_end) / size_begin
+        print(
+            'Mem. usage decreased from {:5.2f} Mb to {:5.2f} Mb ({:.1f}% reduction)'.format(
+                size_begin, size_end, percent
+            )
+        )
+        mapper_col_all_file[file_name] = mapper_column
+        mapper_mask_all_file[file_name] = mapper_mask_col
+        mapper_statistic_all_file[file_name] = get_mapper_statistic(data=data)
+        
+    with open(
+        os.path.join(
+            config['PATH_MAPPER_DATA'], 'mapper_dtype.json'
+        ), 'w'            
+    ) as file_dtype:
+        
+        json.dump(mapper_col_all_file, file_dtype)
+        
+    with open(
+        os.path.join(
+            config['PATH_MAPPER_DATA'], 'mapper_mask.json'
+        ), 'w'            
+    ) as file_mask:
+        
+        json.dump(mapper_mask_all_file, file_mask)
+
+    with open(
+        os.path.join(
+            config['PATH_MAPPER_DATA'], 'mapper_statistic.json'
+        ), 'w'            
+    ) as file_stat:
+        
+        json.dump(mapper_statistic_all_file, file_stat)
