@@ -12,12 +12,12 @@ class LgbmPipeline(ModelPipeline, LgbmTrainer, LgbmExplainer, LgbmInference):
             experiment_name:str, 
             params_lgb: dict[str, Any],
             metric_eval: str,
-            config_dict: dict[str, Any], inference_setup: str=None,
+            config_dict: dict[str, Any],
             log_evaluation:int =1, fold_name: str = 'fold_info', 
         ):
         LgbmInit.__init__(
             self, experiment_name=experiment_name, params_lgb=params_lgb,
-            metric_eval=metric_eval, config_dict=config_dict, inference_setup=inference_setup,
+            metric_eval=metric_eval, config_dict=config_dict,
             log_evaluation=log_evaluation, fold_name=fold_name
         )
 
