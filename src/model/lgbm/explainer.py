@@ -33,7 +33,9 @@ class LgbmExplainer(LgbmInit):
         plt.title(f"Training plot curve of {self.metric_eval}")
 
         fig.savefig(
-            os.path.join(self.experiment_path, f'{name_plot}.png')
+            os.path.join(
+                self.experiment_insight_path, f'{name_plot}.png'
+            )
         )
         plt.close(fig)
 
@@ -121,12 +123,13 @@ class LgbmExplainer(LgbmInit):
             .sort_values(by='average', ascending=False)
         )
         
+        #plain feature
         fig = plt.figure(figsize=(12,8))
         sns.barplot(data=feature_importances.head(50), x='average', y='feature')
         plt.title(f"50 TOP feature importance over {self.n_fold} average")
 
         fig.savefig(
-            os.path.join(self.experiment_path, 'importance_plot.png')
+            os.path.join(self.experiment_insight_path, 'importance_plot.png')
         )
         plt.close(fig)
         
@@ -151,7 +154,7 @@ class LgbmExplainer(LgbmInit):
         plt.title(f"Score prediction over date_decision")
         
         fig.savefig(
-            os.path.join(self.experiment_path, 'score_over_date.png')
+            os.path.join(self.experiment_insight_path, 'score_over_date.png')
         )
         plt.close(fig)
 
@@ -173,7 +176,7 @@ class LgbmExplainer(LgbmInit):
         plt.title(f"AUC over WEEK_NUM")
         
         fig.savefig(
-            os.path.join(self.experiment_path, 'auc_over_week.png')
+            os.path.join(self.experiment_insight_path, 'auc_over_week.png')
         )
         plt.close(fig)
 

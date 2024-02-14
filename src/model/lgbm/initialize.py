@@ -2,6 +2,7 @@ import os
 import json
 import pickle
 
+import pandas as pd
 import polars as pl
 import lightgbm as lgb
 
@@ -24,6 +25,9 @@ class LgbmInit(ModelInit):
         self.experiment_path: str = os.path.join(
             config_dict['PATH_EXPERIMENT'],
             experiment_name
+        )
+        self.experiment_insight_path: str = os.path.join(
+            self.experiment_path, 'insight'
         )
         self.metric_eval: str = metric_eval
         self.n_fold: int = config_dict['N_FOLD']
@@ -111,7 +115,11 @@ class LgbmInit(ModelInit):
     def create_experiment_structure(self) -> None:
         if not os.path.isdir(self.experiment_path):
             os.makedirs(self.experiment_path)
-
+            
+        #plot
+        if not os.path.isdir(self.experiment_insight_path):
+            os.makedirs(self.experiment_insight_path)
+            
     def load_model(self) -> None: 
         self.load_used_feature()
         self.load_best_result()
