@@ -26,6 +26,9 @@ class PreprocessInit():
             'registaddr_zipcode_184M', 'addres_district_368M',
             'addres_zip_823M', 'empls_employer_name_740M'
         ]
+        self.mapper_mask: Dict[str, Dict[str, int]] = None
+        self.mapper_dtype: Dict[str, Dict[str, str]] = None
+        self.mapper_statistic: Dict[str, Dict[str, float]] = None
 
         self._initialiaze_empty_dataset()
         

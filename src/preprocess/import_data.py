@@ -2,7 +2,7 @@ import os
 import json
 import polars as pl
 
-from typing import Dict, Union
+from typing import Union
 from src.utils.dtype import TYPE_MAPPING
 from src.utils.import_file import read_multiple_parquet
 from src.preprocess.initialize import PreprocessInit
@@ -20,7 +20,7 @@ class PreprocessImport(PreprocessInit):
                 'mapper_dtype.json'
             ), 'r'
         ) as file:
-            self.mapper_dtype: Dict[str, str] = json.load(file)
+            self.mapper_dtype = json.load(file)
     
     def _import_mapper_mask(self):
         with open(
@@ -29,7 +29,7 @@ class PreprocessImport(PreprocessInit):
                 'mapper_mask.json'
             ), 'r'
         ) as file:
-            self.mapper_mask: Dict[str, int] = json.load(file)
+            self.mapper_mask = json.load(file)
     
     def _import_mapper_statistic(self):
         with open(
@@ -38,7 +38,7 @@ class PreprocessImport(PreprocessInit):
                 'mapper_statistic.json'
             ), 'r'
         ) as file:
-            self.mapper_statistic: Dict[str, float] = json.load(file)
+            self.mapper_statistic = json.load(file)
 
     def scan_all_dataset(self):
         
