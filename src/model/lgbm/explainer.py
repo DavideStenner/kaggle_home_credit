@@ -1,4 +1,5 @@
 import os
+import polars as pl
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -135,4 +136,53 @@ class LgbmExplainer(LgbmInit):
         )
         
     def get_oof_prediction(self) -> None:
-        print('Warning: method not implemented')
+        self.load_pickle_model_list()
+        self.load_used_feature()
+        
+        prediction_list: list[pd.DataFrame] = []
+        
+        for fold_ in range(self.n_fold):
+
+            fold_data = pl.scan_parquet(
+                os.path.join(
+                    self.config_dict['PATH_PARQUET_DATA'],
+                    'data.parquet'
+                )
+            ).with_columns(
+                (
+                    pl.col('fold_info').str.split(', ')
+                    .list.get(fold_).alias('current_fold')
+                )
+            ).filter(
+                (pl.col('current_fold') == 'v')
+            )
+            
+            test_feature = fold_data.select(self.feature_list).collect().to_pandas().to_numpy('float32')
+            
+            oof_prediction = self.model_list[fold_].predict(
+                test_feature, 
+                num_iteration=self.best_result['best_epoch']
+            )
+            prediction_df = fold_data.select(
+                [
+                    'case_id', 'date_decision',
+                    'MONTH', 'WEEK_NUM', 'target'
+                ]
+            ).collect().to_pandas()
+            
+            prediction_df['fold'] = fold_
+            prediction_df['score'] = oof_prediction
+            prediction_list.append(prediction_df)
+        
+        (
+            pd.concat(
+                prediction_list, axis=0
+            )
+            .sort_values(
+                ['case_id', 'date_decision']
+            )
+            .to_parquet(
+                os.path.join(self.experiment_path, 'oof_prediction.parquet'),
+                index=False
+            )
+        )
