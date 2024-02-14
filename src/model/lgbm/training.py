@@ -3,9 +3,12 @@ import gc
 import polars as pl
 import lightgbm as lgb
 
+from functools import partial
+
 from src.base.model.training import ModelTrain
 from src.model.lgbm.initialize import LgbmInit
-
+from src.model.metric.official_metric import custom_eval_gini_stability
+ 
 class LgbmTrainer(ModelTrain, LgbmInit):
     def _init_train(self) -> None:
         data = pl.scan_parquet(
@@ -92,6 +95,13 @@ class LgbmTrainer(ModelTrain, LgbmInit):
                 test_filtered.select(self.target_col_name).collect().to_pandas().to_numpy('float32').reshape((-1))
             )
 
+            metric_lgb = partial(
+                custom_eval_gini_stability, 
+                test_filtered.select(
+                    ["WEEK_NUM", "target"]
+                ).collect().to_pandas()
+            )
+            
             print('Start training')
             model = lgb.train(
                 params=self.params_lgb,
@@ -102,6 +112,7 @@ class LgbmTrainer(ModelTrain, LgbmInit):
                 valid_sets=[test_matrix],
                 valid_names=['valid'],
                 callbacks=callbacks_list,
+                feval=metric_lgb
             )
 
             model.save_model(
