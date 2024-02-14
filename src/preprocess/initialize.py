@@ -5,11 +5,10 @@ from src.base.initialize import BaseInit
 
 class PreprocessInit(BaseInit):
     def __init__(self, 
-            config_dict: dict[str, Any], target_n_lags: int, 
+            config_dict: dict[str, Any],
             embarko_skip: int
         ):
         
-        self.target_n_lags: int = target_n_lags
         self.config_dict: dict[str, Any] = config_dict
         self.embarko_skip: int = embarko_skip
         self.n_folds: int = config_dict['N_FOLD']
@@ -20,6 +19,7 @@ class PreprocessInit(BaseInit):
         self.inference: bool = False
         self.path_file_pattern: str = '*/train_{pattern_file}*.parquet'
         
+        #drop this column
         self.anagraphical_column_list: list[str] = [
             'district_544M', 'profession_152M', 'name_4527232M',
             'name_4917606M', 'employername_160M', 
