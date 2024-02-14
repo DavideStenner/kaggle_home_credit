@@ -62,12 +62,10 @@ class LgbmTrainer(ModelTrain, LgbmInit):
             fold_data = self.access_fold(fold_=fold_)
             
             train_filtered = fold_data.filter(
-                (pl.col('current_fold') == 't') &
-                (pl.col('target').is_not_null())
+                (pl.col('current_fold') == 't')
             )
             test_filtered = fold_data.filter(
-                (pl.col('current_fold') == 'v') &
-                (pl.col('target').is_not_null())
+                (pl.col('current_fold') == 'v')
             )
             
             assert len(

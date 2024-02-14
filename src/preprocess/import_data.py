@@ -101,7 +101,9 @@ class PreprocessImport(BaseImport, PreprocessInit):
             pl.col('date_decision').cast(pl.Date),
             pl.col('MONTH').cast(pl.Int32),
             pl.col('target').cast(pl.UInt8)
-        )
+        ).filter(
+            pl.col('target').is_not_null()
+        ).sort(['case_id', 'date_decision'])
     
     def skip_useless_categorical_columns(self):
         #drop useless categorical columns as name of employer
