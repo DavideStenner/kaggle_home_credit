@@ -3,11 +3,12 @@ import json
 import polars as pl
 
 from typing import Union
+from src.base.preprocess.import_data import BaseImport
 from src.utils.dtype import TYPE_MAPPING
 from src.utils.import_file import read_multiple_parquet
 from src.preprocess.initialize import PreprocessInit
 
-class PreprocessImport(PreprocessInit):
+class PreprocessImport(BaseImport, PreprocessInit):
     def _import_all_mapper(self):
         self._import_mapper_dtype()
         self._import_mapper_mask()

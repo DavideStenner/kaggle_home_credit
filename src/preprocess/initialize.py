@@ -1,7 +1,7 @@
 import polars as pl
 from typing import Any, Union, Dict
 
-from src.base.initialize import BaseInit
+from src.base.preprocess.initialize import BaseInit
 
 class PreprocessInit(BaseInit):
     def __init__(self, 

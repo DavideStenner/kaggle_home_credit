@@ -5,7 +5,7 @@ import polars as pl
 
 from typing import Iterator, Tuple
 
-from src.base.cv_fold import BaseCVFold
+from src.base.preprocess.cv_fold import BaseCVFold
 from src.preprocess.initialize import PreprocessInit
 
 def get_time_series_cross_val_splits(
@@ -104,7 +104,7 @@ def get_fold(
         ]
     return fold_split
 
-class PreprocessFoldCreator(PreprocessInit):
+class PreprocessFoldCreator(BaseCVFold, PreprocessInit):
     def create_fold(self):        
         data_for_split = self.data.select([self.fold_time_col]).to_pandas() 
         fold_split = get_fold(

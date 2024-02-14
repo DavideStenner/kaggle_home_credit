@@ -3,7 +3,7 @@ import gc
 
 from typing import Any
 
-from src.base.pipeline import BasePipeline
+from src.base.preprocess.pipeline import BasePipeline
 from src.preprocess.import_data import PreprocessImport
 from src.preprocess.initialize import PreprocessInit
 from src.preprocess.add_feature import PreprocessAddFeature

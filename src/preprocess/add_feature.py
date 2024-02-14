@@ -1,6 +1,6 @@
 import polars as pl
 
-from src.base.add_feature import BaseFeature
+from src.base.preprocess.add_feature import BaseFeature
 from src.preprocess.initialize import PreprocessInit
 
 class PreprocessAddFeature(BaseFeature, PreprocessInit):
