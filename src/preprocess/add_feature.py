@@ -7,22 +7,8 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
     
     def add_fold_column(self) -> None:
         if not self.inference:
-            #create fold time col -> incremental index over dateself.fold_time_col
-            index_date_dict =  {
-                row_['date_decision']: i
-                for i, row_ in (
-                    self.base_data.select(
-                        pl.col('date_decision').unique().sort()
-                        .dt.to_string(format="%Y/%m/%d")
-                    )
-                    .collect().to_pandas().iterrows()
-                )
-            }
-
             self.base_data = self.base_data.with_columns(
-                pl.col('date_decision')
-                .dt.to_string(format="%Y/%m/%d")
-                .map_dict(index_date_dict)
+                pl.col('WEEK_NUM')
                 .alias(self.fold_time_col)
                 .cast(pl.UInt16)
             )
