@@ -41,7 +41,11 @@ class PreprocessImport(PreprocessInit):
             self.mapper_statistic = json.load(file)
 
     def scan_all_dataset(self):
-        
+        self.base_data: pl.LazyFrame = read_multiple_parquet(
+            self.path_file_pattern.format(pattern_file='base'),
+            root_dir=self.config_dict['PATH_ORIGINAL_DATA'], 
+            scan=True
+        )
         self.static_0: pl.LazyFrame = read_multiple_parquet(
             self.path_file_pattern.format(pattern_file='static_0'),
             root_dir=self.config_dict['PATH_ORIGINAL_DATA'], 
@@ -69,7 +73,7 @@ class PreprocessImport(PreprocessInit):
         #downcast
         mapper_column_cast = {
             col: TYPE_MAPPING[dtype_str]
-            for col, dtype_str in self.mapper_dtype.items()
+            for col, dtype_str in self.mapper_dtype[dataset_name].items()
         }
         data = data.with_columns(
             [
@@ -90,6 +94,23 @@ class PreprocessImport(PreprocessInit):
             data=self.static_cb_0, dataset_name='static_cb_0'
         )
 
+    def downcast_base(self):
+        self.base_data = self.base_data.with_columns(
+            pl.col('case_id').cast(pl.UInt32),
+            pl.col('date_decision').cast(pl.Date),
+            pl.col('MONTH').cast(pl.Int32),
+            pl.col('target').cast(pl.UInt8)
+        )
+    
+    def skip_useless_categorical_columns(self):
+        #drop useless categorical columns as name of employer
+        self.static_0 = self.static_0.drop(
+            [col for col in self.static_0.columns if col in self.anagraphical_column_list]
+        )
+        self.static_cb_0 = self.static_cb_0.drop(
+            [col for col in self.static_cb_0.columns if col in self.anagraphical_column_list]
+        )
+
     def skip_dates_for_now(self):
         #drop dates for now
 
@@ -105,7 +126,10 @@ class PreprocessImport(PreprocessInit):
         self.scan_all_dataset()
         self._import_all_mapper()
 
+        self.downcast_base()
         self.downcast_static_0()
         self.downcast_static_cb_0()
         
+        self.skip_useless_categorical_columns()
+        #to delete
         self.skip_dates_for_now()
