@@ -1,7 +1,9 @@
 import polars as pl
 from typing import Any, Union, Dict
 
-class PreprocessInit():
+from src.base.initialize import BaseInit
+
+class PreprocessInit(BaseInit):
     def __init__(self, 
             config_dict: dict[str, Any], target_n_lags: int, 
             embarko_skip: int
@@ -30,9 +32,10 @@ class PreprocessInit():
         self.mapper_dtype: Dict[str, Dict[str, str]] = None
         self.mapper_statistic: Dict[str, Dict[str, float]] = None
 
-        self._initialiaze_empty_dataset()
+        self._initialize_empty_dataset()
         
-    def _initialiaze_empty_dataset(self):
+    def _initialize_empty_dataset(self):
+        self.base_data: Union[pl.LazyFrame, pl.DataFrame] = None
         self.data: Union[pl.LazyFrame, pl.DataFrame] = None
         self.static_0: Union[pl.LazyFrame, pl.DataFrame] = None
         self.static_cb_0: Union[pl.LazyFrame, pl.DataFrame] = None

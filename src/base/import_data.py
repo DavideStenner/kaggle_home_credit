@@ -1,7 +1,6 @@
 from abc import abstractmethod
-from src.base.initialize import BaseInit
 
-class BaseImport(BaseInit):
+class BaseImport():
 
     @abstractmethod
     def scan_all_dataset(self) -> None:
