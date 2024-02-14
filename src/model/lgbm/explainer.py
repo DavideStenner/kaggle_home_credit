@@ -62,7 +62,7 @@ class LgbmExplainer(LgbmInit):
             :, [self.metric_eval in x for x in progress_df.columns]
         ].std(axis =1)
 
-        best_epoch_lgb = int(progress_df[f"average_{self.metric_eval}"].argmin())
+        best_epoch_lgb = int(progress_df[f"average_{self.metric_eval}"].argmax())
         best_score_lgb = progress_df.loc[
             best_epoch_lgb,
             f"average_{self.metric_eval}"
