@@ -15,7 +15,7 @@ if __name__=='__main__':
         experiment_name=experiment_name + "_lgb",
         params_lgb=params_model,
         config_dict=config_dict,
-        metric_eval='gini_stability', log_evaluation=1
+        metric_eval='gini_stability', log_evaluation=50
     )
     trainer.train_explain()
     
