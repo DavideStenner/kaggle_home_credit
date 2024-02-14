@@ -50,6 +50,34 @@ class LgbmInit(ModelInit):
         
         self.feature_list: list[str] = []
         self.get_categorical_columns()
+        self.get_dataset_columns()
+        
+    def get_dataset_columns(self) -> None:
+        with open(
+            os.path.join(
+                self.config_dict['PATH_MAPPER_DATA'],
+                'mapper_dtype.json'
+            ), 'r'
+        ) as file:
+            mapper_dtype = json.load(file)
+            
+        self.feature_dataset = pd.DataFrame(
+            list(
+                chain(
+                    *[
+                        [
+                            [dataset_name, column]
+                            for column in dtype_mapping.keys()
+                        ]
+                        for dataset_name, dtype_mapping in
+                        mapper_dtype.items()
+                    ]
+                )   
+            ),
+            columns=[
+                'dataset', 'feature'
+            ]
+        )
         
     def get_categorical_columns(self) -> None:
         with open(
