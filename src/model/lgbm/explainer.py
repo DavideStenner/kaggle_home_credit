@@ -5,6 +5,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 from typing import Union
+from sklearn.metrics import roc_auc_score
 from src.model.lgbm.initialize import LgbmInit
 
 class LgbmExplainer(LgbmInit):       
@@ -134,7 +135,48 @@ class LgbmExplainer(LgbmInit):
             os.path.join(self.experiment_path, 'feature_importances.xlsx'),
             index=False
         )
+    
+    def get_oof_insight(self) -> None:
+        #read data
+        oof_prediction = pl.read_parquet(
+            os.path.join(self.experiment_path, 'oof_prediction.parquet')
+        )
         
+        #score plot
+        fig = plt.figure(figsize=(12,8))
+        sns.lineplot(
+            data=oof_prediction, 
+            x="date_decision", y="score", hue='fold'
+        )
+        plt.title(f"Score prediction over date_decision")
+        
+        fig.savefig(
+            os.path.join(self.experiment_path, 'score_over_date.png')
+        )
+        plt.close(fig)
+
+        #auc over time
+        gini_in_time = (
+            oof_prediction.to_pandas()
+            .sort_values("WEEK_NUM")
+            .groupby(["WEEK_NUM", "fold"])[["target", "score"]]
+            .apply(
+                lambda x: 2*roc_auc_score(x["target"], x["score"])-1
+            )
+        ).reset_index().rename(columns={0: 'auc'})
+
+        fig = plt.figure(figsize=(12,8))
+        sns.lineplot(
+            data=gini_in_time, 
+            x="WEEK_NUM", y="auc", hue='fold'
+        )
+        plt.title(f"AUC over WEEK_NUM")
+        
+        fig.savefig(
+            os.path.join(self.experiment_path, 'auc_over_week.png')
+        )
+        plt.close(fig)
+
     def get_oof_prediction(self) -> None:
         self.load_pickle_model_list()
         self.load_used_feature()
@@ -175,14 +217,22 @@ class LgbmExplainer(LgbmInit):
             prediction_list.append(prediction_df)
         
         (
-            pd.concat(
-                prediction_list, axis=0
+            pl.from_dataframe(
+                pd.concat(
+                    prediction_list, axis=0
+                )
             )
-            .sort_values(
+            .with_columns(
+                pl.col('case_id').cast(pl.UInt32),
+                pl.col('date_decision').cast(pl.Date),
+                pl.col('MONTH').cast(pl.UInt32),
+                pl.col('WEEK_NUM').cast(pl.UInt8),
+                pl.col('fold').cast(pl.UInt8),
+            )
+            .sort(
                 ['case_id', 'date_decision']
             )
-            .to_parquet(
-                os.path.join(self.experiment_path, 'oof_prediction.parquet'),
-                index=False
+            .write_parquet(
+                os.path.join(self.experiment_path, 'oof_prediction.parquet')
             )
         )

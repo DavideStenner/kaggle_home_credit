@@ -33,6 +33,7 @@ class LgbmPipeline(ModelPipeline, LgbmTrainer, LgbmExplainer, LgbmInference):
         self.evaluate_score()
         self.get_feature_importance()
         self.get_oof_prediction()
+        self.get_oof_insight()
         
     def train_explain(self) -> None:
         self.create_experiment_structure()
