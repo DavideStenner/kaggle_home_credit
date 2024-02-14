@@ -1,5 +1,6 @@
 {
     "PATH_ORIGINAL_DATA": "data/original_data/home-credit-credit-risk-model-stability/parquet_files",
+    "PATH_ORIGINAL_DATA_ROOT": "data/original_data/home-credit-credit-risk-model-stability",
     "PATH_PARQUET_DATA": "data/parquet_dataset",
     "PATH_MAPPER_DATA": "data/mapper_dataset",
     "PATH_EXPERIMENT": "experiment",
