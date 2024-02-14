@@ -1,6 +1,6 @@
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 
-class BaseFeature():
+class BaseFeature(ABC):
 
     @abstractmethod
     def create_feature(self) -> None:

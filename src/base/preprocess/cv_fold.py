@@ -1,6 +1,6 @@
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 
-class BaseCVFold():
+class BaseCVFold(ABC):
 
     @abstractmethod
     def create_fold(self) -> None:

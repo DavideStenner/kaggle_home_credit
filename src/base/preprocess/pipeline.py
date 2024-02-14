@@ -1,6 +1,6 @@
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 
-class BasePipeline():    
+class BasePipeline(ABC):    
     @abstractmethod
     def save_data(self) -> None:
         pass

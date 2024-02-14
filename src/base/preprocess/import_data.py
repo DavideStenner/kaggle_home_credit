@@ -1,6 +1,6 @@
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 
-class BaseImport():
+class BaseImport(ABC):
 
     @abstractmethod
     def scan_all_dataset(self) -> None:
