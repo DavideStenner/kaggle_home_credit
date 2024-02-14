@@ -1,8 +1,12 @@
 if __name__=='__main__':
     import argparse
+    import warnings
 
     from src.utils.import_utils import import_config, import_params
     from src.model.lgbm.pipeline import LgbmPipeline
+
+    #filter useless warning
+    warnings.simplefilter(action='ignore', category=FutureWarning)
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--xgb', action='store_true')
