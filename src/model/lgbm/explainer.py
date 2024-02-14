@@ -138,7 +138,70 @@ class LgbmExplainer(LgbmInit):
             os.path.join(self.experiment_path, 'feature_importances.xlsx'),
             index=False
         )
-    
+        #add dataset
+        feature_importances_dataset = feature_importances.merge(
+            self.feature_dataset, how='left',
+            on='feature'
+        )
+
+        feature_importances_dataset['rank_average'] = feature_importances_dataset['average'].rank(ascending=False)
+
+        #plain feature top dataset
+        fig = plt.figure(figsize=(12,8))
+        plot_ = sns.barplot(
+            data=feature_importances_dataset, 
+            x='rank_average', y='average', hue='dataset', 
+        )
+        plot_.set(xticklabels=[])
+        plt.title(f"Rank Top feature by dataset")
+        
+        fig.savefig(
+            os.path.join(self.experiment_insight_path, 'top_feature_by_dataset.png')
+        )
+        plt.close(fig)
+
+        #for each dataset print top feature
+        for dataset_name in feature_importances_dataset['dataset'].unique():
+            fig = plt.figure(figsize=(12,8))
+            temp_dataset_feature = feature_importances_dataset.loc[
+                feature_importances_dataset['dataset'] == dataset_name
+            ]
+            sns.barplot(data=temp_dataset_feature.head(50), x='average', y='feature')
+            plt.title(f"50 TOP feature importance over {self.n_fold} average for {dataset_name}")
+
+            fig.savefig(
+                os.path.join(
+                    self.experiment_insight_path, 
+                    f'importance_plot_{dataset_name}.png'
+                )
+            )
+            plt.close(fig)
+
+        #get information about top dataset on mean gai and rank gain
+        feature_importances_dataset = feature_importances_dataset.groupby(
+            'dataset'
+        )[['average', 'rank_average']].mean().reset_index()
+        
+        #top mean gain for each dataset
+        fig = plt.figure(figsize=(12,8))
+        sns.barplot(data=feature_importances_dataset, x='average', y='dataset')
+        plt.title(f"Top dataset importance mean gain")
+
+        fig.savefig(
+            os.path.join(self.experiment_insight_path, 'dataset_importance_plot.png')
+        )
+        plt.close(fig)
+
+        #top rank gain for each dataset
+        fig = plt.figure(figsize=(12,8))
+        sns.barplot(data=feature_importances_dataset, x='rank_average', y='dataset')
+        plt.title(f"Top dataset importance mean rank gain")
+
+        fig.savefig(
+            os.path.join(self.experiment_insight_path, 'dataset_importance_rank_plot.png')
+        )
+        plt.close(fig)
+        
     def get_oof_insight(self) -> None:
         #read data
         oof_prediction = pl.read_parquet(
