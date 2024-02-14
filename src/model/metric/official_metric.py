@@ -31,7 +31,7 @@ def gini_stability(
     avg_gini = np.mean(gini_in_time)
     return avg_gini + w_fallingrate * min(0, a) + w_resstd * res_std
 
-def custom_eval_gini_stability(
+def lgb_eval_gini_stability(
         base: pd.DataFrame, 
         y_pred: np.ndarray, eval_data: lgb.Dataset,
     ) -> Tuple[str, float, bool]:

@@ -7,7 +7,7 @@ from functools import partial
 
 from src.base.model.training import ModelTrain
 from src.model.lgbm.initialize import LgbmInit
-from src.model.metric.official_metric import custom_eval_gini_stability
+from src.model.metric.official_metric import lgb_eval_gini_stability
  
 class LgbmTrainer(ModelTrain, LgbmInit):
     def _init_train(self) -> None:
@@ -96,7 +96,7 @@ class LgbmTrainer(ModelTrain, LgbmInit):
             )
 
             metric_lgb = partial(
-                custom_eval_gini_stability, 
+                lgb_eval_gini_stability, 
                 test_filtered.select(
                     ["WEEK_NUM", "target"]
                 ).collect().to_pandas()
