@@ -5,7 +5,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 from typing import Union
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import roc_auc_score, log_loss
 from src.model.lgbm.initialize import LgbmInit
 
 class LgbmExplainer(LgbmInit):       
@@ -268,6 +268,29 @@ class LgbmExplainer(LgbmInit):
         
         fig.savefig(
             os.path.join(self.experiment_insight_path, 'auc_over_week.png')
+        )
+        plt.close(fig)
+
+        #binary cross entropy over week
+        #auc over time
+        logloss_in_time = (
+            oof_prediction.to_pandas()
+            .sort_values("WEEK_NUM")
+            .groupby(["WEEK_NUM", "fold"])[["target", "score"]]
+            .apply(
+                lambda x: log_loss(x["target"], x["score"])
+            )
+        ).reset_index().rename(columns={0: 'log_loss'})
+
+        fig = plt.figure(figsize=(12,8))
+        sns.lineplot(
+            data=logloss_in_time, 
+            x="WEEK_NUM", y="log_loss", hue='fold'
+        )
+        plt.title(f"Log Loss over WEEK_NUM")
+        
+        fig.savefig(
+            os.path.join(self.experiment_insight_path, 'logloss_over_week.png')
         )
         plt.close(fig)
 
