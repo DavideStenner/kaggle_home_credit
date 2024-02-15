@@ -34,7 +34,15 @@ class PreprocessPipeline(BasePipeline, PreprocessImport, PreprocessAddFeature, P
 
     def collect_all(self) -> None:
         self.collect_feature()
-        self.main_data = self.base_data.collect()
+        self.base_data = self.base_data.collect()
+
+    def preprocess_inference(self) -> None:
+        self.create_feature()
+        self.merge_all()
+        
+        print('Collecting test....')
+        self.data = self.data.collect()
+        _ = gc.collect()
 
     def preprocess_train(self) -> None:
         self.create_feature()
@@ -47,9 +55,18 @@ class PreprocessPipeline(BasePipeline, PreprocessImport, PreprocessAddFeature, P
         print('Creating fold_info column ...')
         self.create_fold()
         self.save_data()
-
+        
+    def begin_inference(self) -> None:
+        #reset data
+        self.data = None
+        self.inference: bool = True
+        self.path_file_pattern: str = '*/test_{pattern_file}*.parquet'
+        
+        self.import_all()
+        
     def __call__(self) -> None:
         if self.inference:
-            raise NotImplementedError
+            self.preprocess_inference()
+
         else:
             self.preprocess_train()
