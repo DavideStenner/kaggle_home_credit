@@ -19,6 +19,7 @@ class PreprocessInit(BaseInit):
         self.inference: bool = False
         self.path_file_pattern: str = '*/train_{pattern_file}*.parquet'
         
+        self.special_column_list: list[str] = config_dict['SPECIAL_COLUMNS']
         #drop this column
         self.anagraphical_column_list: list[str] = [
             'district_544M', 'profession_152M', 'name_4527232M',

@@ -7,7 +7,7 @@ import polars as pl
 import lightgbm as lgb
 
 from itertools import chain
-from typing import Any, Union
+from typing import Any, Union, Dict
 from src.base.model.initialize import ModelInit
 
 class LgbmInit(ModelInit):
@@ -34,6 +34,9 @@ class LgbmInit(ModelInit):
         
         self.target_col_name: str = config_dict['TARGET_COL']
         self.fold_name: str = fold_name
+
+        self.special_column_list: list[str] = config_dict['SPECIAL_COLUMNS']
+
         self.useless_col_list: list[str] = [
             'case_id',
             'date_decision',
@@ -55,6 +58,17 @@ class LgbmInit(ModelInit):
         self.feature_list: list[str] = []
         self.get_categorical_columns()
         self.get_dataset_columns()
+    
+    def convert_feature_name_with_dataset(self, mapper_dict: Dict[str, Union[str, dict, float]]):
+        return {
+            dataset_name: {
+                #add dataset name to column as new feature for duplicated column name
+                dataset_name + '_' + column: value_
+                for column, value_ in mapping_col.items() 
+            }
+            for dataset_name, mapping_col in
+            mapper_dict.items()
+        }
         
     def get_dataset_columns(self) -> None:
         with open(
@@ -63,8 +77,9 @@ class LgbmInit(ModelInit):
                 'mapper_dtype.json'
             ), 'r'
         ) as file:
-            mapper_dtype = json.load(file)
-            
+            mapper_dtype = self.convert_feature_name_with_dataset(
+                json.load(file)
+            )
         self.feature_dataset = pd.DataFrame(
             list(
                 chain(
@@ -90,8 +105,9 @@ class LgbmInit(ModelInit):
                 'mapper_mask.json'
             ), 'r'
         ) as file:
-            mapper_mask = json.load(file)
-
+            mapper_mask = self.convert_feature_name_with_dataset(
+                json.load(file)
+            )
         data_columns = pl.scan_parquet(
             os.path.join(
                 self.config_dict['PATH_PARQUET_DATA'],

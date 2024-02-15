@@ -16,7 +16,25 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
     def create_feature(self) -> None:
         self.add_fold_column()
 
+    def add_dataset_name_to_feature(self) -> None: 
+        self.static_0 = self.static_0.rename(
+            {
+                col: 'static_0_' + col
+                for col in self.static_0.columns
+                if col not in self.special_column_list
+            }
+        )
+        self.static_cb_0 = self.static_cb_0.rename(
+            {
+                col: 'static_cb_0_' + col
+                for col in self.static_cb_0.columns
+                if col not in self.special_column_list
+            }
+        )
+
     def merge_all(self) -> None:
+        self.add_dataset_name_to_feature()
+        
         self.data = self.base_data
         
         if not self.inference:
