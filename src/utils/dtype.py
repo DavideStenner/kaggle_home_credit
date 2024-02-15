@@ -82,7 +82,8 @@ def get_mapper_numerical(
         type_mapping_reverse: Mapping[pl.DataType, str]=TYPE_MAPPING_REVERSE,
         threshold: float = 0.001, 
         dtype_choices: Tuple[pl.DataType]=[
-            pl.UInt8, pl.Int8, pl.UInt16,  pl.Int16,  pl.UInt32,  pl.Int32, pl.Float32
+            pl.UInt8, pl.Int8, pl.UInt16,  pl.Int16,  pl.UInt32,  pl.Int32, pl.Float32, 
+            pl.UInt64, pl.Int64, pl.Float64
         ],
     ) -> Mapping[str, str]:
     """
@@ -135,7 +136,7 @@ def get_mapper_numerical(
     
     #add boolean
     for col in  data.select(cs.by_dtype(pl.Boolean)).columns:
-        mapper_column[col] = 'uint8'
+        mapper_column[col] = type_mapping_reverse[pl.Boolean]
 
     #add date
     for col in [x for x in data.columns if x[-1]=='D']:
