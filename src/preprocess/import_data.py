@@ -125,7 +125,7 @@ class PreprocessImport(BaseImport, PreprocessInit):
 
     def downcast_base(self):
         self.base_data = self.base_data.with_columns(
-            pl.col('case_id').cast(pl.Int64),
+            pl.col('case_id').cast(pl.UInt32),
             pl.col('date_decision').cast(pl.Date),
             pl.col('MONTH').cast(pl.Int32),
             pl.col('WEEK_NUM').cast(pl.Int16)

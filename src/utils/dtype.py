@@ -14,7 +14,6 @@ TYPE_MAPPING: Mapping[str, pl.DataType] = {
     "float64": pl.Float64,
     "int64": pl.Int64,
     "uint64": pl.UInt64,
-    
     "float32": pl.Float32,
     "int32": pl.Int32,
     "uint32": pl.UInt32,
@@ -33,25 +32,7 @@ TYPE_MAPPING_REVERSE = {
     pl_dtype_: type_
     for type_, pl_dtype_ in TYPE_MAPPING.items()
 }
-TYPE_MAPPING_REVERSE_CONSERVATIVE = {
-    pl.Float64: "float64",
-    pl.Int64: "int64",
-    pl.UInt64: "int64",
 
-    pl.Float32: "float64",
-    pl.Int32: "int64",
-    pl.UInt32: "int64",
-
-    pl.Int16: "int64",
-    pl.UInt16: "int64",
-
-    pl.Int8: "int64",
-    pl.UInt8: "int64",
-    
-    pl.String: "str",
-    pl.Boolean: "int64",
-    pl.Date: "date"
-}
 
 def get_mapper_categorical(
         data: Union[pl.LazyFrame, pl.DataFrame], 
@@ -218,9 +199,7 @@ def get_mapping_info(
             ]
         )
         
-        mapper_column = get_mapper_numerical(
-            data=data, type_mapping_reverse=TYPE_MAPPING_REVERSE_CONSERVATIVE, 
-        )
+        mapper_column = get_mapper_numerical(data=data, type_mapping_reverse=TYPE_MAPPING_REVERSE)
 
         mapper_column_cast = {
             col: TYPE_MAPPING[dtype_str]
