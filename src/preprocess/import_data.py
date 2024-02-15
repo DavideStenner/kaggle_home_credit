@@ -120,7 +120,8 @@ class PreprocessImport(BaseImport, PreprocessInit):
         self.base_data = self.base_data.with_columns(
             pl.col('case_id').cast(pl.UInt32),
             pl.col('date_decision').cast(pl.Date),
-            pl.col('MONTH').cast(pl.Int32)
+            pl.col('MONTH').cast(pl.Int32),
+            pl.col('WEEK_NUM').cast(pl.Int16)
         )
         if not self.inference:
             self.base_data = self.base_data.with_columns(
