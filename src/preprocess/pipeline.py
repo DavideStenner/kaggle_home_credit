@@ -56,7 +56,21 @@ class PreprocessPipeline(BasePipeline, PreprocessImport, PreprocessAddFeature, P
         self.create_fold()
         self.save_data()
         
+    
     def begin_inference(self) -> None:
+        #if no data.parquet is provided create one with 5 rows it's needed by the model to check column names
+        if not os.path.exists(
+            os.path.join(
+                self.config_dict['PATH_PARQUET_DATA'],
+                'data.parquet'
+            )
+        ):
+            self.create_feature()
+            self.merge_all()
+            self.data = self.data.head(5).collect()
+
+            self.save_data()
+        
         #reset data
         self.data = None
         self.inference: bool = True
