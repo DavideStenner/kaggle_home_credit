@@ -63,11 +63,32 @@ class PreprocessImport(BaseImport, PreprocessInit):
             data: Union[pl.LazyFrame, pl.DataFrame], 
             dataset_name: str
         ) -> Union[pl.LazyFrame, pl.DataFrame]:
+        
+        #don't remap empty columns as polars raise errors
+        empty_columns_list = [
+            column for column, value_missing in
+            (
+                data.select(
+                    pl.col(self.mapper_mask[dataset_name].keys())
+                    .is_null().mean()
+                ).collect()
+                .to_dicts()[0]
+                .items()
+            )
+            if value_missing == 1.
+        ]
+
+        
         data = data.with_columns(
             [
                 (
-                    pl.col(col).replace(mapping_dict, default=None)
-                ).cast(pl.UInt64)
+                    (
+                        pl.col(col).replace(mapping_dict, default=None)
+                    ).cast(pl.UInt64)
+                    if col not in empty_columns_list
+                    #if it's empty don't apply replace as it raise errors
+                    else pl.col(col).cast(pl.UInt64)
+                )
                 for col, mapping_dict in self.mapper_mask[dataset_name].items()
             ]
         )
