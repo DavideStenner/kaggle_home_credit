@@ -143,8 +143,36 @@ class LgbmExplainer(LgbmInit):
             self.feature_dataset, how='left',
             on='feature'
         )
-
+        feature_importances_dataset['type_feature'] = feature_importances_dataset['feature'].apply(
+            lambda x: x[-1]
+        )
         feature_importances_dataset['rank_average'] = feature_importances_dataset['average'].rank(ascending=False)
+
+        #feature type
+        fig = plt.figure(figsize=(12,8))
+        sns.barplot(
+            data=feature_importances_dataset, 
+            x='average', y='type_feature'
+        )
+        plt.title(f"Top type feature")
+        
+        fig.savefig(
+            os.path.join(self.experiment_insight_path, 'top_type_feature.png')
+        )
+        plt.close(fig)
+        
+        #feature type by dataset
+        fig = plt.figure(figsize=(12,8))
+        sns.barplot(
+            data=feature_importances_dataset, 
+            x='average', y='type_feature', hue='dataset'
+        )
+        plt.title(f"Top type feature by dataset")
+        
+        fig.savefig(
+            os.path.join(self.experiment_insight_path, 'top_type_feature_by_dataset.png')
+        )
+        plt.close(fig)
 
         #plain feature top dataset
         fig = plt.figure(figsize=(12,8))
