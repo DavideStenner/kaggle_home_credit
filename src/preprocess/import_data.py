@@ -65,11 +65,17 @@ class PreprocessImport(BaseImport, PreprocessInit):
         ) -> Union[pl.LazyFrame, pl.DataFrame]:
         
         #don't remap empty columns as polars raise errors
+        column_dataset = (
+            set(self.mapper_mask[dataset_name].keys())
+            .intersection(
+                data.columns
+            )
+        )
         empty_columns_list = [
             column for column, value_missing in
             (
                 data.select(
-                    pl.col(self.mapper_mask[dataset_name].keys())
+                    pl.col(column_dataset)
                     .is_null().mean()
                 ).collect()
                 .to_dicts()[0]
@@ -90,6 +96,7 @@ class PreprocessImport(BaseImport, PreprocessInit):
                     else pl.col(col).cast(pl.UInt64)
                 )
                 for col, mapping_dict in self.mapper_mask[dataset_name].items()
+                if col in data.columns
             ]
         )
         #downcast
@@ -130,13 +137,30 @@ class PreprocessImport(BaseImport, PreprocessInit):
                 pl.col('target').is_not_null()
             ).sort(['case_id', 'date_decision'])
     
+    def skip_useless_null_columns(self):
+        #drop useless null columns as name of employer
+        self.static_0 = self.static_0.drop(
+            [
+                col 
+                for col in self.static_0.columns 
+                if self.mapper_statistic['static_0'][col]>=self.null_threshold
+            ]
+        )
+        self.static_cb_0 = self.static_cb_0.drop(
+            [
+                col 
+                for col in self.static_cb_0.columns 
+                if self.mapper_statistic['static_cb_0'][col]>=self.null_threshold
+            ]
+        )
+
     def skip_useless_categorical_columns(self):
         #drop useless categorical columns as name of employer
         self.static_0 = self.static_0.drop(
-            [col for col in self.static_0.columns if col in self.anagraphical_column_list]
+            [col for col in self.static_0.columns if col in self.useless_categorical_column_list]
         )
         self.static_cb_0 = self.static_cb_0.drop(
-            [col for col in self.static_cb_0.columns if col in self.anagraphical_column_list]
+            [col for col in self.static_cb_0.columns if col in self.useless_categorical_column_list]
         )
 
     def skip_dates_for_now(self):
@@ -154,10 +178,13 @@ class PreprocessImport(BaseImport, PreprocessInit):
         self.scan_all_dataset()
         self._import_all_mapper()
 
+        self.skip_useless_categorical_columns()
+        self.skip_useless_null_columns()
+        
+        #to delete
+        self.skip_dates_for_now()
+
         self.downcast_base()
         self.downcast_static_0()
         self.downcast_static_cb_0()
         
-        self.skip_useless_categorical_columns()
-        #to delete
-        self.skip_dates_for_now()

@@ -8,7 +8,7 @@ class PreprocessInit(BaseInit):
             config_dict: dict[str, Any],
             embarko_skip: int
         ):
-        
+        self.null_threshold: float = 0.95
         self.config_dict: dict[str, Any] = config_dict
         self.embarko_skip: int = embarko_skip
         self.n_folds: int = config_dict['N_FOLD']
@@ -21,13 +21,13 @@ class PreprocessInit(BaseInit):
         
         self.special_column_list: list[str] = config_dict['SPECIAL_COLUMNS']
         #drop this column
-        self.anagraphical_column_list: list[str] = [
-            'district_544M', 'profession_152M', 'name_4527232M',
-            'name_4917606M', 'employername_160M', 
-            'contaddr_district_15M', 'contaddr_zipcode_807M', 
-            'empladdr_zipcode_114M', 'registaddr_district_1083M',
-            'registaddr_zipcode_184M', 'addres_district_368M',
-            'addres_zip_823M', 'empls_employer_name_740M'
+        self.useless_categorical_column_list: list[str] = [
+            'bankacctype_710L', 'paytype1st_925L', 'typesuite_864L', 
+            'district_544M', 'profession_152M', 'name_4527232M', 'name_4917606M', 
+            'employername_160M', 'classificationofcontr_400M', 'contractst_964M', 
+            'financialinstitution_382M', 'contaddr_district_15M', 'contaddr_zipcode_807M', 
+            'empladdr_zipcode_114M', 'registaddr_district_1083M', 'registaddr_zipcode_184M', 
+            'role_993L', 'addres_district_368M', 'addres_zip_823M', 'empls_employer_name_740M'
         ]
         self.mapper_mask: Dict[str, Dict[str, int]] = None
         self.mapper_dtype: Dict[str, Dict[str, str]] = None

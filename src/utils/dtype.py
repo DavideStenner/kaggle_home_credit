@@ -36,7 +36,7 @@ TYPE_MAPPING_REVERSE = {
 
 def get_mapper_categorical(
         data: Union[pl.LazyFrame, pl.DataFrame], 
-        check_cat_length: int = 255,
+        check_cat_length: int = 200,
         message_error: str = 'Categories {col} has over {num_different_cat_values} different values.'
     ) -> Mapping[str, int]:
     """
@@ -67,7 +67,7 @@ def get_mapper_categorical(
             for i, value in enumerate(unique_values.sort().to_list())
         }
         num_different_cat_values = len(mapper_mask_col[col].values())
-        if  num_different_cat_values > check_cat_length:
+        if  (num_different_cat_values < 2) | (num_different_cat_values > check_cat_length):
             print(
                 message_error.format(
                     col=col, 
