@@ -122,7 +122,12 @@ class LgbmExplainer(LgbmInit):
             feature_importances[['feature', 'average']]
             .sort_values(by='average', ascending=False)
         )
-        
+        feature_importances['rank_average'] = feature_importances['average'].rank(ascending=False)
+        feature_importances['type_feature'] = feature_importances['feature'].apply(
+            lambda x: 
+                x[-1] if x[-1] in self.config_dict['TYPE_FEATURE'] else 'other'
+        )
+
         #plain feature
         fig = plt.figure(figsize=(12,8))
         sns.barplot(data=feature_importances.head(50), x='average', y='feature')
@@ -140,18 +145,14 @@ class LgbmExplainer(LgbmInit):
         )
         #add dataset
         feature_importances_dataset = feature_importances.merge(
-            self.feature_dataset, how='left',
+            self.feature_dataset, how='inner',
             on='feature'
         )
-        feature_importances_dataset['type_feature'] = feature_importances_dataset['feature'].apply(
-            lambda x: x[-1]
-        )
-        feature_importances_dataset['rank_average'] = feature_importances_dataset['average'].rank(ascending=False)
 
         #feature type
         fig = plt.figure(figsize=(12,8))
         sns.barplot(
-            data=feature_importances_dataset, 
+            data=feature_importances, 
             x='average', y='type_feature'
         )
         plt.title(f"Top type feature")
