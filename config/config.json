@@ -7,5 +7,6 @@
     "N_FOLD": 5,
     "TARGET_COL": "target",
     "SPECIAL_COLUMNS": ["case_id", "date_decision", "WEEK_NUM", "MONTH", "target", "num_group1", "num_group2"],
-    "DEPTH_0": ["static_0", "static_cb_0"]
+    "DEPTH_0": ["static_0", "static_cb_0"],
+    "TYPE_FEATURE": ["P", "M", "A", "D", "T", "L"]
 }
