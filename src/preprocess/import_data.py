@@ -154,8 +154,8 @@ class PreprocessImport(BaseImport, PreprocessInit):
             ]
         )
 
-    def skip_useless_categorical_columns(self):
-        #drop useless categorical columns as name of employer
+    def skip_useless_columns(self):
+        #drop useless columns as name of employer
         self.static_0 = self.static_0.drop(
             [col for col in self.static_0.columns if col in self.useless_categorical_column_list]
         )
@@ -183,7 +183,7 @@ class PreprocessImport(BaseImport, PreprocessInit):
         self.downcast_static_0()
         self.downcast_static_cb_0()
         
-        self.skip_useless_categorical_columns()
+        self.skip_useless_columns()
         self.skip_useless_null_columns()
         
         #to delete

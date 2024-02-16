@@ -26,7 +26,8 @@ class PreprocessInit(BaseInit):
             'employername_160M', 
             'contaddr_district_15M', 'contaddr_zipcode_807M', 
             'empladdr_zipcode_114M', 'registaddr_district_1083M', 'registaddr_zipcode_184M', 
-            'addres_district_368M', 'addres_zip_823M', 'empls_employer_name_740M'
+            'addres_district_368M', 'addres_zip_823M', 'empls_employer_name_740M',
+            'dateofbirth_342D'
         ]
         self.mapper_mask: Dict[str, Dict[str, int]] = None
         self.mapper_dtype: Dict[str, Dict[str, str]] = None
