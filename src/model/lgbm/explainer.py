@@ -243,6 +243,11 @@ class LgbmExplainer(LgbmInit):
                 importance_type='gain'
             )
             feature_importances[f'fold_{fold_}_rank'] = feature_importances[f'fold_{fold_}'].rank(ascending=False)
+        
+        feature_importances['type_feature'] = feature_importances['feature'].apply(
+            lambda x: 
+                x[-1] if x[-1] in self.config_dict['TYPE_FEATURE'] else 'other'
+        )
             
         feature_importances['average'] = feature_importances[
             [f'fold_{fold_}' for fold_ in range(self.n_fold)]
@@ -267,6 +272,23 @@ class LgbmExplainer(LgbmInit):
             os.path.join(self.experiment_path, 'feature_stability_importances.xlsx'),
             index=False
         )
+
+        feature_importances_dataset = feature_importances.merge(
+            self.feature_dataset, how='inner',
+            on='feature'
+        )
+        #stability over class feature and dataset
+        fig = plt.figure(figsize=(12,8))
+        sns.barplot(
+            data=feature_importances_dataset, 
+            x='rank_average', y='type_feature', hue='dataset'
+        )
+        plt.title(f"Top rank average by type and feature")
+        
+        fig.savefig(
+            os.path.join(self.experiment_insight_path, 'top_rank_feature_by_type_dataset.png')
+        )
+        plt.close(fig)
 
     def get_oof_insight(self) -> None:
         #read data
