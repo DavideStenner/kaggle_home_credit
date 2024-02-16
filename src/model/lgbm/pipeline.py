@@ -14,12 +14,14 @@ class LgbmPipeline(ModelPipeline, LgbmTrainer, LgbmExplainer, LgbmInference):
             metric_eval: str,
             config_dict: dict[str, Any],
             log_evaluation:int =1, fold_name: str = 'fold_info', 
+            evaluate_stability: bool=False
         ):
         LgbmInit.__init__(
             self, experiment_name=experiment_name, params_lgb=params_lgb,
             metric_eval=metric_eval, config_dict=config_dict,
             log_evaluation=log_evaluation, fold_name=fold_name
         )
+        self.evaluate_stability: bool = evaluate_stability
 
     def activate_inference(self) -> None:
         self.load_model()
@@ -39,3 +41,7 @@ class LgbmPipeline(ModelPipeline, LgbmTrainer, LgbmExplainer, LgbmInference):
         self.create_experiment_structure()
         self.run_train()
         self.explain_model()
+        
+        if self.evaluate_stability:
+            self.single_fold_train()
+            self.get_stability_feature_importance()

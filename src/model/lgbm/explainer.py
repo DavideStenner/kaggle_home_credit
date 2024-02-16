@@ -230,7 +230,44 @@ class LgbmExplainer(LgbmInit):
             os.path.join(self.experiment_insight_path, 'dataset_importance_rank_plot.png')
         )
         plt.close(fig)
+    
+    def get_stability_feature_importance(self) -> None:
+        self.load_used_feature()
+        self.load_pickle_model_stability_list()
         
+        feature_importances = pd.DataFrame()
+        feature_importances['feature'] = self.feature_list
+
+        for fold_, model in enumerate(self.model_list_stability):
+            feature_importances[f'fold_{fold_}'] = model.feature_importance(
+                importance_type='gain'
+            )
+            feature_importances[f'fold_{fold_}_rank'] = feature_importances[f'fold_{fold_}'].rank(ascending=False)
+            
+        feature_importances['average'] = feature_importances[
+            [f'fold_{fold_}' for fold_ in range(self.n_fold)]
+        ].mean(axis=1)
+        feature_importances['std'] = feature_importances[
+            [f'fold_{fold_}' for fold_ in range(self.n_fold)]
+        ].std(axis=1)
+        
+        feature_importances['rank_average'] = feature_importances[
+            [f'fold_{fold_}_rank' for fold_ in range(self.n_fold)]
+        ].mean(axis=1)
+
+        feature_importances['rank_std'] = feature_importances[
+            [f'fold_{fold_}_rank' for fold_ in range(self.n_fold)]
+        ].std(axis=1)
+
+        feature_importances = (
+            feature_importances
+            .sort_values(by='rank_average', ascending=True)
+        )
+        feature_importances.to_excel(
+            os.path.join(self.experiment_path, 'feature_stability_importances.xlsx'),
+            index=False
+        )
+
     def get_oof_insight(self) -> None:
         #read data
         oof_prediction = pl.read_parquet(

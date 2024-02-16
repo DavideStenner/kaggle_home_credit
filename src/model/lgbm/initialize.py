@@ -50,8 +50,9 @@ class LgbmInit(ModelInit):
 
         self.params_lgb: dict[str, Any] = params_lgb
         
-        self.model_all_data: lgb.Booster = None
         self.model_list: list[lgb.Booster] = []
+        self.model_list_stability: list[lgb.Booster] = []
+        
         self.progress_list: list = []
         self.best_result: dict[str, Union[int, float]] = None
         
@@ -214,14 +215,24 @@ class LgbmInit(ModelInit):
         ) as file:
             self.model_list = pickle.load(file)
 
-    def load_model_all_data(self) -> None:
-        self.model_all_data = lgb.Booster(
-            params=self.params_lgb,
-            model_file=os.path.join(
+    def save_pickle_model_stability_list(self) -> None:
+        with open(
+            os.path.join(
                 self.experiment_path,
-                f'lgb_all.txt'
-            )
-        )
+                'model_list_stability.pkl'
+            ), 'wb'
+        ) as file:
+            pickle.dump(self.model_list_stability, file)
+    
+    def load_pickle_model_stability_list(self) -> None:
+        with open(
+            os.path.join(
+                self.experiment_path,
+                'model_list_stability.pkl'
+            ), 'rb'
+        ) as file:
+            self.model_list_stability = pickle.load(file)
+
     def load_model_list(self) -> None:
         
         self.model_list = [

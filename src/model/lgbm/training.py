@@ -127,37 +127,37 @@ class LgbmTrainer(ModelTrain, LgbmInit):
             
             _ = gc.collect()
 
-    def all_data_train(self, num_round: int) -> None:
+    def single_fold_train(self) -> None:
+        print('\n\n\nBeginning stability training on each validation fold')
         
-        data = pl.scan_parquet(
-            os.path.join(
-                self.config_dict['PATH_PARQUET_DATA'],
-                'data.parquet'
+        for fold_ in range(self.n_fold):
+            print(f'\n\nStarting fold {fold_}')
+            fold_data = self.access_fold(fold_=fold_)
+            
+            test_filtered = fold_data.filter(
+                (pl.col('current_fold') == 'v')
             )
-        ).filter(
-            (pl.col('target').is_not_null())
-        )
-        train_matrix = lgb.Dataset(
-            data.select(self.feature_list).collect().to_pandas().to_numpy('float32'),
-            data.select(self.target_col_name).collect().to_pandas().to_numpy('float64').reshape((-1))
-        )
+            test_matrix = lgb.Dataset(
+                test_filtered.select(self.feature_list).collect().to_pandas().to_numpy('float32'),
+                test_filtered.select(self.target_col_name).collect().to_pandas().to_numpy('float32').reshape((-1))
+            )
+            
+            print('Start training')
+            model = lgb.train(
+                params=self.params_lgb,
+                train_set=test_matrix, 
+                feature_name=self.feature_list,
+                categorical_feature=self.categorical_col_list,
+                num_boost_round=self.params_lgb['n_round'],
+            )
+
+            self.model_list_stability.append(model)
+
+            del test_matrix
+            
+            _ = gc.collect()
+        self.save_pickle_model_stability_list()
         
-        print('Start training model on all data with selected epoch')
-        model = lgb.train(
-            params=self.params_lgb,
-            train_set=train_matrix, 
-            feature_name=self.feature_list,
-            categorical_feature=self.categorical_col_list,
-            num_boost_round=num_round,
-        )
-
-        model.save_model(
-            os.path.join(
-                self.experiment_path,
-                f'lgb_all.txt'
-            ), importance_type='gain'
-        )
-
     def save_model(self)->None:
         self.save_pickle_model_list()
         self.save_params()
