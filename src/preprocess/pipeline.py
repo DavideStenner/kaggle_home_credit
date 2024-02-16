@@ -47,6 +47,7 @@ class PreprocessPipeline(BasePipeline, PreprocessImport, PreprocessAddFeature, P
     def preprocess_train(self) -> None:
         self.create_feature()
         self.merge_all()
+        self.add_additional_feature()
         
         print('Collecting....')
         self.data = self.data.collect()

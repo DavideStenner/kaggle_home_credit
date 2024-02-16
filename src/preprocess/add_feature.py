@@ -32,6 +32,31 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             }
         )
 
+    def add_additional_feature(self) -> None:
+
+        self.data = self.data.with_columns(
+            [
+                (
+                    (
+                        pl.col('date_decision') - pl.col(col)
+                    )
+                    .dt.total_days()
+                    .cast(pl.Int32).alias(col)
+                )
+                for col in self.data.columns if col[-1]=='D'
+            ]
+        ).with_columns(
+            [
+                (
+                    pl.when((pl.col(col) <0))
+                    .then(None)
+                    .otherwise(pl.col(col))
+                    .cast(pl.Int32).alias(col)
+                )
+                for col in self.data.columns if col[-1]=='D'
+            ]
+        )
+    
     def merge_all(self) -> None:
         self.add_dataset_name_to_feature()
         
