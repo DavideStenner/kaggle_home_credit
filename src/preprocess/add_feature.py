@@ -1,5 +1,6 @@
 import polars as pl
 
+from src.utils.other import change_name_with_type
 from src.base.preprocess.add_feature import BaseFeature
 from src.preprocess.initialize import PreprocessInit
 
@@ -33,7 +34,11 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         )
 
     def add_additional_feature(self) -> None:
-
+        not_allowed_negative_dates = [
+            col
+            for col in self.data.columns if col[-1]=='D'
+            if col not in self.negative_allowed_dates
+        ]
         self.data = self.data.with_columns(
             [
                 (
@@ -44,6 +49,21 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                     .cast(pl.Int32).alias(col)
                 )
                 for col in self.data.columns if col[-1]=='D'
+            ] + [
+                (
+                    (
+                        (
+                            pl.col('date_decision') - pl.col(col)
+                        )
+                        .dt.total_days()//365
+                    )
+                    .cast(pl.Int32).alias(
+                        change_name_with_type(
+                            col, '_year_diff_'
+                        )
+                    )
+                )
+                for col in self.calc_also_year_dates
             ]
         ).with_columns(
             [
@@ -53,7 +73,17 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                     .otherwise(pl.col(col))
                     .cast(pl.Int32).alias(col)
                 )
-                for col in self.data.columns if col[-1]=='D'
+                for col in (
+                    not_allowed_negative_dates + 
+                    #add also year calculation
+                    [
+                        change_name_with_type(
+                            col, '_year_diff_'
+                        )
+                        for col in not_allowed_negative_dates
+                        if col in self.calc_also_year_dates
+                    ]
+                )
             ]
         )
     
