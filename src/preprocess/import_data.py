@@ -157,10 +157,10 @@ class PreprocessImport(BaseImport, PreprocessInit):
     def skip_useless_columns(self):
         #drop useless columns as name of employer
         self.static_0 = self.static_0.drop(
-            [col for col in self.static_0.columns if col in self.useless_categorical_column_list]
+            [col for col in self.static_0.columns if col in self.useless_column_list]
         )
         self.static_cb_0 = self.static_cb_0.drop(
-            [col for col in self.static_cb_0.columns if col in self.useless_categorical_column_list]
+            [col for col in self.static_cb_0.columns if col in self.useless_column_list]
         )
 
     def skip_dates_for_now(self):

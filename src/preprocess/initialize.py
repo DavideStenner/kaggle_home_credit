@@ -21,7 +21,7 @@ class PreprocessInit(BaseInit):
         
         self.special_column_list: list[str] = config_dict['SPECIAL_COLUMNS']
         #drop this column
-        self.useless_categorical_column_list: list[str] = [
+        self.useless_column_list: list[str] = [
             'district_544M', 'profession_152M', 'name_4527232M', 'name_4917606M', 
             'employername_160M', 
             'contaddr_district_15M', 'contaddr_zipcode_807M', 
