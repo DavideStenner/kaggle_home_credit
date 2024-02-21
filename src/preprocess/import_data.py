@@ -162,17 +162,6 @@ class PreprocessImport(BaseImport, PreprocessInit):
         self.static_cb_0 = self.static_cb_0.drop(
             [col for col in self.static_cb_0.columns if col in self.useless_column_list]
         )
-
-    def skip_dates_for_now(self):
-        #drop dates for now
-
-        self.static_0 = self.static_0.drop(
-            [col for col in self.static_0.columns if col[-1]=='D']
-        )
-
-        self.static_cb_0 = self.static_cb_0.drop(
-            [col for col in self.static_cb_0.columns if col[-1]=='D']
-        )
     
     def import_all(self) -> None:
         self.scan_all_dataset()
@@ -184,7 +173,4 @@ class PreprocessImport(BaseImport, PreprocessInit):
         self.downcast_static_cb_0()
         
         self.skip_useless_columns()
-        self.skip_useless_null_columns()
-        
-        #to delete
-        # self.skip_dates_for_now()
+        # self.skip_useless_null_columns()
