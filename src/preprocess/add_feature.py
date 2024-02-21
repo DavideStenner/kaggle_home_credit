@@ -20,7 +20,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         ).select(
             [
                 'case_id',
-                'birth_259D', 'childnum_185L', 'education_927M',
+                'birth_259D', 'education_927M',
                 'empl_employedfrom_271D',
                 'empl_industry_691L', 'familystate_447L',
                 'housetype_905L', 
