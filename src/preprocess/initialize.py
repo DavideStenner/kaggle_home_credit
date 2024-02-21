@@ -20,7 +20,8 @@ class PreprocessInit(BaseInit):
         self.path_file_pattern: str = '*/train_{pattern_file}*.parquet'
         
         self.special_column_list: list[str] = config_dict['SPECIAL_COLUMNS']
-        #drop this column
+        
+        #drop this column --> accross all dataset
         self.useless_column_list: list[str] = [
             'district_544M', 'profession_152M', 'name_4527232M', 'name_4917606M', 
             'employername_160M', 
@@ -29,11 +30,13 @@ class PreprocessInit(BaseInit):
             'addres_district_368M', 'addres_zip_823M', 'empls_employer_name_740M',
             'birthdate_574D', 'dateofbirth_337D', 'dateofbirth_342D'
         ]
+        #for this dates doesn't correct to blank when negative
         self.negative_allowed_dates: list[str] = [
             'static_cb_0_assignmentdate_238D',
             'static_cb_0_assignmentdate_4527235D', 'static_cb_0_responsedate_1012D',
             'static_cb_0_responsedate_4527233D', 'static_cb_0_responsedate_4917613D'
         ]
+        #calculate day diff and year diff to date_decision
         self.calc_also_year_dates: list[str] = [
             'static_0_datefirstoffer_1144D', 'static_0_datelastinstal40dpd_247D',
             'static_0_dtlastpmtallstes_4499206D', 'static_0_firstclxcampaign_1125D',
@@ -41,8 +44,10 @@ class PreprocessInit(BaseInit):
             'static_0_lastapplicationdate_877D', 'static_0_lastapprdate_640D',
             'static_0_lastdelinqdate_224D', 'static_0_lastrejectdate_50D',
             'static_0_maxdpdinstldate_3546855D', 'static_cb_0_assignmentdate_238D',
-            'static_cb_0_assignmentdate_4955616D', 'static_0_lastrepayingdate_696D'
+            'static_cb_0_assignmentdate_4955616D', 'static_0_lastrepayingdate_696D',
+            'person_1_birth_259D', 'person_1_empl_employedfrom_271D'
         ]
+
         self.mapper_mask: Dict[str, Dict[str, int]] = None
         self.mapper_dtype: Dict[str, Dict[str, str]] = None
         self.mapper_statistic: Dict[str, Dict[str, float]] = None
@@ -54,7 +59,8 @@ class PreprocessInit(BaseInit):
         self.data: Union[pl.LazyFrame, pl.DataFrame] = None
         self.static_0: Union[pl.LazyFrame, pl.DataFrame] = None
         self.static_cb_0: Union[pl.LazyFrame, pl.DataFrame] = None
-    
+        self.person_1: Union[pl.LazyFrame, pl.DataFrame] = None
+        
     def _collect_item_utils(self, data: Union[pl.DataFrame, pl.LazyFrame]) -> Any:
         if isinstance(data, pl.LazyFrame):
             return data.collect().item()

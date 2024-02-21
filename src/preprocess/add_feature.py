@@ -13,7 +13,27 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             .cast(pl.UInt16)
         )
 
+    def create_person_1_feature(self) -> None:
+        print('Only considering client info not related person for now...')
+        self.person_1 = self.person_1.filter(
+            pl.col('num_group1')==0
+        ).select(
+            [
+                'case_id',
+                'birth_259D', 'childnum_185L', 'education_927M',
+                'empl_employedfrom_271D',
+                'empl_industry_691L', 'familystate_447L',
+                'housetype_905L', 
+                'incometype_1044T', 'isreference_387L', 'language1_981M',
+                'mainoccupationinc_384A', 'maritalst_703L',
+                'role_1084L', 'role_993L',
+                'safeguarantyflag_411L', 'type_25L', 'sex_738L'
+            ]
+        )
+
     def create_feature(self) -> None:
+        self.create_person_1_feature()
+        
         if not self.inference:
             self.add_fold_column()
 
@@ -29,6 +49,13 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             {
                 col: 'static_cb_0_' + col
                 for col in self.static_cb_0.columns
+                if col not in self.special_column_list
+            }
+        )
+        self.person_1 = self.person_1.rename(
+            {
+                col: 'person_1_' + col
+                for col in self.person_1.columns
                 if col not in self.special_column_list
             }
         )
@@ -104,7 +131,12 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             self.static_cb_0, how='left', 
             on=['case_id']
         )
-        
+
+        self.data = self.data.join(
+            self.person_1, how='left', 
+            on=['case_id']
+        )
+
         n_rows_end = self._collect_item_utils(
             self.data.select(pl.count())
         )

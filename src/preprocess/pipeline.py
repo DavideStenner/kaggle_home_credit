@@ -31,6 +31,7 @@ class PreprocessPipeline(BasePipeline, PreprocessImport, PreprocessAddFeature, P
     def collect_feature(self) -> None:
         self.static_0 = self.static_0.collect()
         self.static_cb_0 = self.static_cb_0.collect()
+        self.person_1 = self.person_1.collect()
 
     def collect_all(self) -> None:
         self.collect_feature()
