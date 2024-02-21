@@ -60,12 +60,24 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             }
         )
 
-    def add_additional_feature(self) -> None:
+    def add_difference_to_date_decision(self) -> None:
+        """
+        Everything which isn't touched until now and it's a date
+        will be confrontend with date decision
+        """
+        temp_row_data = self.data.first().collect()
+        
+        dates_to_transform = [
+            col for col in self.data.columns 
+            if (col[-1]=='D') & (temp_row_data[col].dtype == pl.Date)
+        ]
         not_allowed_negative_dates = [
             col
-            for col in self.data.columns if col[-1]=='D'
+            for col in dates_to_transform
             if col not in self.negative_allowed_dates
         ]
+        assert all([col in dates_to_transform for col in self.calc_also_year_dates])
+        
         self.data = self.data.with_columns(
             [
                 (
@@ -75,7 +87,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                     .dt.total_days()
                     .cast(pl.Int32).alias(col)
                 )
-                for col in self.data.columns if col[-1]=='D'
+                for col in dates_to_transform
             ] + [
                 (
                     (
@@ -113,7 +125,18 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 )
             ]
         )
-    
+        temp_row_data = self.data.first().collect()
+        assert all(
+            [
+                temp_row_data[col].dtype != pl.Date 
+                for col in self.data.columns 
+                if (col[-1]=='D')
+            ]
+        )
+
+    def add_additional_feature(self) -> None:
+        self.add_difference_to_date_decision()
+        
     def merge_all(self) -> None:
         self.add_dataset_name_to_feature()
         
