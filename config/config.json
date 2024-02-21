@@ -8,5 +8,11 @@
     "TARGET_COL": "target",
     "SPECIAL_COLUMNS": ["case_id", "date_decision", "WEEK_NUM", "MONTH", "target", "num_group1", "num_group2"],
     "DEPTH_0": ["static_0", "static_cb_0"],
+    "DEPTH_1": [
+        "applprev_1", "other_1", 
+        "tax_registry_a_1", "tax_registry_b_1", "tax_registry_c_1", 
+        "credit_bureau_a_1", "credit_bureau_b_1", "deposit_1", "person_1",
+        "debitcard_1"
+    ],
     "TYPE_FEATURE": ["P", "M", "A", "D", "T", "L"]
 }
