@@ -60,6 +60,7 @@ class PreprocessInit(BaseInit):
         self.static_0: Union[pl.LazyFrame, pl.DataFrame] = None
         self.static_cb_0: Union[pl.LazyFrame, pl.DataFrame] = None
         self.person_1: Union[pl.LazyFrame, pl.DataFrame] = None
+        self.applprev_1: Union[pl.LazyFrame, pl.DataFrame] = None
         
     def _collect_item_utils(self, data: Union[pl.DataFrame, pl.LazyFrame]) -> Any:
         if isinstance(data, pl.LazyFrame):

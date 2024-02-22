@@ -64,6 +64,12 @@ class PreprocessImport(BaseImport, PreprocessInit):
             root_dir=self.config_dict['PATH_ORIGINAL_DATA'], 
             scan=True
         )
+        
+        self.applprev_1: pl.LazyFrame = read_multiple_parquet(
+            self.path_file_pattern.format(pattern_file='applprev_1'),
+            root_dir=self.config_dict['PATH_ORIGINAL_DATA'], 
+            scan=True
+        )
     
     def remap_downcast(self, 
             data: Union[pl.LazyFrame, pl.DataFrame], 
@@ -135,6 +141,12 @@ class PreprocessImport(BaseImport, PreprocessInit):
             data=self.person_1, dataset_name='person_1'
         )
 
+    def downcast_applprev_1(self):
+        #replace categorical before downcasting
+        self.applprev_1 = self.remap_downcast(
+            data=self.applprev_1, dataset_name='applprev_1'
+        )
+
     def downcast_base(self):
         self.base_data = self.base_data.with_columns(
             pl.col('case_id').cast(pl.Int32),
@@ -184,6 +196,7 @@ class PreprocessImport(BaseImport, PreprocessInit):
         self.downcast_static_0()
         self.downcast_static_cb_0()
         self.downcast_person_1()
+        self.downcast_applprev_1()
         
         self.skip_useless_columns()
         # self.skip_useless_null_columns()

@@ -14,7 +14,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         )
 
     def create_person_1_feature(self) -> None:
-        print('Only considering client info not related person for now...')
+        print('Only considering person_1 info not related person for now...')
         self.person_1 = self.person_1.filter(
             pl.col('num_group1')==0
         ).select(
@@ -31,8 +31,59 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             ]
         )
 
+    def create_applprev_1_feature(self) -> None:
+        print('Only considering applprev_1 info not related person for now...')
+        self.applprev_1 = self.applprev_1.filter(
+            pl.col('num_group1')==0
+        ).select(
+            [
+                'case_id',
+                'actualdpd_943P', 'annuity_853A', 'approvaldate_319D',
+                'byoccupationinc_3656910L', 'cancelreason_3545846M',
+                'childnum_21L', 'creationdate_885D', 'credacc_actualbalance_314A',
+                'credacc_credlmt_575A', 'credacc_maxhisbal_375A',
+                'credacc_minhisbal_90A', 'credacc_status_367L',
+                'credacc_transactions_402L', 'credamount_590A',
+                'credtype_587L', 'currdebt_94A', 'dateactivated_425D',
+                'downpmt_134A', 'dtlastpmt_581D', 'dtlastpmtallstes_3545839D',
+                'education_1138M', 'employedfrom_700D', 'familystate_726L',
+                'firstnonzeroinstldate_307D', 'inittransactioncode_279L', 
+                'isbidproduct_390L', 'isdebitcard_527L', 'mainoccupationinc_437A',
+                'maxdpdtolerance_577P', 'pmtnum_8L', 'postype_4733339M',
+                'profession_152M', 'rejectreason_755M', 'rejectreasonclient_4145042M',
+                'revolvingaccount_394A', 'status_219L', 'tenor_203L'
+            ]
+        )
+        self.applprev_1 = self.applprev_1.with_columns(
+            #add day diff
+            [
+                ( 
+                    pl.col(col) -
+                    pl.col('creationdate_885D')
+                ).dt.total_days()
+                .cast(pl.Int32).alias(col)
+                for col in self.applprev_1.columns
+                if (col[-1] == "D") & (col != 'creationdate_885D')
+            ]
+        ).with_columns(
+            #add also year diff
+            [
+                (
+                    (pl.col(col)//365)
+                    .cast(pl.Int32).alias(
+                        change_name_with_type(
+                            col, '_year_diff_'
+                        )
+                    )
+                )
+                for col in self.applprev_1.columns
+                if (col[-1] == "D") & (col != 'creationdate_885D')
+            ]
+        )
+        
     def create_feature(self) -> None:
         self.create_person_1_feature()
+        self.create_applprev_1_feature()
         
         if not self.inference:
             self.add_fold_column()
@@ -59,6 +110,13 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 if col not in self.special_column_list
             }
         )
+        self.applprev_1 = self.applprev_1.rename(
+            {
+                col: 'applprev_1_' + col
+                for col in self.applprev_1.columns
+                if col not in self.special_column_list
+            }
+        )
 
     def add_difference_to_date_decision(self) -> None:
         """
@@ -69,7 +127,8 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         
         dates_to_transform = [
             col for col in self.data.columns 
-            if (col[-1]=='D') & (temp_row_data[col].dtype == pl.Date)
+            if (col[-1]=='D') & (temp_row_data[col].dtype == pl.Date) &
+            (col not in ['applprev_1_creationdate_885D'])
         ]
         not_allowed_negative_dates = [
             col
@@ -125,6 +184,25 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 )
             ]
         )
+
+        #correct applprev_1 columns depending on date decision
+        self.data = self.data.with_columns(
+            
+            [
+                (
+                    pl.when(
+                        (pl.col('date_decision') - pl.col('applprev_1_creationdate_885D'))
+                        .dt.total_days() <0
+                    )
+                    .then(None)
+                    .otherwise(pl.col(col))
+                    .cast(pl.Int32).alias(col)
+                )
+                for col in self.data.columns
+                if (col[-1]=='D') & ('applprev_1_' in col)
+            ]
+        ).drop('applprev_1_creationdate_885D')
+        
         temp_row_data = self.data.first().collect()
         assert all(
             [
@@ -157,6 +235,11 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
 
         self.data = self.data.join(
             self.person_1, how='left', 
+            on=['case_id']
+        )
+
+        self.data = self.data.join(
+            self.applprev_1, how='left', 
             on=['case_id']
         )
 
