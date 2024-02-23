@@ -255,29 +255,15 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             self.data.select(pl.count())
         )
 
-        self.data = self.data.join(
-            self.static_0, how='left', 
-            on=['case_id']
-        )
-        self.data = self.data.join(
-            self.static_cb_0, how='left', 
-            on=['case_id']
-        )
-
-        self.data = self.data.join(
-            self.person_1, how='left', 
-            on=['case_id']
-        )
-
-        self.data = self.data.join(
-            self.applprev_1, how='left', 
-            on=['case_id']
-        )
-
-        self.data = self.data.join(
-            self.other_1, how='left', 
-            on=['case_id']
-        )
+        list_df_join_case_id = [
+            self.static_0, self.static_cb_0, self.person_1,
+            self.applprev_1, self.other_1,
+        ]
+        for df in list_df_join_case_id:
+            self.data = self.data.join(
+                df, how='left', 
+                on=['case_id']
+            )
         
         n_rows_end = self._collect_item_utils(
             self.data.select(pl.count())
