@@ -178,7 +178,7 @@ class LgbmExplainer(LgbmInit):
         #plain feature top dataset
         fig = plt.figure(figsize=(12,8))
         plot_ = sns.barplot(
-            data=feature_importances_dataset, 
+            data=feature_importances_dataset.head(50), 
             x='rank_average', y='average', hue='dataset', 
         )
         plot_.set(xticklabels=[])
