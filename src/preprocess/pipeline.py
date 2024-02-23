@@ -37,7 +37,8 @@ class PreprocessPipeline(BasePipeline, PreprocessImport, PreprocessAddFeature, P
         self.tax_registry_a_1 = self.tax_registry_a_1.collect()
         self.tax_registry_b_1 = self.tax_registry_b_1.collect()
         self.tax_registry_c_1 = self.tax_registry_c_1.collect()
-
+        self.deposit_1 = self.deposit_1.collect()
+        
     def collect_all(self) -> None:
         self.collect_feature()
         self.base_data = self.base_data.collect()

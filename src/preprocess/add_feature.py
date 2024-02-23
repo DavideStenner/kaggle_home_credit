@@ -13,6 +13,35 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             .cast(pl.UInt16)
         )
     
+    def create_deposit_1_feature(self) -> None:
+        print('Only considering deposit_1 info not related person for now...')
+        self.deposit_1 = self.deposit_1.filter(
+            pl.col('num_group1')==0
+        ).select(
+            [
+                'case_id', 'amount_416A',
+                'contractenddate_991D', 'openingdate_313D'
+            ]
+        ).with_columns(
+            (
+                (
+                    pl.col('contractenddate_991D') - 
+                    pl.col('openingdate_313D')
+                ).dt.total_days()
+                .alias('duration_contract_date_D')
+                .cast(pl.Int32)
+            ),
+            (
+                (
+                    (
+                        pl.col('contractenddate_991D') - 
+                        pl.col('openingdate_313D')
+                    ).dt.total_days()//365
+                )
+                .alias('duration_contract_date_year_diff_D')
+                .cast(pl.Int32)
+            )
+        )
     def create_static_0_feature(self) -> None:
         pass
     
@@ -136,6 +165,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         self.create_applprev_1_feature()
         self.create_other_1()
         self.create_tax_registry_1_feature()
+        self.create_deposit_1_feature()
         
         if not self.inference:
             self.add_fold_column()
@@ -197,6 +227,14 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 if col not in self.special_column_list
             }
         )
+        self.deposit_1 = self.deposit_1.rename(
+            {
+                col: 'deposit_1_' + col
+                for col in self.deposit_1.columns
+                if col not in self.special_column_list
+            }
+        )
+
     def add_difference_to_date_decision(self) -> None:
         """
         Everything which isn't touched until now and it's a date
@@ -309,6 +347,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             self.static_0, self.static_cb_0, self.person_1,
             self.applprev_1, self.other_1,
             self.tax_registry_a_1, self.tax_registry_b_1, self.tax_registry_c_1,
+            self.deposit_1
         ]
         for df in list_df_join_case_id:
             self.data = self.data.join(

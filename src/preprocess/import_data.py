@@ -91,7 +91,12 @@ class PreprocessImport(BaseImport, PreprocessInit):
             root_dir=self.config_dict['PATH_ORIGINAL_DATA'], 
             scan=True
         )
-    
+        self.deposit_1: pl.LazyFrame = read_multiple_parquet(
+            self.path_file_pattern.format(pattern_file='deposit_1'),
+            root_dir=self.config_dict['PATH_ORIGINAL_DATA'], 
+            scan=True
+        )
+
     def remap_downcast(self, 
             data: Union[pl.LazyFrame, pl.DataFrame], 
             dataset_name: str
@@ -149,6 +154,10 @@ class PreprocessImport(BaseImport, PreprocessInit):
         )
         return data
     
+    def downcast_deposit_1(self):
+        self.deposit_1 = self.remap_downcast(
+            data=self.deposit_1, dataset_name='deposit_1'
+        )
     def downcast_static_0(self):
         #replace categorical before downcasting
         self.static_0 = self.remap_downcast(
@@ -231,4 +240,5 @@ class PreprocessImport(BaseImport, PreprocessInit):
         self.downcast_applprev_1()
         self.downcast_other_1()
         self.downcast_tax_registry_1()
+        self.downcast_deposit_1()
         # self.skip_useless_null_columns()
