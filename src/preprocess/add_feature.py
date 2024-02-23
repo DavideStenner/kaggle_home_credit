@@ -213,7 +213,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                     .cast(pl.Int32).alias(col)
                 )
                 for col in self.data.columns
-                if (col[-1]=='D') & ('applprev_1_' in col)
+                if (col[-1]=='D') & ('applprev_1_' in col) & (col != 'applprev_1_creationdate_885D')
             ]
         ).drop('applprev_1_creationdate_885D')
         
