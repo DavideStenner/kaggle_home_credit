@@ -22,13 +22,13 @@ class PreprocessInit(BaseInit):
         self.special_column_list: list[str] = config_dict['SPECIAL_COLUMNS']
         
         #for this dates doesn't correct to blank when negative
-        self.negative_allowed_dates: list[str] = [
+        self.negative_allowed_dates_date_decision: list[str] = [
             'static_cb_0_assignmentdate_238D',
             'static_cb_0_assignmentdate_4527235D', 'static_cb_0_responsedate_1012D',
             'static_cb_0_responsedate_4527233D', 'static_cb_0_responsedate_4917613D'
         ]
         #calculate day diff and year diff to date_decision
-        self.calc_also_year_dates: list[str] = [
+        self.calc_also_year_dates_date_decision: list[str] = [
             'static_0_datefirstoffer_1144D', 'static_0_datelastinstal40dpd_247D',
             'static_0_dtlastpmtallstes_4499206D', 'static_0_firstclxcampaign_1125D',
             'static_0_firstdatedue_489D', 'static_0_lastactivateddate_801D',

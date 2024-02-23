@@ -145,10 +145,11 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         not_allowed_negative_dates = [
             col
             for col in dates_to_transform
-            if col not in self.negative_allowed_dates
+            if col not in self.negative_allowed_dates_date_decision
         ]
-        assert all([col in dates_to_transform for col in self.calc_also_year_dates])
+        assert all([col in dates_to_transform for col in self.calc_also_year_dates_date_decision])
         
+        #calculate day diff respect to date_decision
         self.data = self.data.with_columns(
             [
                 (
@@ -173,9 +174,10 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                         )
                     )
                 )
-                for col in self.calc_also_year_dates
+                for col in self.calc_also_year_dates_date_decision
             ]
         ).with_columns(
+            #put blank wrong dates
             [
                 (
                     pl.when((pl.col(col) <0))
@@ -191,13 +193,13 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                             col, '_year_diff_'
                         )
                         for col in not_allowed_negative_dates
-                        if col in self.calc_also_year_dates
+                        if col in self.calc_also_year_dates_date_decision
                     ]
                 )
             ]
         )
 
-        #correct applprev_1 columns depending on date decision
+        #correct applprev_1 columns depending on date decision -> no future decision
         self.data = self.data.with_columns(
             
             [
