@@ -76,6 +76,21 @@ class PreprocessImport(BaseImport, PreprocessInit):
             root_dir=self.config_dict['PATH_ORIGINAL_DATA'], 
             scan=True
         )
+        self.tax_registry_a_1: pl.LazyFrame = read_multiple_parquet(
+            self.path_file_pattern.format(pattern_file='tax_registry_a_1'),
+            root_dir=self.config_dict['PATH_ORIGINAL_DATA'], 
+            scan=True
+        )
+        self.tax_registry_b_1: pl.LazyFrame = read_multiple_parquet(
+            self.path_file_pattern.format(pattern_file='tax_registry_b_1'),
+            root_dir=self.config_dict['PATH_ORIGINAL_DATA'], 
+            scan=True
+        )
+        self.tax_registry_c_1: pl.LazyFrame = read_multiple_parquet(
+            self.path_file_pattern.format(pattern_file='tax_registry_c_1'),
+            root_dir=self.config_dict['PATH_ORIGINAL_DATA'], 
+            scan=True
+        )
     
     def remap_downcast(self, 
             data: Union[pl.LazyFrame, pl.DataFrame], 
@@ -161,7 +176,18 @@ class PreprocessImport(BaseImport, PreprocessInit):
         self.other_1 = self.remap_downcast(
             data=self.other_1, dataset_name='other_1'
         )
-
+    
+    def downcast_tax_registry_1(self):
+        self.tax_registry_a_1 = self.remap_downcast(
+            data=self.tax_registry_a_1, dataset_name='tax_registry_a_1'
+        )
+        self.tax_registry_b_1 = self.remap_downcast(
+            data=self.tax_registry_b_1, dataset_name='tax_registry_b_1'
+        )
+        self.tax_registry_c_1 = self.remap_downcast(
+            data=self.tax_registry_c_1, dataset_name='tax_registry_c_1'
+        )
+        
     def downcast_base(self):
         self.base_data = self.base_data.with_columns(
             pl.col('case_id').cast(pl.Int32),
@@ -204,5 +230,5 @@ class PreprocessImport(BaseImport, PreprocessInit):
         self.downcast_person_1()
         self.downcast_applprev_1()
         self.downcast_other_1()
-        
+        self.downcast_tax_registry_1()
         # self.skip_useless_null_columns()

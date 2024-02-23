@@ -36,7 +36,9 @@ class PreprocessInit(BaseInit):
             'static_0_lastdelinqdate_224D', 'static_0_lastrejectdate_50D',
             'static_0_maxdpdinstldate_3546855D', 'static_cb_0_assignmentdate_238D',
             'static_cb_0_assignmentdate_4955616D', 'static_0_lastrepayingdate_696D',
-            'person_1_birth_259D', 'person_1_empl_employedfrom_271D'
+            'person_1_birth_259D', 'person_1_empl_employedfrom_271D',
+            'tax_registry_a_1_recorddate_4527225D', 'tax_registry_b_1_deductiondate_4917603D',
+            'tax_registry_c_1_processingdate_168D'
         ]
 
         self.mapper_mask: Dict[str, Dict[str, int]] = None
@@ -53,7 +55,10 @@ class PreprocessInit(BaseInit):
         self.person_1: Union[pl.LazyFrame, pl.DataFrame] = None
         self.applprev_1: Union[pl.LazyFrame, pl.DataFrame] = None
         self.other_1: Union[pl.LazyFrame, pl.DataFrame] = None
-        
+        self.tax_registry_a_1: Union[pl.LazyFrame, pl.DataFrame] = None
+        self.tax_registry_b_1: Union[pl.LazyFrame, pl.DataFrame] = None
+        self.tax_registry_c_1: Union[pl.LazyFrame, pl.DataFrame] = None
+
     def _collect_item_utils(self, data: Union[pl.DataFrame, pl.LazyFrame]) -> Any:
         if isinstance(data, pl.LazyFrame):
             return data.collect().item()

@@ -23,6 +23,35 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             ]
         )
 
+    def create_tax_registry_1_feature(self) -> None:
+        print('Only considering tax_registry_a_1 info not related person for now...')
+        self.tax_registry_a_1 = self.tax_registry_a_1.filter(
+            pl.col('num_group1')==0
+        ).select(
+            [
+                'case_id', 'amount_4527230A',
+                'recorddate_4527225D'
+            ]
+        )
+        self.tax_registry_b_1 = self.tax_registry_b_1.filter(
+            pl.col('num_group1')==0
+        ).select(
+            [
+                'case_id', 'amount_4917619A',
+                'deductiondate_4917603D'
+            ]
+        )
+        
+        self.tax_registry_c_1 = self.tax_registry_c_1.filter(
+            pl.col('num_group1')==0
+        ).select(
+            [
+                'case_id', 'pmtamount_36A',
+                'processingdate_168D'
+            ]
+        )
+                
+        
     def create_person_1_feature(self) -> None:
         print('Only considering person_1 info not related person for now...')
         self.person_1 = self.person_1.filter(
@@ -106,6 +135,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         self.create_person_1_feature()
         self.create_applprev_1_feature()
         self.create_other_1()
+        self.create_tax_registry_1_feature()
         
         if not self.inference:
             self.add_fold_column()
@@ -146,7 +176,27 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 if col not in self.special_column_list
             }
         )
-        
+        self.tax_registry_a_1 = self.tax_registry_a_1.rename(
+            {
+                col: 'tax_registry_a_1_' + col
+                for col in self.tax_registry_a_1.columns
+                if col not in self.special_column_list
+            }
+        )
+        self.tax_registry_b_1 = self.tax_registry_b_1.rename(
+            {
+                col: 'tax_registry_b_1_' + col
+                for col in self.tax_registry_b_1.columns
+                if col not in self.special_column_list
+            }
+        )
+        self.tax_registry_c_1 = self.tax_registry_c_1.rename(
+            {
+                col: 'tax_registry_c_1_' + col
+                for col in self.tax_registry_c_1.columns
+                if col not in self.special_column_list
+            }
+        )
     def add_difference_to_date_decision(self) -> None:
         """
         Everything which isn't touched until now and it's a date
@@ -258,6 +308,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         list_df_join_case_id = [
             self.static_0, self.static_cb_0, self.person_1,
             self.applprev_1, self.other_1,
+            self.tax_registry_a_1, self.tax_registry_b_1, self.tax_registry_c_1,
         ]
         for df in list_df_join_case_id:
             self.data = self.data.join(
