@@ -12,6 +12,16 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             .alias(self.fold_time_col)
             .cast(pl.UInt16)
         )
+    
+    def create_static_0_feature(self) -> None:
+        pass
+    
+    def create_static_cb_0_feature(self) -> None:
+        self.static_cb_0 = self.static_cb_0.drop(
+            [
+                'birthdate_574D', 'dateofbirth_337D', 'dateofbirth_342D'
+            ]
+        )
 
     def create_person_1_feature(self) -> None:
         print('Only considering person_1 info not related person for now...')
@@ -82,6 +92,8 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         )
         
     def create_feature(self) -> None:
+        self.create_static_0_feature()
+        self.create_static_cb_0_feature()
         self.create_person_1_feature()
         self.create_applprev_1_feature()
         

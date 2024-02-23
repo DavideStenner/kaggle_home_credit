@@ -178,15 +178,6 @@ class PreprocessImport(BaseImport, PreprocessInit):
             ]
         )
 
-    def skip_useless_columns(self):
-        #drop useless columns as name of employer
-        self.static_0 = self.static_0.drop(
-            [col for col in self.static_0.columns if col in self.useless_column_list]
-        )
-        self.static_cb_0 = self.static_cb_0.drop(
-            [col for col in self.static_cb_0.columns if col in self.useless_column_list]
-        )
-    
     def import_all(self) -> None:
         self.scan_all_dataset()
         self._import_all_mapper()
@@ -198,5 +189,4 @@ class PreprocessImport(BaseImport, PreprocessInit):
         self.downcast_person_1()
         self.downcast_applprev_1()
         
-        self.skip_useless_columns()
         # self.skip_useless_null_columns()
