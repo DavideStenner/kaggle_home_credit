@@ -268,6 +268,21 @@ class LgbmExplainer(LgbmInit):
             feature_importances
             .sort_values(by='rank_average', ascending=True)
         )
+        feature_importances['rank_norm'] = (
+            feature_importances['rank_average'] + feature_importances['rank_std'] * 1.96
+        )
+        feature_importances['rank_ratio'] = (
+            feature_importances['rank_std']/feature_importances['rank_average']
+        )
+
+        feature_importances['average_norm'] = (
+            feature_importances['average'] + feature_importances['std'] * 1.96
+        )
+        feature_importances['average_ratio'] = (
+            feature_importances['std']/feature_importances['average']
+        )
+
+
         feature_importances.to_excel(
             os.path.join(self.experiment_path, 'feature_stability_importances.xlsx'),
             index=False
