@@ -90,12 +90,22 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 if (col[-1] == "D") & (col != 'creationdate_885D')
             ]
         )
-        
+    
+    def create_other_1(self) -> None:
+        self.other_1 = self.other_1.select(
+            [
+                'case_id',
+                'amtdebitincoming_4809443A', 'amtdebitoutgoing_4809440A', 
+                'amtdepositbalance_4809441A', 'amtdepositincoming_4809444A',	
+                'amtdepositoutgoing_4809442A'
+            ]
+        )
     def create_feature(self) -> None:
         self.create_static_0_feature()
         self.create_static_cb_0_feature()
         self.create_person_1_feature()
         self.create_applprev_1_feature()
+        self.create_other_1()
         
         if not self.inference:
             self.add_fold_column()
@@ -129,7 +139,14 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 if col not in self.special_column_list
             }
         )
-
+        self.other_1 = self.other_1.rename(
+            {
+                col: 'other_1_' + col
+                for col in self.other_1.columns
+                if col not in self.special_column_list
+            }
+        )
+        
     def add_difference_to_date_decision(self) -> None:
         """
         Everything which isn't touched until now and it's a date
@@ -257,6 +274,11 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             on=['case_id']
         )
 
+        self.data = self.data.join(
+            self.other_1, how='left', 
+            on=['case_id']
+        )
+        
         n_rows_end = self._collect_item_utils(
             self.data.select(pl.count())
         )
