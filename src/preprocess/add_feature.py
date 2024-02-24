@@ -13,6 +13,17 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             .cast(pl.UInt16)
         )
     
+    def create_debitcard_1_feature(self) -> None:
+        print('Only considering debitcard_1 info not related person for now...')
+        self.debitcard_1 = self.debitcard_1.filter(
+            pl.col('num_group1')==0
+        ).select(
+            [
+                'case_id', 'last180dayaveragebalance_704A',
+                'last180dayturnover_1134A', 'last30dayturnover_651A',
+                'openingdate_857D'
+            ]
+        )
     def create_deposit_1_feature(self) -> None:
         print('Only considering deposit_1 info not related person for now...')
         self.deposit_1 = self.deposit_1.filter(
@@ -166,6 +177,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         self.create_other_1()
         self.create_tax_registry_1_feature()
         self.create_deposit_1_feature()
+        self.create_debitcard_1_feature()
         
         if not self.inference:
             self.add_fold_column()
@@ -234,6 +246,14 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 if col not in self.special_column_list
             }
         )
+        self.debitcard_1 = self.debitcard_1.rename(
+            {
+                col: 'debitcard_1_' + col
+                for col in self.debitcard_1.columns
+                if col not in self.special_column_list
+            }
+        )
+
 
     def add_difference_to_date_decision(self) -> None:
         """
@@ -347,7 +367,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             self.static_0, self.static_cb_0, self.person_1,
             self.applprev_1, self.other_1,
             self.tax_registry_a_1, self.tax_registry_b_1, self.tax_registry_c_1,
-            self.deposit_1
+            self.deposit_1, self.debitcard_1
         ]
         for df in list_df_join_case_id:
             self.data = self.data.join(

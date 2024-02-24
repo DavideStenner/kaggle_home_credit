@@ -97,6 +97,12 @@ class PreprocessImport(BaseImport, PreprocessInit):
             scan=True
         )
 
+        self.debitcard_1: pl.LazyFrame = read_multiple_parquet(
+            self.path_file_pattern.format(pattern_file='debitcard_1'),
+            root_dir=self.config_dict['PATH_ORIGINAL_DATA'], 
+            scan=True
+        )
+
     def remap_downcast(self, 
             data: Union[pl.LazyFrame, pl.DataFrame], 
             dataset_name: str
@@ -154,6 +160,10 @@ class PreprocessImport(BaseImport, PreprocessInit):
         )
         return data
     
+    def downcast_debitcard_1(self):
+        self.debitcard_1 = self.remap_downcast(
+            data=self.debitcard_1, dataset_name='debitcard_1'
+        )
     def downcast_deposit_1(self):
         self.deposit_1 = self.remap_downcast(
             data=self.deposit_1, dataset_name='deposit_1'
@@ -241,4 +251,5 @@ class PreprocessImport(BaseImport, PreprocessInit):
         self.downcast_other_1()
         self.downcast_tax_registry_1()
         self.downcast_deposit_1()
+        self.downcast_debitcard_1()
         # self.skip_useless_null_columns()
