@@ -63,7 +63,6 @@ class LgbmInit(ModelInit):
         
         self.feature_list: list[str] = []
         self.get_categorical_columns()
-        self.get_dataset_columns()
     
     def convert_feature_name_with_dataset(self, mapper_dict: Dict[str, Union[str, dict, float]]):
         return {
