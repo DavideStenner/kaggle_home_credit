@@ -39,6 +39,7 @@ class PreprocessPipeline(BasePipeline, PreprocessImport, PreprocessAddFeature, P
         self.tax_registry_c_1 = self.tax_registry_c_1.collect()
         self.deposit_1 = self.deposit_1.collect()
         self.debitcard_1 = self.debitcard_1.collect()
+        self.person_2 = self.person_2.collect()
         
     def collect_all(self) -> None:
         self.collect_feature()

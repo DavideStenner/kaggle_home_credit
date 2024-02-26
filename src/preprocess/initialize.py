@@ -53,6 +53,7 @@ class PreprocessInit(BaseInit):
         self.data: Union[pl.LazyFrame, pl.DataFrame] = None
         self.static_0: Union[pl.LazyFrame, pl.DataFrame] = None
         self.static_cb_0: Union[pl.LazyFrame, pl.DataFrame] = None
+        
         self.person_1: Union[pl.LazyFrame, pl.DataFrame] = None
         self.applprev_1: Union[pl.LazyFrame, pl.DataFrame] = None
         self.other_1: Union[pl.LazyFrame, pl.DataFrame] = None
@@ -61,6 +62,8 @@ class PreprocessInit(BaseInit):
         self.tax_registry_c_1: Union[pl.LazyFrame, pl.DataFrame] = None
         self.deposit_1: Union[pl.LazyFrame, pl.DataFrame] = None
         self.debitcard_1: Union[pl.LazyFrame, pl.DataFrame] = None
+        
+        self.person_2: Union[pl.LazyFrame, pl.DataFrame] = None
         
     def _collect_item_utils(self, data: Union[pl.DataFrame, pl.LazyFrame]) -> Any:
         if isinstance(data, pl.LazyFrame):

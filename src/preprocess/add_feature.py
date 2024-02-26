@@ -1,5 +1,7 @@
 import polars as pl
 
+from itertools import product, chain
+
 from src.utils.other import change_name_with_type
 from src.base.preprocess.add_feature import BaseFeature
 from src.preprocess.initialize import PreprocessInit
@@ -110,6 +112,87 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             ]
         )
 
+    def create_person_2_feature(self) -> None:
+        print('Only considering person_2 info relate to 0...')
+        zero_n_list = {
+            'addres_role_871L': ['PERMANENT'],
+            'conts_role_79M': ['P38_92_157', 'P177_137_98', 'a55475b1']
+        }
+        n_0_list = {
+            'addres_role_871L': ['TEMPORARY', 'REGISTERED', 'CONTACT', 'PERMANENT'],
+            'conts_role_79M': [
+                'P206_38_166', 'P58_79_51',
+                'P7_147_157', 'P115_147_77',
+                'P125_105_50', 'P177_137_98', 
+                'P125_14_176', 'P124_137_181',
+                'a55475b1', 'P38_92_157'
+            ],
+            'relatedpersons_role_762T': [
+                    'OTHER', 'CHILD', 'SIBLING',
+                    'PARENT', 'OTHER_RELATIVE',
+                    'COLLEAGUE', 'SPOUSE', 'NEIGHBOR',
+                    'GRAND_PARENT', 'FRIEND'
+            ]
+        }
+
+        zero_n_list = list(
+            chain(
+                *[
+                    list(product([key], value))
+                    for key, value in zero_n_list.items()
+                ]
+            )
+        )
+        n_0_list = list(
+            chain(
+                *[
+                    list(product([key], value))
+                    for key, value in n_0_list.items()
+                ]
+            )
+        )
+
+        self.person_2 = self.person_2.group_by('case_id').agg(
+            (
+                [
+                    pl.col('case_id').filter(
+                        (pl.col('num_group1')!=0) &
+                        (pl.col('num_group2')==0)                
+                    ).count().alias('related_n_0_X').cast(pl.UInt16),
+                    pl.col('case_id').filter(
+                        (pl.col('num_group1')==0) &
+                        (pl.col('num_group2')!=0)                
+                    ).count().alias('related_0_n_X').cast(pl.UInt16),   
+                ] +
+                [
+                    (
+                        pl.col(col).filter(
+                            (pl.col(col)==self.mapper_mask['person_2'][col][single_value])&
+                            (pl.col('num_group1')==0) &
+                            (pl.col('num_group2')!=0)
+                        )
+                        .count()
+                        .alias(f'{col[:-1]}_{single_value}_0_n_' + col[-1])
+                        .cast(pl.UInt16)
+                    )
+                    for col, single_value in zero_n_list
+                ] + 
+                [
+                    (
+                        pl.col(col).filter(
+                            (pl.col(col)==self.mapper_mask['person_2'][col][single_value])&
+                            (pl.col('num_group1')!=0) &
+                            (pl.col('num_group2')==0)
+                        )
+                        .count()
+                        .alias(f'{col[:-1]}_{single_value}_n_0_' + col[-1])
+                        .cast(pl.UInt16)
+                    )
+                    for col, single_value in n_0_list
+                ]
+            )
+        )
+
     def create_applprev_1_feature(self) -> None:
         print('Only considering applprev_1 info not related person for now...')
         self.applprev_1 = self.applprev_1.filter(
@@ -178,6 +261,8 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         self.create_tax_registry_1_feature()
         self.create_deposit_1_feature()
         self.create_debitcard_1_feature()
+        
+        self.create_person_2_feature()
         
         if not self.inference:
             self.add_fold_column()
@@ -250,6 +335,13 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             {
                 col: 'debitcard_1_' + col
                 for col in self.debitcard_1.columns
+                if col not in self.special_column_list
+            }
+        )
+        self.person_2 = self.person_2.rename(
+            {
+                col: 'person_2_' + col
+                for col in self.person_2.columns
                 if col not in self.special_column_list
             }
         )
@@ -367,7 +459,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             self.static_0, self.static_cb_0, self.person_1,
             self.applprev_1, self.other_1,
             self.tax_registry_a_1, self.tax_registry_b_1, self.tax_registry_c_1,
-            self.deposit_1, self.debitcard_1
+            self.deposit_1, self.debitcard_1, self.person_2
         ]
         for df in list_df_join_case_id:
             self.data = self.data.join(
