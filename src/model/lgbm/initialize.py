@@ -45,7 +45,12 @@ class LgbmInit(ModelInit):
             'date_order_kfold',
             'fold_info', 'current_fold', 'date_order_kfold'
         ]
-        
+        self.used_dataset: list[str] = [
+            "static_0", "static_cb_0", "person_1",
+            "applprev_1", "other_1",
+            "tax_registry_a_1", "tax_registry_b_1", "tax_registry_c_1",
+            "deposit_1", "debitcard_1", "person_2"
+        ]
         self.log_evaluation: int = log_evaluation
 
         self.params_lgb: dict[str, Any] = params_lgb
@@ -70,8 +75,22 @@ class LgbmInit(ModelInit):
             for dataset_name, mapping_col in
             mapper_dict.items()
         }
-        
+    
     def get_dataset_columns(self) -> None:
+        self.load_used_feature()
+        
+        self.feature_dataset = pd.DataFrame(
+            [
+                [
+                    next((dataset for dataset in self.used_dataset if dataset in col)),
+                    col
+                ]
+                for col in self.feature_list
+            ],
+            columns=['dataset', 'feature']
+        )
+        
+    def get_original_dataset_columns(self) -> None:
         with open(
             os.path.join(
                 self.config_dict['PATH_MAPPER_DATA'],
@@ -81,7 +100,7 @@ class LgbmInit(ModelInit):
             mapper_dtype = self.convert_feature_name_with_dataset(
                 json.load(file)
             )
-        self.feature_dataset = pd.DataFrame(
+        self.original_feature_dataset = pd.DataFrame(
             list(
                 chain(
                     *[
