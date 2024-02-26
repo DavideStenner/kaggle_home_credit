@@ -1,5 +1,6 @@
 import polars as pl
 
+from typing import Union
 from itertools import product, chain
 
 from src.utils.other import change_name_with_type
@@ -268,84 +269,21 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             self.add_fold_column()
 
     def add_dataset_name_to_feature(self) -> None: 
-        self.static_0 = self.static_0.rename(
-            {
-                col: 'static_0_' + col
-                for col in self.static_0.columns
-                if col not in self.special_column_list
-            }
-        )
-        self.static_cb_0 = self.static_cb_0.rename(
-            {
-                col: 'static_cb_0_' + col
-                for col in self.static_cb_0.columns
-                if col not in self.special_column_list
-            }
-        )
-        self.person_1 = self.person_1.rename(
-            {
-                col: 'person_1_' + col
-                for col in self.person_1.columns
-                if col not in self.special_column_list
-            }
-        )
-        self.applprev_1 = self.applprev_1.rename(
-            {
-                col: 'applprev_1_' + col
-                for col in self.applprev_1.columns
-                if col not in self.special_column_list
-            }
-        )
-        self.other_1 = self.other_1.rename(
-            {
-                col: 'other_1_' + col
-                for col in self.other_1.columns
-                if col not in self.special_column_list
-            }
-        )
-        self.tax_registry_a_1 = self.tax_registry_a_1.rename(
-            {
-                col: 'tax_registry_a_1_' + col
-                for col in self.tax_registry_a_1.columns
-                if col not in self.special_column_list
-            }
-        )
-        self.tax_registry_b_1 = self.tax_registry_b_1.rename(
-            {
-                col: 'tax_registry_b_1_' + col
-                for col in self.tax_registry_b_1.columns
-                if col not in self.special_column_list
-            }
-        )
-        self.tax_registry_c_1 = self.tax_registry_c_1.rename(
-            {
-                col: 'tax_registry_c_1_' + col
-                for col in self.tax_registry_c_1.columns
-                if col not in self.special_column_list
-            }
-        )
-        self.deposit_1 = self.deposit_1.rename(
-            {
-                col: 'deposit_1_' + col
-                for col in self.deposit_1.columns
-                if col not in self.special_column_list
-            }
-        )
-        self.debitcard_1 = self.debitcard_1.rename(
-            {
-                col: 'debitcard_1_' + col
-                for col in self.debitcard_1.columns
-                if col not in self.special_column_list
-            }
-        )
-        self.person_2 = self.person_2.rename(
-            {
-                col: 'person_2_' + col
-                for col in self.person_2.columns
-                if col not in self.special_column_list
-            }
-        )
-
+        for dataset in self.used_dataset:
+            current_dataset: Union[pl.LazyFrame, pl.DataFrame] = getattr(
+                self, dataset
+            )
+            setattr(
+                self, 
+                dataset,  
+                current_dataset.rename(
+                    {
+                        col: dataset + '_' + col
+                        for col in current_dataset.columns
+                        if col not in self.special_column_list
+                    }
+                )
+            )
 
     def add_difference_to_date_decision(self) -> None:
         """
@@ -455,15 +393,12 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             self.data.select(pl.count())
         )
 
-        list_df_join_case_id = [
-            self.static_0, self.static_cb_0, self.person_1,
-            self.applprev_1, self.other_1,
-            self.tax_registry_a_1, self.tax_registry_b_1, self.tax_registry_c_1,
-            self.deposit_1, self.debitcard_1, self.person_2
-        ]
-        for df in list_df_join_case_id:
+        for dataset in self.used_dataset:
+            current_dataset: Union[pl.LazyFrame, pl.DataFrame] = getattr(
+                self, dataset
+            )
             self.data = self.data.join(
-                df, how='left', 
+                current_dataset, how='left', 
                 on=['case_id']
             )
         
