@@ -158,11 +158,11 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                     pl.col('case_id').filter(
                         (pl.col('num_group1')!=0) &
                         (pl.col('num_group2')==0)                
-                    ).count().alias('related_n_0_X').cast(pl.UInt16),
+                    ).count().alias('person_2_related_n_0_X').cast(pl.UInt16),
                     pl.col('case_id').filter(
                         (pl.col('num_group1')==0) &
                         (pl.col('num_group2')!=0)                
-                    ).count().alias('related_0_n_X').cast(pl.UInt16),   
+                    ).count().alias('person_2_related_0_n_X').cast(pl.UInt16),   
                 ] +
                 [
                     (
