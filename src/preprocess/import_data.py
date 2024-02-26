@@ -139,23 +139,6 @@ class PreprocessImport(BaseImport, PreprocessInit):
                 pl.col('target').is_not_null()
             ).sort(['case_id', 'date_decision'])
     
-    def skip_useless_null_columns(self):
-        #drop original useless null columns as name of employer
-        self.static_0 = self.static_0.drop(
-            [
-                col 
-                for col in self.mapper_statistic['static_0'].keys()
-                if (self.mapper_statistic['static_0'][col]>=self.null_threshold) & (col in self.static_0.columns)
-            ]
-        )
-        self.static_cb_0 = self.static_cb_0.drop(
-            [
-                col 
-                for col in self.mapper_statistic['static_cb_0'].keys() 
-                if (self.mapper_statistic['static_cb_0'][col]>=self.null_threshold) & (col in self.static_cb_0.columns)
-            ]
-        )
-
     def import_all(self) -> None:
         self.scan_all_dataset()
         self._import_all_mapper()

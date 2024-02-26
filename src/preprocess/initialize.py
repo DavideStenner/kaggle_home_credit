@@ -8,7 +8,6 @@ class PreprocessInit(BaseInit):
             config_dict: dict[str, Any],
             embarko_skip: int
         ):
-        self.null_threshold: float = 0.95
         self.config_dict: dict[str, Any] = config_dict
         self.embarko_skip: int = embarko_skip
         self.n_folds: int = config_dict['N_FOLD']
