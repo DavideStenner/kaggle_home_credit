@@ -29,17 +29,12 @@ class PreprocessPipeline(BasePipeline, PreprocessImport, PreprocessAddFeature, P
             )
         )
     def collect_feature(self) -> None:
-        self.static_0 = self.static_0.collect()
-        self.static_cb_0 = self.static_cb_0.collect()
-        self.person_1 = self.person_1.collect()
-        self.applprev_1 = self.applprev_1.collect()
-        self.other_1 = self.other_1.collect()
-        self.tax_registry_a_1 = self.tax_registry_a_1.collect()
-        self.tax_registry_b_1 = self.tax_registry_b_1.collect()
-        self.tax_registry_c_1 = self.tax_registry_c_1.collect()
-        self.deposit_1 = self.deposit_1.collect()
-        self.debitcard_1 = self.debitcard_1.collect()
-        self.person_2 = self.person_2.collect()
+        for dataset in self.used_dataset:
+            setattr(
+                self, 
+                dataset,
+                getattr(self, dataset).collect()
+            )
         
     def collect_all(self) -> None:
         self.collect_feature()

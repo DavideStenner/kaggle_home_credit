@@ -47,67 +47,16 @@ class PreprocessImport(BaseImport, PreprocessInit):
             root_dir=self.config_dict['PATH_ORIGINAL_DATA'], 
             scan=True
         )
-        self.static_0: pl.LazyFrame = read_multiple_parquet(
-            self.path_file_pattern.format(pattern_file='static_0'),
-            root_dir=self.config_dict['PATH_ORIGINAL_DATA'], 
-            scan=True
-        )
-        
-        self.static_cb_0: pl.LazyFrame = read_multiple_parquet(
-            self.path_file_pattern.format(pattern_file='static_cb_0'),
-            root_dir=self.config_dict['PATH_ORIGINAL_DATA'], 
-            scan=True
-        )
-        
-        self.person_1: pl.LazyFrame = read_multiple_parquet(
-            self.path_file_pattern.format(pattern_file='person_1'),
-            root_dir=self.config_dict['PATH_ORIGINAL_DATA'], 
-            scan=True
-        )
-        
-        self.applprev_1: pl.LazyFrame = read_multiple_parquet(
-            self.path_file_pattern.format(pattern_file='applprev_1'),
-            root_dir=self.config_dict['PATH_ORIGINAL_DATA'], 
-            scan=True
-        )
-        
-        self.other_1: pl.LazyFrame = read_multiple_parquet(
-            self.path_file_pattern.format(pattern_file='other_1'),
-            root_dir=self.config_dict['PATH_ORIGINAL_DATA'], 
-            scan=True
-        )
-        self.tax_registry_a_1: pl.LazyFrame = read_multiple_parquet(
-            self.path_file_pattern.format(pattern_file='tax_registry_a_1'),
-            root_dir=self.config_dict['PATH_ORIGINAL_DATA'], 
-            scan=True
-        )
-        self.tax_registry_b_1: pl.LazyFrame = read_multiple_parquet(
-            self.path_file_pattern.format(pattern_file='tax_registry_b_1'),
-            root_dir=self.config_dict['PATH_ORIGINAL_DATA'], 
-            scan=True
-        )
-        self.tax_registry_c_1: pl.LazyFrame = read_multiple_parquet(
-            self.path_file_pattern.format(pattern_file='tax_registry_c_1'),
-            root_dir=self.config_dict['PATH_ORIGINAL_DATA'], 
-            scan=True
-        )
-        self.deposit_1: pl.LazyFrame = read_multiple_parquet(
-            self.path_file_pattern.format(pattern_file='deposit_1'),
-            root_dir=self.config_dict['PATH_ORIGINAL_DATA'], 
-            scan=True
-        )
-
-        self.debitcard_1: pl.LazyFrame = read_multiple_parquet(
-            self.path_file_pattern.format(pattern_file='debitcard_1'),
-            root_dir=self.config_dict['PATH_ORIGINAL_DATA'], 
-            scan=True
-        )
-
-        self.person_2: pl.LazyFrame = read_multiple_parquet(
-            self.path_file_pattern.format(pattern_file='person_2'),
-            root_dir=self.config_dict['PATH_ORIGINAL_DATA'], 
-            scan=True
-        )
+        for dataset in  self.used_dataset:
+            setattr(
+                self, 
+                dataset, 
+                read_multiple_parquet(
+                    self.path_file_pattern.format(pattern_file=dataset),
+                    root_dir=self.config_dict['PATH_ORIGINAL_DATA'], 
+                    scan=True
+                )
+            )
         
     def remap_downcast(self, 
             data: Union[pl.LazyFrame, pl.DataFrame], 
@@ -166,58 +115,15 @@ class PreprocessImport(BaseImport, PreprocessInit):
         )
         return data
     
-    def downcast_debitcard_1(self):
-        self.debitcard_1 = self.remap_downcast(
-            data=self.debitcard_1, dataset_name='debitcard_1'
-        )
-    def downcast_deposit_1(self):
-        self.deposit_1 = self.remap_downcast(
-            data=self.deposit_1, dataset_name='deposit_1'
-        )
-    def downcast_static_0(self):
-        #replace categorical before downcasting
-        self.static_0 = self.remap_downcast(
-            data=self.static_0, dataset_name='static_0'
-        )
-
-    def downcast_static_cb_0(self):
-        self.static_cb_0 = self.remap_downcast(
-            data=self.static_cb_0, dataset_name='static_cb_0'
-        )
-        
-    def downcast_person_1(self):
-        #replace categorical before downcasting
-        self.person_1 = self.remap_downcast(
-            data=self.person_1, dataset_name='person_1'
-        )
-
-    def downcast_person_2(self):
-        #replace categorical before downcasting
-        self.person_2 = self.remap_downcast(
-            data=self.person_2, dataset_name='person_2'
-        )
-        
-    def downcast_applprev_1(self):
-        #replace categorical before downcasting
-        self.applprev_1 = self.remap_downcast(
-            data=self.applprev_1, dataset_name='applprev_1'
-        )
-    
-    def downcast_other_1(self):
-        self.other_1 = self.remap_downcast(
-            data=self.other_1, dataset_name='other_1'
-        )
-    
-    def downcast_tax_registry_1(self):
-        self.tax_registry_a_1 = self.remap_downcast(
-            data=self.tax_registry_a_1, dataset_name='tax_registry_a_1'
-        )
-        self.tax_registry_b_1 = self.remap_downcast(
-            data=self.tax_registry_b_1, dataset_name='tax_registry_b_1'
-        )
-        self.tax_registry_c_1 = self.remap_downcast(
-            data=self.tax_registry_c_1, dataset_name='tax_registry_c_1'
-        )
+    def downcast_feature_dataset(self):
+        for dataset in self.used_dataset:
+            setattr(
+                self, 
+                dataset,  
+                self.remap_downcast(
+                    data=getattr(self, dataset), dataset_name=dataset
+                )
+            )
         
     def downcast_base(self):
         self.base_data = self.base_data.with_columns(
@@ -256,14 +162,4 @@ class PreprocessImport(BaseImport, PreprocessInit):
 
 
         self.downcast_base()
-        self.downcast_static_0()
-        self.downcast_static_cb_0()
-        self.downcast_person_1()
-        self.downcast_applprev_1()
-        self.downcast_other_1()
-        self.downcast_tax_registry_1()
-        self.downcast_deposit_1()
-        self.downcast_debitcard_1()
-        
-        self.downcast_person_2()
-        # self.skip_useless_null_columns()
+        self.downcast_feature_dataset()

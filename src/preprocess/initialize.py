@@ -45,7 +45,12 @@ class PreprocessInit(BaseInit):
         self.mapper_mask: Dict[str, Dict[str, int]] = None
         self.mapper_dtype: Dict[str, Dict[str, str]] = None
         self.mapper_statistic: Dict[str, Dict[str, float]] = None
-
+        self.used_dataset: list[str] = [
+            "static_0", "static_cb_0", "person_1",
+            "applprev_1", "other_1",
+            "tax_registry_a_1", "tax_registry_b_1", "tax_registry_c_1",
+            "deposit_1", "debitcard_1", "person_2"
+        ]
         self._initialize_empty_dataset()
         
     def _initialize_empty_dataset(self):
