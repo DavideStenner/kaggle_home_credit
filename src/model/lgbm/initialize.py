@@ -49,7 +49,7 @@ class LgbmInit(ModelInit):
             "static_0", "static_cb_0", "person_1",
             "applprev_1", "other_1",
             "tax_registry_a_1", "tax_registry_b_1", "tax_registry_c_1",
-            "deposit_1", "debitcard_1", "person_2"
+            "deposit_1", "debitcard_1", "person_2", "applprev_2"
         ]
         self.log_evaluation: int = log_evaluation
 

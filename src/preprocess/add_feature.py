@@ -244,6 +244,69 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             ]
         )
     
+    def create_applprev_2_feature(self) -> None:
+        print('Only considering applprev_2 info relate to 0...')
+
+        category_list = {
+            "cacccardblochreas_147M": [
+                'P127_74_114', 'a55475b1',
+                'P133_119_56', 'P23_105_103',
+                'P19_60_110', 'P33_145_161',
+                'P201_63_60', 'P17_56_144',
+                'P41_107_150'
+            ],
+            "conts_type_509L": ['PHONE',
+                'SECONDARY_MOBILE', 'EMPLOYMENT_PHONE',
+                'PRIMARY_EMAIL', 'ALTERNATIVE_PHONE',
+                'PRIMARY_MOBILE', 'WHATSAPP',
+                'HOME_PHONE',
+            ],
+            "credacc_cards_status_52L": ['RENEWED', 'CANCELLED', 'UNCONFIRMED', 'ACTIVE', 'BLOCKED', 'INACTIVE']
+        }
+        category_list = list(
+            chain(
+                *[
+                    list(product([key], value))
+                    for key, value in category_list.items()
+                ]
+            )
+        )
+        self.applprev_2 = self.applprev_2.group_by('case_id').agg(
+            (
+                [
+                    pl.col('case_id').filter(
+                        (pl.col('num_group1')!=0) &
+                        (pl.col('num_group2')==0)                
+                    ).count().alias('related_n_0_X').cast(pl.UInt16),
+                    pl.col('case_id').filter(
+                        (pl.col('num_group1')==0) &
+                        (pl.col('num_group2')!=0)                
+                    ).count().alias('related_0_n_X').cast(pl.UInt16),   
+                ] +
+                [
+                    (
+                        pl.col(col).filter(
+                            (pl.col(col)==self.mapper_mask['applprev_2'][col][single_value])&
+                            (pl.col('num_group1')==0) &
+                            (pl.col('num_group2')!=0)
+                        )
+                        .count()
+                        .alias(f'{col[:-1]}_{single_value}_0_n_' + col[-1])
+                        .cast(pl.UInt16)
+                    )
+                    for col, single_value in category_list
+                ] + 
+                [
+                    pl.col(col).filter(
+                        (pl.col(col)==self.mapper_mask['applprev_2'][col][single_value])&
+                        (pl.col('num_group1')!=0) &
+                        (pl.col('num_group2')==0)
+                    ).count().alias(f'{col[:-1]}_{single_value}_n_0_' + col[-1]).cast(pl.UInt16)
+                    for col, single_value in category_list
+                ]
+            )
+        )
+
     def create_other_1(self) -> None:
         self.other_1 = self.other_1.select(
             [
@@ -264,6 +327,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         self.create_debitcard_1_feature()
         
         self.create_person_2_feature()
+        self.create_applprev_2_feature()
         
         if not self.inference:
             self.add_fold_column()
