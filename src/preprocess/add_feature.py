@@ -16,6 +16,86 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             .cast(pl.UInt16)
         )
     
+    def create_credit_bureau_a_1_feature(self) -> None:
+        print('Only considering credit_bureau_a_1 info not related person for now...')
+        self.credit_bureau_a_1 = self.credit_bureau_a_1.filter(
+            pl.col('num_group1')==0
+        ).drop('num_group1')
+        
+        list_date_non_negative_operation = [
+            #range active contract to end
+            (pl.col('dateofcredend_289D') - pl.col('dateofcredstart_181D')).alias('range_active_D'),
+            #range closed contract to end
+            (pl.col('dateofcredend_353D') - pl.col('dateofcredstart_739D')).alias('range_close_D'),
+            #range of update between active and closed
+            (pl.col('lastupdate_1112D')- pl.col('lastupdate_388D')).alias('range_update_D'),
+            #end - last update active
+            (pl.col('dateofcredend_289D') - pl.col('lastupdate_1112D')).alias('end_active_last_update_D'),
+            #update - start active
+            (pl.col('lastupdate_1112D')- pl.col('dateofcredstart_181D')).alias('update_start_active_D'),
+            #end - last update closed
+            (pl.col('dateofcredend_353D') - pl.col('lastupdate_388D')).alias('end_closed_last_update_D'),
+            #update - start closed
+            (pl.col('lastupdate_388D')- pl.col('dateofcredstart_739D')).alias('update_start_closed_D'),
+            #% difference worst date with maximum number of past due active vs closed
+            (pl.col('numberofoverdueinstlmaxdat_641D') - pl.col('numberofoverdueinstlmaxdat_148D')).alias('numberofoverdueinstlmaxdat_active_closed_D'),
+            #difference worst date with maximum number of past due active vs start of closed
+            (pl.col('numberofoverdueinstlmaxdat_148D') - pl.col('dateofcredstart_739D')).alias('numberofoverdueinstlmaxdat_closed_start_D'),
+            #difference worst date with maximum number of past due active vs start of active
+            (pl.col('numberofoverdueinstlmaxdat_641D') - pl.col('dateofcredstart_181D')).alias('numberofoverdueinstlmaxdat_active_start_D'),
+            #difference worst date with maximum number of past due active vs end of closed
+            (pl.col('dateofcredend_289D') - pl.col('numberofoverdueinstlmaxdat_148D')).alias('numberofoverdueinstlmaxdat_closed_end_D'),
+            #difference worst date with maximum number of past due active vs end of active
+            (pl.col('dateofcredend_353D') - pl.col('numberofoverdueinstlmaxdat_641D')).alias('numberofoverdueinstlmaxdat_active_end_D'),
+            #% difference worst date with highest outstanding of past due active vs closed
+            (pl.col('overdueamountmax2date_1142D') - pl.col('overdueamountmax2date_1002D')).alias('overdueamountmax2date_active_closed_D'),
+            #difference worst date with highest outstanding of past due active vs start of closed
+            (pl.col('overdueamountmax2date_1002D') - pl.col('dateofcredstart_739D')).alias('overdueamountmax2date_active_closed_start_D'),
+            #difference worst date with highest outstanding of past due active vs start of active
+            (pl.col('overdueamountmax2date_1142D') - pl.col('dateofcredstart_181D')).alias('overdueamountmax2date_active_active_start_D'),
+            #difference worst date with highest outstanding of past due active vs end of closed
+            (pl.col('dateofcredend_289D') - pl.col('overdueamountmax2date_1002D')).alias('overdueamountmax2date_active_closed_end_D'),
+            #difference worst date with highest outstanding of past due active vs end of active
+            (pl.col('dateofcredend_353D') - pl.col('overdueamountmax2date_1142D')).alias('overdueamountmax2date_active_active_end_D'),
+        ]
+
+        list_generic_operation = [
+            #difference of end active and closed
+            (pl.col('dateofcredend_289D') - pl.col('dateofcredend_353D')).alias('range_end_active_closed_D'),
+            #difference of start active and closed
+            (pl.col('dateofcredstart_181D') - pl.col('dateofcredstart_739D')).alias('range_start_active_closed_D'),
+            #difference end activate and refresh date
+            (pl.col('dateofcredend_289D') - pl.col('refreshdate_3813885D')).alias('range_end_active_refresh_D'),
+            #difference start activate and refresh date
+            (pl.col('dateofcredstart_181D') - pl.col('refreshdate_3813885D')).alias('range_start_active_refresh_D'),
+            #difference end closed and refresh date
+            (pl.col('dateofcredend_353D') - pl.col('refreshdate_3813885D')).alias('range_end_closed_refresh_D'),
+            #difference start closed and refresh date
+            (pl.col('dateofcredstart_739D') - pl.col('refreshdate_3813885D')).alias('range_start_closed_refresh_D'),
+            #difference between end of repayment and closure -> renotiation
+            (pl.col('dateofcredend_353D') - pl.col('dateofrealrepmt_138D')).alias('range_end_repmt_closed_D'),
+        ]
+
+        self.credit_bureau_a_1 = self.credit_bureau_a_1.with_columns(
+            [
+                (
+                    pl.when(
+                        operation.dt.total_days()<0
+                    ).then(None).otherwise(operation.dt.total_days())
+                ).alias(operation.meta.output_name()).cast(pl.Int64)
+                for operation in list_date_non_negative_operation
+            ]
+        ).with_columns(
+            [
+                (
+                    operation.dt.total_days()
+                    .alias(operation.meta.output_name())
+                    .cast(pl.Int64)
+                )
+                for operation in list_generic_operation
+            ]
+        )
+        
     def create_debitcard_1_feature(self) -> None:
         print('Only considering debitcard_1 info not related person for now...')
         self.debitcard_1 = self.debitcard_1.filter(
@@ -325,6 +405,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         self.create_tax_registry_1_feature()
         self.create_deposit_1_feature()
         self.create_debitcard_1_feature()
+        self.create_credit_bureau_a_1_feature()
         
         self.create_person_2_feature()
         self.create_applprev_2_feature()
