@@ -96,6 +96,30 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             ]
         )
         
+    def create_credit_bureau_b_1_feature(self) -> None:
+        print('Only considering credit_bureau_b_1 info not related person for now...')
+        self.credit_bureau_b_1 = self.credit_bureau_b_1.filter(
+            pl.col('num_group1')==0
+        ).drop('num_group1')
+        
+        list_operation = [
+            #end - start active
+            (pl.col('contractmaturitydate_151D') - pl.col('contractdate_551D')).alias('range_start_end_active_D'),
+            #update - start active
+            (pl.col('lastupdate_260D') - pl.col('contractdate_551D')).alias('range_start_update_active_D'),
+            #end - update active
+            (pl.col('contractmaturitydate_151D') - pl.col('lastupdate_260D')).alias('range_end_update_active_D'),
+        ]
+        self.credit_bureau_b_1 = self.credit_bureau_b_1.with_columns(
+            [
+                (
+                    operation.dt.total_days()
+                    .alias(operation.meta.output_name())
+                )
+                for operation in list_operation
+            ]
+        )
+
     def create_debitcard_1_feature(self) -> None:
         print('Only considering debitcard_1 info not related person for now...')
         self.debitcard_1 = self.debitcard_1.filter(
@@ -406,6 +430,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         self.create_deposit_1_feature()
         self.create_debitcard_1_feature()
         self.create_credit_bureau_a_1_feature()
+        self.create_credit_bureau_b_1_feature()
         
         self.create_person_2_feature()
         self.create_applprev_2_feature()
