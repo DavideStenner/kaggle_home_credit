@@ -218,7 +218,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                     'num_group1', 'num_group2'
                 ]
             ).group_by('case_id', maintain_order=True).agg(
-                pl.col('num_group1').first(),
+                pl.col('num_group1_X').first(),
                 #num group1 different group2
                 pl.col('num_group2').n_unique().alias('num_group2_X').cast(pl.Int32),
 
