@@ -606,11 +606,11 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         Everything which isn't touched until now and it's a date
         will be confrontend with date decision
         """
-        temp_row_data = self.data.first().collect()
+        type_list = self.data.dtypes
         
         dates_to_transform = [
-            col for col in self.data.columns 
-            if (col[-1]=='D') & (temp_row_data[col].dtype == pl.Date) &
+            col for i, col in enumerate(self.data.columns)
+            if (col[-1]=='D') & (type_list[i] == pl.Date) &
             (col not in ['applprev_1_creationdate_885D'])
         ]
         not_allowed_negative_dates = [
@@ -688,11 +688,11 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             ]
         ).drop('applprev_1_creationdate_885D')
         
-        temp_row_data = self.data.first().collect()
+        type_list = self.data.dtypes
         assert all(
             [
-                temp_row_data[col].dtype != pl.Date 
-                for col in self.data.columns 
+                type_list[i] != pl.Date 
+                for i, col in enumerate(self.data.columns)
                 if (col[-1]=='D')
             ]
         )
@@ -706,7 +706,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         self.data = self.base_data
         
         n_rows_begin = self._collect_item_utils(
-            self.data.select(pl.count())
+            self.data.select(pl.len())
         )
 
         for dataset in self.used_dataset:
@@ -719,7 +719,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             )
         
         n_rows_end = self._collect_item_utils(
-            self.data.select(pl.count())
+            self.data.select(pl.len())
         )
         assert n_rows_begin == n_rows_end
 
