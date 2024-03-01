@@ -95,6 +95,90 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 for operation in list_generic_operation
             ]
         )
+    
+    def create_credit_bureau_a_2_feature(self) -> None:
+        print('Only considering credit_bureau_a_2 num1==0')
+        #aggregate and take first element
+        credit_bureau_a_2_first_categorical = self.credit_bureau_a_2.with_columns(
+            #number of num_group1
+            (1+ pl.col('num_group1').max()).over('case_id').alias('num_group1_X').cast(pl.Int32),
+            #num group1 different group2
+            (1 + pl.col('num_group2').max()).over('case_id', 'num_group1').alias('num_group2_X').cast(pl.Int32),
+        ).filter(
+            #current case
+            (pl.col('num_group1')==0) &
+            (pl.col('num_group2')==0)
+        ).select(
+            'case_id', 
+            'num_group1_X', 'num_group2_X',
+            'collater_typofvalofguarant_298M', 'collater_typofvalofguarant_407M',
+            'collater_valueofguarantee_1124L', 'collater_valueofguarantee_876L',
+            'collaterals_typeofguarante_359M', 'collaterals_typeofguarante_669M',
+        )
+        #optimization required
+        operation_list = [
+            {
+                'filter': (
+                    (pl.col('collater_valueofguarantee_1124L')!=0)&
+                    (pl.col('num_group1')==0)
+                ),
+                'agg':
+                    #has another collateral
+                    (
+                        pl.col('collater_valueofguarantee_1124L')
+                        .count().alias('non_0_collater_valueofguarantee_1124L')
+                        .cast(pl.Int32)
+                    )
+            },
+            {
+                'filter': (
+                    (
+                        (pl.col('pmts_dpd_303P')==0) |
+                        (pl.col('pmts_dpd_1073P')==0)
+                    ) &
+                    (pl.col('num_group1')==0)
+
+                ),
+                'agg': (
+                    pl.col('pmts_dpd_1073P').count().alias('equal_0_pmts_dpd_1073P').cast(pl.Int32),
+                    pl.col('pmts_dpd_303P').count().alias('equal_0_pmts_dpd_303P').cast(pl.Int32),
+                )
+            }
+        ]
+        operation_list += [
+            {
+                'filter': (
+                    (pl.col(col)!=0) &
+                    (pl.col('num_group1')==0)
+                ),
+                'agg': (
+                    pl.col(col).sum().alias(f'sum_no_0_{col}').cast(pl.Float32),
+                    pl.col(col).mean().alias(f'mean_no_0_{col}').cast(pl.Float32),
+                    pl.col(col).std().alias(f'std_no_0_{col}').cast(pl.Float32),
+                )
+            }
+            for col in ['pmts_dpd_303P', 'pmts_dpd_1073P']
+
+        ]
+
+        credit_bureau_a_2 = self.credit_bureau_a_2.select('case_id').unique().join(
+            credit_bureau_a_2_first_categorical,
+            on='case_id', how='left'
+        )
+
+        for operator_dict in operation_list:
+            credit_bureau_a_2 = credit_bureau_a_2.join(
+                (
+                    self.credit_bureau_a_2.filter(
+                        operator_dict['filter']
+                    ).group_by('case_id').agg(
+                        operator_dict['agg']
+                    )
+                ),
+                on='case_id', how='left'
+            )
+        
+        self.credit_bureau_a_2 = credit_bureau_a_2
         
     def create_credit_bureau_b_1_feature(self) -> None:
         print('Only considering credit_bureau_b_1 info not related person for now...')
@@ -120,6 +204,66 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             ]
         )
 
+    def create_credit_bureau_b_2_feature(self) -> None:
+        print('Only considering credit_bureau_b_2 num1==0')
+        self.credit_bureau_b_2 = (
+            self.credit_bureau_b_2.with_columns(
+                #number of num_group1
+                pl.col('num_group1').n_unique().over('case_id').alias('num_group1_X').cast(pl.Int32),
+            ).filter(
+                #current case
+                (pl.col('num_group1')==0)
+            ).sort(
+                [
+                    'num_group1', 'num_group2'
+                ]
+            ).group_by('case_id', maintain_order=True).agg(
+                pl.col('num_group1').first(),
+                #num group1 different group2
+                pl.col('num_group2').n_unique().alias('num_group2_X').cast(pl.Int32),
+
+                #stat on all
+                pl.col('pmts_dpdvalue_108P').sum().alias('sum_pmts_dpdvalue_108P').cast(pl.Float32),
+                pl.col('pmts_dpdvalue_108P').mean().alias('mean_pmts_dpdvalue_108P').cast(pl.Float32),
+                pl.col('pmts_dpdvalue_108P').std().alias('std_pmts_dpdvalue_108P').cast(pl.Float32),
+                
+                pl.col('pmts_pmtsoverdue_635A').sum().alias('sum_pmts_pmtsoverdue_635A').cast(pl.Float32),
+                pl.col('pmts_pmtsoverdue_635A').mean().alias('mean_pmts_pmtsoverdue_635A').cast(pl.Float32),
+                pl.col('pmts_pmtsoverdue_635A').std().alias('std_pmts_pmtsoverdue_635A').cast(pl.Float32),
+
+                #stat on not '
+                pl.col('pmts_dpdvalue_108P').filter(pl.col('pmts_dpdvalue_108P')!=0).sum().alias('sum_no_0_pmts_dpdvalue_108P').cast(pl.Float32),
+                pl.col('pmts_dpdvalue_108P').filter(pl.col('pmts_dpdvalue_108P')!=0).mean().alias('mean_no_0_pmts_dpdvalue_108P').cast(pl.Float32),
+                pl.col('pmts_dpdvalue_108P').filter(pl.col('pmts_dpdvalue_108P')!=0).std().alias('std_no_0_pmts_dpdvalue_108P').cast(pl.Float32),
+
+                pl.col('pmts_pmtsoverdue_635A').filter(pl.col('pmts_pmtsoverdue_635A')!=0).sum().alias('sum_no_0_pmts_pmtsoverdue_635A').cast(pl.Float32),
+                pl.col('pmts_pmtsoverdue_635A').filter(pl.col('pmts_pmtsoverdue_635A')!=0).mean().alias('mean_no_0_pmts_pmtsoverdue_635A').cast(pl.Float32),
+                pl.col('pmts_pmtsoverdue_635A').filter(pl.col('pmts_pmtsoverdue_635A')!=0).std().alias('std_no_0_pmts_pmtsoverdue_635A').cast(pl.Float32),
+
+                #count on 0 and not '
+                pl.col('pmts_dpdvalue_108P').filter(pl.col('pmts_dpdvalue_108P')==0).count().alias('equal_0_pmts_dpdvalue_108P').cast(pl.Int32),
+                pl.col('pmts_dpdvalue_108P').filter(pl.col('pmts_dpdvalue_108P')!=0).count().alias('unequal_0_pmts_dpdvalue_108P').cast(pl.Int32),
+
+                #how many change num->0 and 0->num
+                (
+                    pl.when(
+                        (pl.col('pmts_dpdvalue_108P')!=0) &
+                        (pl.col('pmts_dpdvalue_108P').shift()==0)
+                    )
+                    .then(1).otherwise(0)
+                    .mean().alias('mean_change_0_not_0_pmts_dpdvalue_108P').cast(pl.Float32)
+                ),
+                (
+                    pl.when(
+                        (pl.col('pmts_dpdvalue_108P')==0) &
+                        (pl.col('pmts_dpdvalue_108P').shift()!=0)
+                    )
+                    .then(1).otherwise(0)
+                    .mean().alias('mean_change_not_0_0_pmts_dpdvalue_108P').cast(pl.Float32)
+                )
+            )
+        )
+        
     def create_debitcard_1_feature(self) -> None:
         print('Only considering debitcard_1 info not related person for now...')
         self.debitcard_1 = self.debitcard_1.filter(
@@ -434,6 +578,8 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         
         self.create_person_2_feature()
         self.create_applprev_2_feature()
+        self.create_credit_bureau_a_2_feature()
+        self.create_credit_bureau_b_2_feature()
         
         if not self.inference:
             self.add_fold_column()

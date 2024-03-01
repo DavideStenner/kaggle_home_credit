@@ -49,7 +49,8 @@ class PreprocessInit(BaseInit):
             "applprev_1", "other_1",
             "tax_registry_a_1", "tax_registry_b_1", "tax_registry_c_1",
             "deposit_1", "debitcard_1", "person_2", "applprev_2",
-            "credit_bureau_a_1", "credit_bureau_b_1"
+            "credit_bureau_a_1", "credit_bureau_b_1",
+            "credit_bureau_a_2", "credit_bureau_b_2"
         ]
         self._initialize_empty_dataset()
         
@@ -72,6 +73,8 @@ class PreprocessInit(BaseInit):
         
         self.person_2: Union[pl.LazyFrame, pl.DataFrame] = None
         self.applprev_2: Union[pl.LazyFrame, pl.DataFrame] = None
+        self.credit_bureau_a_2: Union[pl.LazyFrame, pl.DataFrame] = None
+        self.credit_bureau_b_2: Union[pl.LazyFrame, pl.DataFrame] = None
         
     def _collect_item_utils(self, data: Union[pl.DataFrame, pl.LazyFrame]) -> Any:
         if isinstance(data, pl.LazyFrame):
