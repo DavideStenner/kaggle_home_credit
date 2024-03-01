@@ -41,16 +41,27 @@ class PreprocessPipeline(BasePipeline, PreprocessImport, PreprocessAddFeature, P
         self.base_data = self.base_data.collect()
 
     def preprocess_inference(self) -> None:
+        print('Creating feature')
         self.create_feature()
+
+        print('Merging All')
         self.merge_all()
+
+        print('Adding additional feature')
+        self.add_additional_feature()
         
         print('Collecting test....')
         self.data = self.data.collect()
         _ = gc.collect()
 
     def preprocess_train(self) -> None:
+        print('Creating feature')
         self.create_feature()
+
+        print('Merging All')
         self.merge_all()
+
+        print('Adding additional feature')
         self.add_additional_feature()
         
         print('Collecting....')
