@@ -589,6 +589,13 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             current_dataset: Union[pl.LazyFrame, pl.DataFrame] = getattr(
                 self, dataset
             )
+            assert not any(
+                [
+                    col in self.special_column_list
+                    for col in current_dataset.columns
+                    if col != 'case_id'
+                ]
+            )
             setattr(
                 self, 
                 dataset,  
@@ -596,7 +603,6 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                     {
                         col: dataset + '_' + col
                         for col in current_dataset.columns
-                        if col not in self.special_column_list
                     }
                 )
             )
