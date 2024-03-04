@@ -433,7 +433,7 @@ class LgbmExplainer(LgbmInit):
         
     def get_shap_insight(
         self, 
-        sample_shap_: int = 50,
+        sample_shap_: int = 5_000,
         top_interaction: int=5
     ) -> None:
         #define private function
