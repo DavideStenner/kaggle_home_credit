@@ -5,7 +5,7 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-from typing import Union
+from typing import Union, Tuple
 from itertools import chain
 from sklearn.metrics import roc_auc_score, log_loss
 from src.model.lgbm.initialize import LgbmInit
@@ -433,7 +433,7 @@ class LgbmExplainer(LgbmInit):
         
     def get_shap_insight(
         self, 
-        sample_shap_: int = 5_000,
+        sample_shap_: int = 10_000,
         top_interaction: int=5
     ) -> None:
         #define private function
@@ -460,7 +460,7 @@ class LgbmExplainer(LgbmInit):
         def get_best_interaction(
                 idx: int, feature_list: list[str],
                 corr_matrix: np.ndarray, top_n: int
-            ) -> list[str]:
+            ) -> Tuple[Tuple[str, float]]:
 
             assert corr_matrix.shape[1] == len(feature_list)    
             
@@ -468,7 +468,7 @@ class LgbmExplainer(LgbmInit):
                 np.abs(corr_matrix), axis=1
             )[idx, -(top_n+1):-1]
             return [
-                feature_list[position]
+                [feature_list[position], corr_matrix[idx, position]]
                 for position in best_position_
             ]
 
@@ -524,8 +524,12 @@ class LgbmExplainer(LgbmInit):
             chain(
                 *[
                     [
-                        [rank_base_feature, feature, feature_interaction, rank]
-                        for rank, feature_interaction in enumerate(
+                        [
+                            rank_base_feature, 
+                            feature, feature_interaction, corr_coef, 
+                            rank
+                        ]
+                        for rank, (feature_interaction, corr_coef) in enumerate(
                             get_best_interaction(
                                 idx=rank_base_feature, 
                                 feature_list=self.feature_list,
@@ -540,7 +544,11 @@ class LgbmExplainer(LgbmInit):
         
         top_interactive_df = pd.DataFrame(
             top_interaction_list,
-            columns=['rank_base_feature', 'top_feature', 'top_interaction', 'rank_interaction']   
+            columns=[
+                'rank_base_feature', 
+                'top_feature', 'top_interaction', 'corr_coef',
+                'rank_interaction'
+            ]   
         )
 
         shap_df = pd.DataFrame(
