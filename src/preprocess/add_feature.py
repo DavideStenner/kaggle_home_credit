@@ -603,6 +603,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                     {
                         col: dataset + '_' + col
                         for col in current_dataset.columns
+                        if col != 'case_id'
                     }
                 )
             )
