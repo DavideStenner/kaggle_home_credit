@@ -40,6 +40,20 @@ class PreprocessPipeline(BasePipeline, PreprocessImport, PreprocessAddFeature, P
         self.collect_feature()
         self.base_data = self.base_data.collect()
 
+    def test_all(self, n_rows: int = 10_000) -> None:
+        print(f'Using testing pipeline with head of {n_rows}')
+        
+        #for debug
+        for dataset in self.used_dataset:
+            setattr(
+                self, 
+                dataset,
+                getattr(self, dataset).head(n_rows)
+            )
+        self.base_data = self.base_data.head(n_rows)
+        
+        self.collect_all()
+
     def preprocess_inference(self) -> None:
         print('Creating feature')
         self.create_feature()
