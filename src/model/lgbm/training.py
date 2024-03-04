@@ -128,6 +128,7 @@ class LgbmTrainer(ModelTrain, LgbmInit):
             _ = gc.collect()
 
     def single_fold_train(self) -> None:
+        self.load_best_result()
         print('\n\n\nBeginning stability training on each validation fold')
         
         for fold_ in range(self.n_fold):
@@ -148,7 +149,7 @@ class LgbmTrainer(ModelTrain, LgbmInit):
                 train_set=test_matrix, 
                 feature_name=self.feature_list,
                 categorical_feature=self.categorical_col_list,
-                num_boost_round=self.params_lgb['n_round'],
+                num_boost_round=self.best_result['best_epoch'],
             )
 
             self.model_list_stability.append(model)
