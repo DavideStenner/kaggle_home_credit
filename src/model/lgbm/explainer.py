@@ -1,10 +1,12 @@
 import os
+import numpy as np
 import polars as pl
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
 from typing import Union
+from itertools import chain
 from sklearn.metrics import roc_auc_score, log_loss
 from src.model.lgbm.initialize import LgbmInit
 
@@ -427,4 +429,131 @@ class LgbmExplainer(LgbmInit):
             .write_parquet(
                 os.path.join(self.experiment_path, 'oof_prediction.parquet')
             )
+        )
+        
+    def get_shap_insight(
+        self, 
+        sample_shap_: int = 50,
+        top_interaction: int=5
+    ) -> None:
+        #define private function
+        print('Starting to calculate shap')
+        def get_corrected_corr_matrix(
+                shap_array: np.ndarray, 
+                noise_: float=0.01
+            ) -> np.ndarray:
+
+            #add noise on constant columns
+            constant_col = np.where(
+                np.std(shap_array, axis=0) == 0
+            )[0]
+            
+            shap_array[:, constant_col] += (
+                np.random.random(
+                    (shap_array.shape[0], len(constant_col))
+                )*noise_
+            )
+            corr_matrix = np.corrcoef(shap_array.T)
+            return corr_matrix
+
+        #best interaction as best correlation feature
+        def get_best_interaction(
+                idx: int, feature_list: list[str],
+                corr_matrix: np.ndarray, top_n: int
+            ) -> list[str]:
+
+            assert corr_matrix.shape[1] == len(feature_list)    
+            
+            best_position_ = np.argsort(
+                np.abs(corr_matrix), axis=1
+            )[idx, -(top_n+1):-1]
+            return [
+                feature_list[position]
+                for position in best_position_
+            ]
+
+        self.load_best_result()
+        self.load_model_list()
+        self.load_used_feature()
+        
+        shap_list: list[np.ndarray] = []
+        
+        for fold_ in range(self.n_fold):
+            print(f'Shap folder {fold_}')
+            fold_data = pl.scan_parquet(
+                os.path.join(
+                    self.config_dict['PATH_PARQUET_DATA'],
+                    'data.parquet'
+                )
+            ).with_columns(
+                (
+                    pl.col('fold_info').str.split(', ')
+                    .list.get(fold_).alias('current_fold')
+                )
+            ).filter(
+                (pl.col('current_fold') == 'v')
+            )
+            
+            test_feature = fold_data.select(self.feature_list).collect().to_pandas()
+            
+            #calculate shap on sampled feature
+            shap_ = self.model_list[fold_].predict(
+                data=test_feature.sample(sample_shap_).to_numpy('float32'),
+                num_iteration=self.best_result['best_epoch'],
+                pred_contrib=True
+            )
+                
+            shap_list.append(shap_[:-1])
+            
+        shap_array = np.concatenate(
+            shap_list, axis=0
+        )[:, :-1]
+
+        corr_matrix = get_corrected_corr_matrix(
+            shap_array=shap_array
+        )
+
+        #get ordered best feature
+        top_feature_list = pd.read_excel(
+            os.path.join(self.experiment_path, 'feature_importances.xlsx'),
+            usecols=['feature'],
+        )['feature'].tolist()
+
+
+        top_interaction_list = list(
+            chain(
+                *[
+                    [
+                        [rank_base_feature, feature, feature_interaction, rank]
+                        for rank, feature_interaction in enumerate(
+                            get_best_interaction(
+                                idx=rank_base_feature, 
+                                feature_list=self.feature_list,
+                                corr_matrix=corr_matrix,
+                                top_n=top_interaction
+                            )
+                        )
+                    ] for rank_base_feature, feature in enumerate(top_feature_list)
+                ]
+            )
+        )
+        
+        top_interactive_df = pd.DataFrame(
+            top_interaction_list,
+            columns=['rank_base_feature', 'top_feature', 'top_interaction', 'rank_interaction']   
+        )
+
+        shap_df = pd.DataFrame(
+            shap_array,
+            columns=self.feature_list
+        )
+        
+        #save info
+        top_interactive_df.to_csv(
+            os.path.join(self.experiment_shap_path, 'top_feature_interaction.csv'),
+            index=False
+        )
+        shap_df.to_csv(
+            os.path.join(self.experiment_shap_path, 'array_shap_interaction.csv'),
+            index=False
         )

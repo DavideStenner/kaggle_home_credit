@@ -19,7 +19,8 @@ if __name__=='__main__':
         experiment_name=experiment_name + "_lgb",
         params_lgb=params_model,
         config_dict=config_dict,
-        metric_eval='gini_stability', log_evaluation=50, evaluate_stability=True
+        metric_eval='gini_stability', log_evaluation=50, 
+        evaluate_stability=True, evaluate_shap=True
     )
     trainer.train_explain()
     

@@ -29,6 +29,9 @@ class LgbmInit(ModelInit):
         self.experiment_insight_path: str = os.path.join(
             self.experiment_path, 'insight'
         )
+        self.experiment_shap_path: str = os.path.join(
+            self.experiment_path, 'shap'
+        )
         self.metric_eval: str = metric_eval
         self.n_fold: int = config_dict['N_FOLD']
         
@@ -156,6 +159,10 @@ class LgbmInit(ModelInit):
         #plot
         if not os.path.isdir(self.experiment_insight_path):
             os.makedirs(self.experiment_insight_path)
+        
+        #shap
+        if not os.path.isdir(self.experiment_shap_path):
+            os.makedirs(self.experiment_shap_path)
             
     def load_model(self) -> None: 
         self.load_used_feature()
