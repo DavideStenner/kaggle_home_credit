@@ -305,7 +305,60 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             )
         )
     def create_static_0_feature(self) -> None:
-        pass
+        self.static_0 = self.static_0.with_columns(
+            #INTRA DATASET DATE FEATURE
+            (pl.col('dtlastpmtallstes_4499206D') - pl.col('firstdatedue_489D')).dt.total_days().alias('pmt_activity_gap_D').cast(pl.Int32),
+            (pl.col('lastrepayingdate_696D') - pl.col('firstdatedue_489D')).dt.total_days().alias('pmt_activity_gap_2_D').cast(pl.Int32),
+            (pl.col('datelastinstal40dpd_247D') - pl.col('maxdpdinstldate_3546855D')).dt.total_days().alias('delniquency_severity_D').cast(pl.Int32),
+            (pl.col('validfrom_1069D') - pl.col('firstclxcampaign_1125D')).dt.total_days().alias('gap_campaign_D').cast(pl.Int32),
+            (pl.col('lastapplicationdate_877D') - pl.col('lastactivateddate_801D')).dt.total_days().alias('last_active_range_D').cast(pl.Int32),
+            (pl.col('lastapprdate_640D') - pl.col('lastapplicationdate_877D')).dt.total_days().alias('approval_application_D').cast(pl.Int32),
+            (pl.col('lastrejectdate_50D') - pl.col('lastapplicationdate_877D')).dt.total_days().alias('reject_application_D').cast(pl.Int32),
+            (pl.col('datelastunpaid_3546854D') - pl.col('lastrepayingdate_696D')).dt.total_days().alias('repayment_consistency_D').cast(pl.Int32),
+            (pl.col('payvacationpostpone_4187118D') - pl.col('datelastunpaid_3546854D')).dt.total_days().alias('payment_holiday_D').cast(pl.Int32),
+            (pl.col('lastdelinqdate_224D') - pl.col('datelastinstal40dpd_247D')).dt.total_days().alias('delinquency_frequency_D').cast(pl.Int32),
+            (pl.col('datelastinstal40dpd_247D') - pl.col('dtlastpmtallstes_4499206D')).dt.total_days().alias('delinquency_pmt_speed_D').cast(pl.Int32),
+            (pl.col('datelastinstal40dpd_247D') - pl.col('lastrepayingdate_696D')).dt.total_days().alias('delinquency_pmt_speed_2_D').cast(pl.Int32),
+            (pl.col('validfrom_1069D') - pl.col('lastactivateddate_801D')).dt.total_days().alias('client_campaign_overlap_D').cast(pl.Int32),
+            (pl.col('dtlastpmtallstes_4499206D') - pl.col('lastrepayingdate_696D')).dt.total_days().alias('payment_method_analysis_D').cast(pl.Int32),
+            
+            #NUMERIC FEATURE
+            (pl.col('maxdpdlast24m_143P')-pl.col('avgdbddpdlast24m_3658932P')).alias('delinquency_interactionX').cast(pl.Int32),
+            (pl.col('numinstpaidearly_338L')-pl.col('pctinstlsallpaidlate1d_3546856L')).alias('pmt_efficiencyX').cast(pl.Float32),
+            (pl.col('totaldebt_9A')-pl.col('avgpmtlast12m_4525200A')).alias('dept_burden_pmtX').cast(pl.Float64),
+            (pl.col('clientscnt_304L')-pl.col('maxdpdlast12m_727P')).alias('network_delinquencyX').cast(pl.Int32),
+            (pl.col('credamount_770A')-pl.col('numinstlswithdpd10_728L')).alias('loan_size_riskX').cast(pl.Float64),
+            (pl.col('maininc_215A')-pl.col('totaldebt_9A')).alias('income_debtX').cast(pl.Float64),
+            (pl.col('clientscnt_1022L')-pl.col('avgdbddpdlast3m_4187120P')).alias('mobile_rmptX').cast(pl.Int32),
+            (pl.col('numpmtchanneldd_318L')-pl.col('maxdpdlast6m_474P')).alias('pmt_channel_delinquencyX').cast(pl.Int32),
+            
+            (
+                (
+                    pl.col('numinstpaidearly_338L')/
+                    (
+                        pl.lit(1) +
+                        pl.col('numinstpaidearly_338L') + 
+                        pl.col('pctinstlsallpaidlate1d_3546856L')
+                    )
+                ).alias('dept_burden_rpmt_interactionX').cast(pl.Float32)
+            ),
+            (
+                (
+                    pl.col('maxdpdlast12m_727P')/
+                    (
+                        pl.lit(1) +
+                        pl.col('clientscnt_304L')
+                    )
+                ).alias('client_past_due_intX').cast(pl.Float32)
+            ),
+            (
+                pl.col('credamount_770A')/
+                (
+                    pl.lit(1) +
+                    pl.col('numinstlswithdpd10_728L')
+                )
+            ).alias('trend_highloan_overdue_instX').cast(pl.Float64),
+        )
     
     def create_static_cb_0_feature(self) -> None:
         self.static_cb_0 = self.static_cb_0.drop(
