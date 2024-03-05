@@ -20,7 +20,7 @@ if __name__=='__main__':
         params_lgb=params_model,
         config_dict=config_dict,
         metric_eval='gini_stability', log_evaluation=50, 
-        evaluate_stability=True, evaluate_shap=True
+        evaluate_stability=True, evaluate_shap=False
     )
     trainer.train_explain()
     
