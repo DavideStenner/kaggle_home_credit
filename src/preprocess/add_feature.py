@@ -747,17 +747,56 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 if (col[-1]=='D') & ('applprev_1_' in col) & (col != 'applprev_1_creationdate_885D')
             ]
         ).drop('applprev_1_creationdate_885D')
-        
+
+    def add_difference_to_date_birth(self) -> None:
+        """
+        Everything which isn't touched until now and it's a date
+        will be confrontend with date decision
+        """
         type_list = self.data.dtypes
-        assert all(
+        
+        dates_to_transform = [
+            col for i, col in enumerate(self.data.columns)
+            if (col[-1]=='D') & (type_list[i] == pl.Date)
+        ]
+        
+        #calculate day diff respect to date_decision
+        self.data = self.data.with_columns(
             [
-                type_list[i] != pl.Date 
-                for i, col in enumerate(self.data.columns)
-                if (col[-1]=='D')
+                (
+                    (
+                        pl.col('person_1_birth_259D') - pl.col(col)
+                    )
+                    .dt.total_days()
+                    .alias(
+                        change_name_with_type(
+                            col, '_birth_diff_'
+                        )
+                    )
+                    .cast(pl.Int32)
+                )
+                for col in dates_to_transform
+            ] + [
+                (
+                    (
+                        (
+                            pl.col('person_1_birth_259D') - pl.col(col)
+                        )
+                        .dt.total_days()//365
+                    )
+                    .alias(
+                        change_name_with_type(
+                            col, '_birth_year_diff_'
+                        )
+                    )
+                    .cast(pl.Int32)
+                )
+                for col in self.calc_also_year_dates_date_decision
             ]
         )
 
     def add_additional_feature(self) -> None:
+        self.add_difference_to_date_birth()
         self.add_difference_to_date_decision()
         
     def merge_all(self) -> None:
