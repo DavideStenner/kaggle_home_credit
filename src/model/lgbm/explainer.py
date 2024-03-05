@@ -234,7 +234,7 @@ class LgbmExplainer(LgbmInit):
         plt.close(fig)
     
     def get_stability_feature_importance(self) -> None:
-        self.load_used_feature()
+        self.get_dataset_columns()
         self.load_pickle_model_stability_list()
         
         feature_importances = pd.DataFrame()

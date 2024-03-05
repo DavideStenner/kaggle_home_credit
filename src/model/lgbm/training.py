@@ -129,6 +129,8 @@ class LgbmTrainer(ModelTrain, LgbmInit):
 
     def single_fold_train(self) -> None:
         self.load_best_result()
+        self.load_used_feature()
+
         print('\n\n\nBeginning stability training on each validation fold')
         
         for fold_ in range(self.n_fold):
