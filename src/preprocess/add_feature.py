@@ -361,9 +361,56 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         )
     
     def create_static_cb_0_feature(self) -> None:
-        self.static_cb_0 = self.static_cb_0.drop(
+        def consecutive_pairs(list_col: list[str]) -> list[list[str]]:
+            return [
+                [list_col[i], list_col[j]] 
+                for i in range(len(list_col)) 
+                for j in range(i + 1, len(list_col))
+            ]
+        list_utils_col = {
+            'number_cba_queries': [
+                'days30_165L', 'days90_310L', 
+                'days120_123L', 'days180_256L', 'days360_512L'
+            ],
+            'credit_history': [
+                'fortoday_1092L', 'forweek_528L', 'formonth_535L', 'forquarter_634L', 
+                'foryear_850L', 'for3years_504L'
+            ],
+            'number_results': [
+                'firstquarter_103L', 'secondquarter_766L', 'thirdquarter_1082L',
+                'fourthquarter_440L'
+            ],
+            'number_rejected': [
+                'forweek_601L', 'formonth_118L', 
+                'forquarter_462L', 'foryear_618L', 
+                'for3years_128L'
+            ],
+            'number_cancelations': [
+                'forweek_1077L', 'formonth_206L', 'forquarter_1017L', 'foryear_818L',
+                'for3years_584L'
+            ]
+        }
+        list_operator = []
+        for name_feature, list_col in list_utils_col.items():
+            list_operator.append(
+                pl.sum_horizontal(
+                    pl.col(list_col)
+                ).alias(f'{name_feature}_sum_sumX').cast(pl.Int32)
+            )
+            #difference
+            list_operator += [
+                (
+                    (pl.col(col_2) - pl.col(col_1))
+                ).alias(f'{col_1}_{col_2}_diffX').cast(pl.Int32)
+                for col_1, col_2 in consecutive_pairs(list_col)
+            ]
+
+        self.static_cb_0 = self.static_cb_0.with_columns(
+            list_operator
+        ).drop(
             [
-                'birthdate_574D', 'dateofbirth_337D', 'dateofbirth_342D'
+                'birthdate_574D', 'dateofbirth_337D', 'dateofbirth_342D',
+                'numberofqueries_373L'
             ]
         )
 
