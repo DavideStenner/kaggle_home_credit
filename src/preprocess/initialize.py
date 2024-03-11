@@ -19,7 +19,8 @@ class PreprocessInit(BaseInit):
         self.path_file_pattern: str = '*/train_{pattern_file}*.parquet'
         
         self.special_column_list: list[str] = config_dict['SPECIAL_COLUMNS']
-        
+        #hashed value for null in string
+        self.hashed_missing_label: str = "a55475b1"
         #for this dates doesn't correct to blank when negative
         self.negative_allowed_dates_date_decision: list[str] = [
             'static_cb_0_assignmentdate_238D',
