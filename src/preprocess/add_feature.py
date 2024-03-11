@@ -1,6 +1,6 @@
 import polars as pl
 
-from typing import Union
+from typing import Union, Dict
 from itertools import product, chain
 
 from src.utils.other import change_name_with_type
@@ -444,13 +444,14 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 
         
     def create_person_1_feature(self) -> None:
-        print('Only considering person_1 info not related person for now...')
-        self.person_1 = self.person_1.filter(
+        person_1 = self.person_1.filter(
             pl.col('num_group1')==0
         ).select(
             [
                 'case_id',
-                'birth_259D', 'education_927M',
+                'birth_259D', 
+                'contaddr_matchlist_1032L', 'contaddr_smempladdr_334L', 
+                'education_927M',
                 'empl_employedfrom_271D',
                 'empl_industry_691L', 'familystate_447L',
                 'housetype_905L', 
@@ -460,7 +461,116 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 'safeguarantyflag_411L', 'type_25L', 'sex_738L'
             ]
         )
+        dict_agg_info: Dict[str, list[str]] = {
+            'education_927M': [
+                "a55475b1", "P33_146_175",
+                "P97_36_170",
+            ],
+            'gender_992L': ['M', 'F'],
+            'housingtype_772L': [
+                'OWNED', 'PARENTAL'
+            ],
+            'maritalst_703L': [
+                'MARRIED', 
+                'SINGLE'
+            ],
+            'persontype_1072L': [
+                1, 4, 5
+            ],
+            'persontype_792L': [4, 5],
+            'relationshiptoclient_415T': [
+                'SPOUSE', 'OTHER_RELATIVE', 
+                'COLLEAGUE', 'GRAND_PARENT',
+                'NEIGHBOR', 'OTHER', 'PARENT',
+                'SIBLING', 'CHILD', 'FRIEND'
+            ],
+            'relationshiptoclient_642T': [
+                'SIBLING', 'SPOUSE', 'OTHER', 'COLLEAGUE', 
+                'PARENT', 'FRIEND', 'NEIGHBOR', 'GRAND_PARENT', 
+                'CHILD', 'OTHER_RELATIVE'
+            ],
+            'role_1084L': ['CL', 'EM', 'PE'],
+            'role_993L': ['FULL'],
+            'type_25L': [
+                'HOME_PHONE', 'PRIMARY_MOBILE', 
+                'SECONDARY_MOBILE', 'ALTERNATIVE_PHONE', 
+                'PHONE'
+            ]
+        }
 
+        person_1_related_info: Union[pl.LazyFrame, pl.DataFrame] = (
+            self.person_1.filter(
+                pl.col('num_group1')!=0
+            ).group_by('case_id').agg(
+                pl.len().alias('number_rowsX').cast(pl.UInt8),
+                pl.col('childnum_185L').max().cast(pl.UInt8),
+                *[
+                    (
+                        pl.col(column_name)
+                        .filter(
+                            (pl.col(column_name)==self.mapper_mask['person_1'][column_name][self.hashed_missing_label])
+                        ).count().alias(f'{column_name}_a55475b1countX').cast(pl.UInt8)
+                    )
+                    for column_name in [
+                        'contaddr_district_15M', 'contaddr_zipcode_807M', 
+                        'empladdr_district_926M', 'empladdr_zipcode_114M',
+                        'registaddr_zipcode_184M'
+                    ]
+                ],
+                *[
+                    (
+                        pl.col(column_name)
+                        .filter(
+                            (
+                                pl.col(column_name)==
+                                (
+                                    #not string
+                                    col_value 
+                                    if column_name not in self.mapper_mask['person_1'].keys()
+                                    #use mapper
+                                    else self.mapper_mask['person_1'][column_name][col_value]
+                                )
+                            )
+                        )
+                        .count()
+                        .alias(f'{column_name}_{col_value}X')
+                        .cast(pl.UInt8)
+                    )
+                    for column_name, col_value in [
+                        (column_name, col_value) 
+                        for column_name, col_value_list in dict_agg_info.items() 
+                        for col_value in col_value_list
+                    ]
+                ],
+                *[
+                    (
+                        pl.col(column_name)
+                        .filter(
+                            (pl.col(column_name).is_null())
+                        )
+                        .len()
+                        .alias(f'{column_name}_nullX')
+                        .cast(pl.UInt8)
+                    )
+                    for column_name in [
+                        'gender_992L', 'housingtype_772L', 
+                        'maritalst_703L', 'persontype_1072L', 
+                        'persontype_792L', 'relationshiptoclient_415T', 
+                        'relationshiptoclient_642T', 'role_1084L', 'role_993L', 
+                        'type_25L'
+                    ]
+                ]
+            )
+        )
+        
+        self.person_1 = (
+            person_1.join(
+                person_1_related_info, 
+                on='case_id', how='left'
+            )
+        )
+        
+        
     def create_person_2_feature(self) -> None:
         print('Only considering person_2 info relate to 0...')
         zero_n_list = {
