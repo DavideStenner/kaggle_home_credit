@@ -7,8 +7,6 @@ test/*
 data/local/*
 data/parquet_dataset/*
 !data/parquet_dataset/
-data/mapper_dataset/*
-!data/mapper_dataset/
 !experiment/
 experiment/*
 config/params_*.json
