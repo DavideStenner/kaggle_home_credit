@@ -113,13 +113,10 @@ class PreprocessImport(BaseImport, PreprocessInit):
             ).sort(['case_id', 'date_decision'])
     
     def import_all(self) -> None:
-        print('Scanning all')
+        print('Importing all')
         self.scan_all_dataset()
-        print('Importing mapper')
         self._import_all_mapper()
 
-        print('Downcasting base')
+
         self.downcast_base()
-        
-        print('Downcasting feature')
         self.downcast_feature_dataset()
