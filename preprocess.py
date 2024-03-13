@@ -4,8 +4,8 @@ if __name__=='__main__':
 
     config_dict = import_config()
     
-    enefit_preprocessor = PreprocessPipeline(
+    home_credit_preprocessor = PreprocessPipeline(
         config_dict=config_dict, 
         embarko_skip=6
     )
-    enefit_preprocessor()
+    home_credit_preprocessor()
