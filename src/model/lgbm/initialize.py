@@ -7,7 +7,7 @@ import polars as pl
 import lightgbm as lgb
 
 from itertools import chain
-from typing import Any, Union, Dict
+from typing import Any, Union, Dict, Tuple
 from src.base.model.initialize import ModelInit
 
 class LgbmInit(ModelInit):
@@ -15,7 +15,7 @@ class LgbmInit(ModelInit):
             experiment_name:str, 
             params_lgb: dict[str, Any],
             metric_eval: str,
-            config_dict: dict[str, Any],
+            config_dict: dict[str, Any], data_columns: Tuple[str],
             log_evaluation:int =1, fold_name: str = 'fold_info'
         ):
         
@@ -67,7 +67,7 @@ class LgbmInit(ModelInit):
         self.best_result: dict[str, Union[int, float]] = None
         
         self.feature_list: list[str] = []
-        self.get_categorical_columns()
+        self.get_categorical_columns(data_columns=data_columns)
     
     def convert_feature_name_with_dataset(self, mapper_dict: Dict[str, Union[str, dict, float]]):
         return {
@@ -122,7 +122,7 @@ class LgbmInit(ModelInit):
             ]
         )
         
-    def get_categorical_columns(self) -> None:
+    def get_categorical_columns(self, data_columns: Tuple[str]) -> None:
         with open(
             os.path.join(
                 self.config_dict['PATH_MAPPER_DATA'],
@@ -132,12 +132,6 @@ class LgbmInit(ModelInit):
             mapper_mask = self.convert_feature_name_with_dataset(
                 json.load(file)
             )
-        data_columns = pl.scan_parquet(
-            os.path.join(
-                self.config_dict['PATH_PARQUET_DATA'],
-                'data.parquet'
-            )
-        ).columns
 
         self.categorical_col_list: set[str] = (
             set(

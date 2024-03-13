@@ -1,7 +1,7 @@
 import os
 import gc
 
-from typing import Any
+from typing import Any, Tuple
 
 from src.base.preprocess.pipeline import BasePipeline
 from src.preprocess.import_data import PreprocessImport
@@ -53,7 +53,21 @@ class PreprocessPipeline(BasePipeline, PreprocessImport, PreprocessAddFeature, P
         self.base_data = self.base_data.head(n_rows)
         
         self.collect_all()
+    
+    @property
+    def feature_list(self) -> Tuple[str]:
+        self.data = None
+        self.create_feature()
 
+        self.merge_all()
+
+        self.add_additional_feature()
+
+        data_columns = self.data.columns
+        #reset data schema
+        self.data = None
+        return data_columns
+    
     def preprocess_inference(self) -> None:
         print('Creating feature')
         self.create_feature()
@@ -88,18 +102,7 @@ class PreprocessPipeline(BasePipeline, PreprocessImport, PreprocessAddFeature, P
         
     
     def begin_inference(self) -> None:
-        #if no data.parquet is provided create one with 5 rows it's needed by the model to check column names
-        if not os.path.exists(
-            os.path.join(
-                self.config_dict['PATH_PARQUET_DATA'],
-                'data.parquet'
-            )
-        ):
-            self.create_feature()
-            self.merge_all()
-            self.data = self.data.head(5).collect()
-
-            self.save_data()
+        print('Beginning inference')
         
         #reset data
         self.data = None

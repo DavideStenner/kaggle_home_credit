@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Tuple
 
 from src.model.lgbm.training import LgbmTrainer
 from src.model.lgbm.explainer import LgbmExplainer
@@ -12,13 +12,14 @@ class LgbmPipeline(ModelPipeline, LgbmTrainer, LgbmExplainer, LgbmInference):
             experiment_name:str, 
             params_lgb: dict[str, Any],
             metric_eval: str,
-            config_dict: dict[str, Any],
+            config_dict: dict[str, Any], data_columns: Tuple[str],
             log_evaluation:int =1, fold_name: str = 'fold_info', 
             evaluate_stability: bool=False, evaluate_shap: bool=False
         ):
         LgbmInit.__init__(
             self, experiment_name=experiment_name, params_lgb=params_lgb,
             metric_eval=metric_eval, config_dict=config_dict,
+            data_columns=data_columns,
             log_evaluation=log_evaluation, fold_name=fold_name
         )
         self.evaluate_stability: bool = evaluate_stability
