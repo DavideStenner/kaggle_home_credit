@@ -14,7 +14,7 @@ def read_multiple_parquet(
     num_files = len(path_file_list)
             
     if num_files==0:
-        print(f'No dataset founded as {path_pattern}')
+        print(f'No dataset founded as {path_pattern} inside {root_dir}')
         return None
     
     elif num_files == 1:

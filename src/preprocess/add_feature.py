@@ -1,3 +1,4 @@
+import warnings
 import polars as pl
 
 from typing import Union, Dict
@@ -17,7 +18,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         )
     
     def create_credit_bureau_a_1_feature(self) -> None:
-        print('Only considering credit_bureau_a_1 info not related person for now...')
+        warnings.warn('Only considering credit_bureau_a_1 info not related person for now...', UserWarning)
         self.credit_bureau_a_1 = self.credit_bureau_a_1.filter(
             pl.col('num_group1')==0
         ).drop('num_group1')
@@ -97,7 +98,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         )
     
     def create_credit_bureau_a_2_feature(self) -> None:
-        print('Only considering credit_bureau_a_2 num1==0')
+        warnings.warn('Only considering credit_bureau_a_2 num1==0', UserWarning)
         #aggregate and take first element
         credit_bureau_a_2_first_categorical = self.credit_bureau_a_2.with_columns(
             #number of num_group1
@@ -181,7 +182,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         self.credit_bureau_a_2 = credit_bureau_a_2
         
     def create_credit_bureau_b_1_feature(self) -> None:
-        print('Only considering credit_bureau_b_1 info not related person for now...')
+        warnings.warn('Only considering credit_bureau_b_1 info not related person for now...', UserWarning)
         self.credit_bureau_b_1 = self.credit_bureau_b_1.filter(
             pl.col('num_group1')==0
         ).drop('num_group1')
@@ -205,7 +206,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         )
 
     def create_credit_bureau_b_2_feature(self) -> None:
-        print('Only considering credit_bureau_b_2 num1==0')
+        warnings.warn('Only considering credit_bureau_b_2 num1==0', UserWarning)
         self.credit_bureau_b_2 = (
             self.credit_bureau_b_2.with_columns(
                 #number of num_group1
@@ -265,7 +266,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         )
         
     def create_debitcard_1_feature(self) -> None:
-        print('Only considering debitcard_1 info not related person for now...')
+        warnings.warn('Only considering debitcard_1 info not related person for now...', UserWarning)
         self.debitcard_1 = self.debitcard_1.filter(
             pl.col('num_group1')==0
         ).select(
@@ -276,7 +277,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             ]
         )
     def create_deposit_1_feature(self) -> None:
-        print('Only considering deposit_1 info not related person for now...')
+        warnings.warn('Only considering deposit_1 info not related person for now...', UserWarning)
         self.deposit_1 = self.deposit_1.filter(
             pl.col('num_group1')==0
         ).select(
@@ -415,7 +416,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         )
 
     def create_tax_registry_1_feature(self) -> None:
-        print('Only considering tax_registry_a_1 info not related person for now...')
+        warnings.warn('Only considering tax_registry_a_1 info not related person for now...', UserWarning)
         self.tax_registry_a_1 = self.tax_registry_a_1.filter(
             pl.col('num_group1')==0
         ).select(
@@ -572,7 +573,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         
         
     def create_person_2_feature(self) -> None:
-        print('Only considering person_2 info relate to 0...')
+        warnings.warn('Only considering person_2 info relate to 0...', UserWarning)
         zero_n_list = {
             'addres_role_871L': ['PERMANENT'],
             'conts_role_79M': ['P38_92_157', 'P177_137_98', 'a55475b1']
@@ -653,7 +654,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         )
 
     def create_applprev_1_feature(self) -> None:
-        print('Only considering applprev_1 info not related person for now...')
+        warnings.warn('Only considering applprev_1 info not related person for now...', UserWarning)
         self.applprev_1 = self.applprev_1.filter(
             pl.col('num_group1')==0
         ).select(
@@ -703,7 +704,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         )
     
     def create_applprev_2_feature(self) -> None:
-        print('Only considering applprev_2 info relate to 0...')
+        warnings.warn('Only considering applprev_2 info relate to 0...', UserWarning)
 
         category_list = {
             "cacccardblochreas_147M": [
