@@ -40,10 +40,9 @@ class PreprocessPipeline(BasePipeline, PreprocessImport, PreprocessAddFeature, P
         self.collect_feature()
         self.base_data = self.base_data.collect()
 
-    def test_all(self, n_rows: int = 10_000) -> None:
-        print(f'Using testing pipeline with head of {n_rows}')
-        
+    def test_all_import(self, n_rows: int = 10_000) -> None:        
         #for debug
+        self.import_all()
         for dataset in self.used_dataset:
             setattr(
                 self, 
@@ -53,7 +52,20 @@ class PreprocessPipeline(BasePipeline, PreprocessImport, PreprocessAddFeature, P
         self.base_data = self.base_data.head(n_rows)
         
         self.collect_all()
-    
+        
+    def test_all(self) -> None:     
+        self.import_all()
+           
+        #for debug
+        self.test_all_import()
+        
+        self.data = None
+        self.create_feature()
+
+        self.merge_all()
+
+        self.add_additional_feature()
+
     @property
     def feature_list(self) -> Tuple[str]:
         self.data = None
