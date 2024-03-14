@@ -53,11 +53,27 @@ class TestPipeline(unittest.TestCase):
         except Exception as e:
             self.fail(e)
     
-    def test_blank_import_pipeline(self):
+    def test_blank_dataset_pipeline(self):
         config_dict = self.config_dict
         config_dict['PATH_ORIGINAL_DATA'] = os.path.join(
             config_dict['PATH_TESTING_DATA'],
             'empty_dataset',
+        )
+
+        pipeline_data = PreprocessPipeline(
+            config_dict=self.config_dict, 
+            embarko_skip=6
+        )
+        try:
+            pipeline_data.test_all()
+        except Exception as e:
+            self.fail(e)
+    
+    def test_random_dataset_pipeline(self):
+        config_dict = self.config_dict
+        config_dict['PATH_ORIGINAL_DATA'] = os.path.join(
+            config_dict['PATH_TESTING_DATA'],
+            'random_dataset',
         )
 
         pipeline_data = PreprocessPipeline(

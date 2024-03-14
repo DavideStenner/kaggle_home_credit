@@ -1,24 +1,56 @@
-# def create_random_value(dataset_: pl.LazyFrame) -> pl.LazyFrame:
-#     dtype_mapping = {
-#         col: dataset_.dtypes[i]
-#         for i, col in enumerate(dataset_.columns)
-#     }
-
-#     for col, dtype_ in dtype_mapping.items():
-#         if dtype_.is_numeric():
-            
-        
-#         if dataset_.select(col).collect().dty
-#         if dtype_mapping[col] != 
-
 def create_testing_dataset():
     
     import os
+    import json
+    import numpy as np
     import polars as pl
     
+    from typing import Dict, Any
     from src.utils.import_utils import import_config
     from src.utils.import_file import read_multiple_parquet
+    
+    
+    def create_random_value(dataset_: pl.LazyFrame, dataset_name: str, config_dict: Dict[str, Any]) -> pl.LazyFrame:
+        from src.utils.dtype import TYPE_MAPPING
+        
+        with open(
+            os.path.join(
+                config_dict['PATH_MAPPER_DATA'],
+                'mapper_dtype.json'
+            ), 'r'
+        ) as file:
+            mapper_dtype = json.load(file)
+        
+        with open(
+            os.path.join(
+                config_dict['PATH_MAPPER_DATA'],
+                'mapper_mask.json'
+            ), 'r'
+        ) as file:
+            categorical_columns = json.load(file)[dataset_name].keys()
             
+        for col in dataset_.columns:
+            if (col in categorical_columns) | (col in config_dict['SPECIAL_COLUMNS']):
+                continue
+            
+            downcasted_type = mapper_dtype[dataset_name][col]
+            doncasted_type_pl = TYPE_MAPPING[downcasted_type]
+            
+            if doncasted_type_pl.is_numeric():
+                
+                if 'int' in downcasted_type:
+                    dataset_ = dataset_.with_columns(
+                        pl.lit(np.random.randint(-1000, 1000)).alias(col).cast(doncasted_type_pl)
+                    )
+                elif 'float' in downcasted_type:
+                    dataset_ = dataset_.with_columns(
+                        pl.lit(np.random.random()*2000 - 1000).alias(col).cast(doncasted_type_pl)
+                    )
+                else:
+                    raise ValueError
+        
+        return dataset_
+
     config_dict = import_config()
     used_dataset: list[str] = (
         ['base'] +
@@ -31,10 +63,17 @@ def create_testing_dataset():
         'empty_dataset',
         'train',
     )
-
+    path_random_test_data = os.path.join(
+        config_dict['PATH_TESTING_DATA'],
+        'random_dataset',
+        'train',
+    )
     if not os.path.isdir(path_blank_test_data):
         os.makedirs(path_blank_test_data)
-            
+    
+    if not os.path.isdir(path_random_test_data):
+        os.makedirs(path_random_test_data)
+
     for pattern_ in  used_dataset:
         print('Saving', pattern_)
         dataset_ = read_multiple_parquet(
@@ -70,6 +109,21 @@ def create_testing_dataset():
         empty_special_dataset.write_parquet(
             os.path.join(
                 path_blank_test_data,
+                f'train_{pattern_}.parquet'
+            )
+        )
+
+        if pattern_ == 'base':
+            random_dataset = dataset_
+
+        else:
+            random_dataset = create_random_value(
+                dataset_=dataset_, dataset_name=pattern_, config_dict=config_dict
+            )
+            
+        random_dataset.sink_parquet(
+            os.path.join(
+                path_random_test_data,
                 f'train_{pattern_}.parquet'
             )
         )
