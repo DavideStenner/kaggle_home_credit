@@ -83,5 +83,23 @@ class TestPipeline(unittest.TestCase):
         try:
             pipeline_data.test_all()
         except Exception as e:
+    def test_pipeline_on_test_data(self):
+        try:
+            config = import_config()
+            pipeline_data = PreprocessPipeline(
+                config_dict=config, 
+                embarko_skip=6
+            )
+            pipeline_data.begin_inference()
+
+            trainer = LgbmPipeline(
+                experiment_name='person_1_more_lgb',
+                params_lgb={},
+                config_dict=config,
+                metric_eval='gini_stability', log_evaluation=50, 
+                data_columns=pipeline_data.feature_list
+            )
+            trainer.activate_inference()
+            pipeline_data.test_all()
+        except Exception as e:
             self.fail(e)
-        
