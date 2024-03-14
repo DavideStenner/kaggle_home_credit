@@ -66,10 +66,43 @@ class PreprocessImport(BaseImport, PreprocessInit):
         remap_categories = len(self.mapper_mask[dataset_name].keys())>0
         
         if remap_categories:
+            if self.inference:
+                skip_empty_dataset = (
+                    self._collect_item_utils(
+                        data.select(pl.len())
+                    ) == 0
+                )
+                count_null = data.select(
+                    pl.col(self.mapper_mask[dataset_name].keys())
+                    .is_null().mean()
+                )
+                if isinstance(data, pl.LazyFrame):
+                    count_null = count_null.collect()
+                    
+                    
+                #don't remap empty columns as polars raise errors
+                empty_columns_list = [
+                    column for column, value_missing in
+                    (
+                        count_null
+                        .to_dicts()[0]
+                        .items()
+                    )
+                    if value_missing == 1.
+                ]
+            else:
+                #during training no problem
+                empty_columns_list = []
+                skip_empty_dataset = False
+
             data = data.with_columns(
             [
                 (
-                    pl.col(col).replace(mapping_dict, default=None)
+                    #if it's empty don't apply replace as it raise errors
+                    pl.col(col).cast(pl.UInt64)
+                    if (col in empty_columns_list) or (skip_empty_dataset)
+
+                    else pl.col(col).replace(mapping_dict, default=None)
                 ).cast(pl.UInt64)
                 for col, mapping_dict in self.mapper_mask[dataset_name].items()
                 if col in data.columns
