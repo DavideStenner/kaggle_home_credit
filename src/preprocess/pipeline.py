@@ -18,7 +18,6 @@ class PreprocessPipeline(BasePipeline, PreprocessImport, PreprocessAddFeature, P
             config_dict=config_dict, 
             embarko_skip=embarko_skip
         )
-        self.import_all()
 
     def save_data(self) -> None:
         print('saving processed dataset')
@@ -128,4 +127,5 @@ class PreprocessPipeline(BasePipeline, PreprocessImport, PreprocessAddFeature, P
             self.preprocess_inference()
 
         else:
+            self.import_all()
             self.preprocess_train()
