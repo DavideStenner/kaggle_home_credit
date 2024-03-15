@@ -106,7 +106,6 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             (pl.col('num_group2')==0)
         ).select(
             'case_id', 
-            'num_group1_X', 'num_group2_X',
             'collater_typofvalofguarant_298M', 'collater_typofvalofguarant_407M',
             'collater_valueofguarantee_1124L', 'collater_valueofguarantee_876L',
             'collaterals_typeofguarante_359M', 'collaterals_typeofguarante_669M',
@@ -211,7 +210,6 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                     'num_group1', 'num_group2'
                 ]
             ).group_by('case_id', maintain_order=True).agg(
-                pl.col('num_group1_X').first(),
                 #num group1 different group2
                 pl.col('num_group2').n_unique().alias('num_group2_X').cast(pl.Int32),
 
