@@ -111,7 +111,9 @@ class PreprocessPipeline(BasePipeline, PreprocessImport, PreprocessAddFeature, P
         self.create_fold()
         self.save_data()
         
-    
+    def begin_training(self) -> None:
+        self.import_all()
+        
     def begin_inference(self) -> None:
         print('Beginning inference')
         

@@ -20,6 +20,7 @@ if __name__=='__main__':
         config_dict=config_dict, 
         embarko_skip=6
     )
+    home_credit_preprocessor.begin_training()
     
     trainer = LgbmPipeline(
         experiment_name=experiment_name + "_lgb",
