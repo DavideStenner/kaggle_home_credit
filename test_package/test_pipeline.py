@@ -13,7 +13,20 @@ class TestPipeline(unittest.TestCase):
        
         _, experiment_name = import_params(model='lgb')
         self.experiment_name: str = experiment_name
-        
+    
+    def test_preprocess_on_train(self):
+        try:
+            config = import_config()
+            pipeline_data: PreprocessPipeline = PreprocessPipeline(
+                config_dict=config, 
+                embarko_skip=6
+            )
+            
+            pipeline_data.test_all()
+            
+        except Exception as e:
+            self.fail(e)
+            
     def test_preprocess_activate_inference(self):
         try:
             config = import_config()
