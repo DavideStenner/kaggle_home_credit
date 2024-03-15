@@ -100,12 +100,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
     def create_credit_bureau_a_2_feature(self) -> None:
         warnings.warn('Only considering credit_bureau_a_2 num1==0', UserWarning)
         #aggregate and take first element
-        credit_bureau_a_2_first_categorical = self.credit_bureau_a_2.with_columns(
-            #number of num_group1
-            (1+ pl.col('num_group1').max()).over('case_id').alias('num_group1_X').cast(pl.Int32),
-            #num group1 different group2
-            (1 + pl.col('num_group2').max()).over('case_id', 'num_group1').alias('num_group2_X').cast(pl.Int32),
-        ).filter(
+        credit_bureau_a_2_first_categorical = self.credit_bureau_a_2.filter(
             #current case
             (pl.col('num_group1')==0) &
             (pl.col('num_group2')==0)
@@ -208,10 +203,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
     def create_credit_bureau_b_2_feature(self) -> None:
         warnings.warn('Only considering credit_bureau_b_2 num1==0', UserWarning)
         self.credit_bureau_b_2 = (
-            self.credit_bureau_b_2.with_columns(
-                #number of num_group1
-                pl.col('num_group1').n_unique().over('case_id').alias('num_group1_X').cast(pl.Int32),
-            ).filter(
+            self.credit_bureau_b_2.filter(
                 #current case
                 (pl.col('num_group1')==0)
             ).sort(
