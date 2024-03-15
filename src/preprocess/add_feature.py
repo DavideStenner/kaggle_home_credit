@@ -350,7 +350,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                     pl.lit(1) +
                     pl.col('numinstlswithdpd10_728L')
                 )
-            ).alias('trend_highloan_overdue_instX').cast(pl.Float64),
+            ).alias('trend_highloan_overdue_instX').cast(pl.Float32),
         )
     
     def create_static_cb_0_feature(self) -> None:
