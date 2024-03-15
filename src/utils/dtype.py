@@ -14,6 +14,7 @@ TYPE_MAPPING: Mapping[str, pl.DataType] = {
     "float64": pl.Float64,
     "int64": pl.Int64,
     "uint64": pl.UInt64,
+    
     "float32": pl.Float32,
     "int32": pl.Int32,
     "uint32": pl.UInt32,
@@ -78,7 +79,7 @@ def get_mapper_categorical(
     return mapper_mask_col
     
 def get_mapper_numerical(
-        data: Union[pl.LazyFrame, pl.DataFrame], 
+        data: Union[pl.LazyFrame, pl.DataFrame], categorical_columns: list[str],
         type_mapping_reverse: Mapping[pl.DataType, str]=TYPE_MAPPING_REVERSE,
         threshold: float = 0.001, 
         dtype_choices: Tuple[pl.DataType]=[
@@ -104,9 +105,15 @@ def get_mapper_numerical(
     mapper_column = {}
     
     for col in tqdm(col_to_check):
+        dtype_choices_col = (
+            [pl.UInt8, pl.UInt16,  pl.UInt32, pl.UInt64]
+            if col in categorical_columns
+            else dtype_choices
+        )           
+            
         check_passed = False
         
-        for dtype_ in dtype_choices:
+        for dtype_ in dtype_choices_col:
             if check_passed:
                 continue
             
@@ -141,7 +148,7 @@ def get_mapper_numerical(
     #add date
     for col in [x for x in data.columns if x[-1]=='D']:
         mapper_column[col] =type_mapping_reverse[pl.Date]
-    
+
     return mapper_column
 
 
@@ -202,10 +209,10 @@ def get_mapping_info(
         mapper_column = get_mapper_numerical(
             data=data, type_mapping_reverse=TYPE_MAPPING_REVERSE,
             dtype_choices=[
-                pl.Int16,  pl.Int32, pl.Float32, pl.Int64, pl.Float64
-            ]
+                pl.Int16,  pl.Int32, pl.Float32, pl.Int64
+            ], categorical_columns=mapper_mask_col.keys()
         )
-
+        #no float64
         mapper_column_cast = {
             col: TYPE_MAPPING[dtype_str]
             for col, dtype_str in mapper_column.items()
