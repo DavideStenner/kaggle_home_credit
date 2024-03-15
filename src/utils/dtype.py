@@ -213,6 +213,10 @@ def get_mapping_info(
             ], categorical_columns=mapper_mask_col.keys()
         )
         #no float64
+        mapper_column = {
+            col: (dtype_str if dtype_str != 'float64' else 'float32')
+            for col, dtype_str in mapper_column.items()
+        }
         mapper_column_cast = {
             col: TYPE_MAPPING[dtype_str]
             for col, dtype_str in mapper_column.items()
