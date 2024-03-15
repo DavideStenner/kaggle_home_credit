@@ -46,6 +46,7 @@ class TestPipeline(unittest.TestCase):
                 config_dict=config, 
                 embarko_skip=6
             )
+            pipeline_data.begin_inference()
             
             trainer: LgbmPipeline = LgbmPipeline(
                 experiment_name=self.experiment_name + "_lgb",
