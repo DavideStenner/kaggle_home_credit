@@ -77,6 +77,10 @@ class PreprocessPipeline(BasePipeline, PreprocessImport, PreprocessAddFeature, P
         data_columns = self.data.columns
         #reset data schema
         self.data = None
+        
+        #reset dataset
+        self.import_all()
+        
         return data_columns
     
     def preprocess_inference(self) -> None:
