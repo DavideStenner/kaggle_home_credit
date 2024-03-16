@@ -2,6 +2,9 @@ import os
 import time
 import psutil
 import warnings
+
+import polars as pl
+
 from contextlib import redirect_stdout
 
 from src.utils.import_utils import import_config
@@ -11,7 +14,7 @@ def track_memory_usage(processor: PreprocessPipeline) -> None:
         
     processor.inference = False
 
-    def run_query():
+    def run_query(processor: PreprocessPipeline):
         processor.import_all()
         processor.create_feature()
         processor.merge_all()
@@ -29,7 +32,7 @@ def track_memory_usage(processor: PreprocessPipeline) -> None:
         gb_used = max_memory_usage/(1024**3)
         return gb_used
 
-    def test_base_dataset(dataset, streaming: bool=True):
+    def test_base_dataset(processor: PreprocessPipeline, dataset: str, streaming: bool=True):
         start_, process = init_tracker()
         processor.import_all()
 
@@ -41,9 +44,9 @@ def track_memory_usage(processor: PreprocessPipeline) -> None:
         except Exception as e:
             print(f'Dataset: {dataset}', str(e))
 
-    def test_single_dataset_memory(dataset, streaming: bool=True):
+    def test_single_dataset_memory(processor: PreprocessPipeline, dataset: str, streaming: bool=True):
         start_, process = init_tracker()
-        run_query()
+        run_query(processor=processor)
 
         try:
             getattr(processor, dataset).collect(streaming=streaming)
@@ -54,9 +57,9 @@ def track_memory_usage(processor: PreprocessPipeline) -> None:
             print(f'Dataset: {dataset}', str(e))
 
 
-    def test_collect(streaming: bool):
+    def test_collect(processor: PreprocessPipeline, streaming: bool):
         start_, process = init_tracker()
-        run_query()
+        run_query(processor=processor)
         
         processor.data = processor.data.collect(streaming=streaming)
 
@@ -64,16 +67,106 @@ def track_memory_usage(processor: PreprocessPipeline) -> None:
 
         print(f"Streaming: {streaming}; Peak memory usage: {gb_used:2f} GB; Time: {(time.time()-start_)/60} min")
 
+    def save_downcast_and_test(processor: PreprocessPipeline, dataset: str):
+        #downcast
+        processor.import_all()
+
+        filter_dict = {
+            'applprev_1': pl.col('num_group1')==0,
+            'credit_bureau_a_1': pl.col('num_group1')==0,
+            'credit_bureau_a_2': (
+                (pl.col('num_group1')==0) &
+                (pl.col('num_group2')==0)
+            ),
+            'credit_bureau_b_1': pl.col('num_group1')==0,
+            'credit_bureau_b_2': (pl.col('num_group1')==0),
+            'debitcard_1': pl.col('num_group1')==0,
+            'deposit_1': pl.col('num_group1')==0,
+            'tax_registry_a_1': pl.col('num_group1')==0,
+            'tax_registry_b_1': pl.col('num_group1')==0,
+            'tax_registry_c_1': pl.col('num_group1')==0,
+        } 
+
+        data: pl.LazyFrame = getattr(processor, dataset)
+        
+        if dataset in filter_dict.keys():
+            data = data.filter(filter_dict[dataset])
+        
+        if dataset[-1]=='S':
+            data.sink_parquet(
+                os.path.join(
+                    'testing_data',
+                    'downcasted', dataset + '.parquet'
+                )
+            )
+        else:
+            
+            data.collect().write_parquet(
+                os.path.join(
+                    'testing_data',
+                    'downcasted', dataset + '.parquet'
+                )
+            )
+            
+        start_, process = init_tracker()
+        setattr(
+            processor, dataset,
+            pl.scan_parquet(
+                os.path.join(
+                    'testing_data',
+                    'downcasted', dataset + '.parquet' 
+                )
+            )
+        )
+        processor.create_feature()
+        getattr(processor, dataset).collect()
+        
+        gb_used = get_usage(process=process)
+        print(f"Dataset: {dataset}; Peak memory usage: {gb_used:2f} GB; Time: {(time.time()-start_)/60} min")
+
+    def downcasted_dataset_collect(processor: PreprocessPipeline):
+        processor.import_all()
+
+        for dataset in processor.used_dataset:
+            setattr(
+                processor, dataset,
+                pl.scan_parquet(
+                    os.path.join(
+                        'testing_data',
+                        'downcasted', dataset + '.parquet'
+                    )
+                )
+            )
+            
+        start_, process = init_tracker()
+        
+        processor.create_feature()
+        processor.merge_all()
+        processor.add_additional_feature()
+
+        processor.data.collect()
+        gb_used = get_usage(process=process)
+
+        print(f"Peak memory usage: {gb_used:2f} GB; Time: {(time.time()-start_)/60} min")
+        
+    #save downcast version and try to import and fe them
+    print('\n\nDowncast dataset\n\n')
+    for dataset in processor.used_dataset:
+        save_downcast_and_test(processor=processor, dataset=dataset)
+
+    print('\n\nEntire Dataset Downcasted\n\n')
+    downcasted_dataset_collect(processor=processor)
+    
     print('\n\nFE dataset\n\n')
     for dataset in processor.used_dataset:
-        test_single_dataset_memory(dataset=dataset, streaming=False)
+        test_single_dataset_memory(processor=processor, dataset=dataset, streaming=False)
 
     print('\n\nEntire Dataset\n\n')
-    test_collect(streaming=False)          
+    test_collect(processor=processor, streaming=False)          
 
     print('\n\nStarting on base dataset\n\n')
     for dataset in processor.used_dataset:
-        test_base_dataset(dataset=dataset, streaming=False)
+        test_base_dataset(processor=processor, dataset=dataset, streaming=False)
         
 
 if __name__=='__main__':
