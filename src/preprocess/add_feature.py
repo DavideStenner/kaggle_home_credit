@@ -405,7 +405,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             ]
         )
 
-    def create_tax_registry_1_feature(self) -> None:
+    def create_tax_registry_a_1_feature(self) -> None:
         warnings.warn('Only considering tax_registry_a_1 info not related person for now...', UserWarning)
         self.tax_registry_a_1 = self.tax_registry_a_1.filter(
             pl.col('num_group1')==0
@@ -415,6 +415,9 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 'recorddate_4527225D'
             ]
         )
+    def create_tax_registry_b_1_feature(self) -> None:
+        warnings.warn('Only considering tax_registry_b_1 info not related person for now...', UserWarning)
+
         self.tax_registry_b_1 = self.tax_registry_b_1.filter(
             pl.col('num_group1')==0
         ).select(
@@ -423,7 +426,9 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 'deductiondate_4917603D'
             ]
         )
-        
+    def create_tax_registry_c_1_feature(self) -> None:
+        warnings.warn('Only considering tax_registry_c_1 info not related person for now...', UserWarning)
+
         self.tax_registry_c_1 = self.tax_registry_c_1.filter(
             pl.col('num_group1')==0
         ).select(
@@ -756,7 +761,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             )
         )
 
-    def create_other_1(self) -> None:
+    def create_other_1_feature(self) -> None:
         self.other_1 = self.other_1.select(
             [
                 'case_id',
@@ -766,22 +771,12 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             ]
         )
     def create_feature(self) -> None:
-        self.create_static_0_feature()
-        self.create_static_cb_0_feature()
-        self.create_person_1_feature()
-        self.create_applprev_1_feature()
-        self.create_other_1()
-        self.create_tax_registry_1_feature()
-        self.create_deposit_1_feature()
-        self.create_debitcard_1_feature()
-        self.create_credit_bureau_a_1_feature()
-        self.create_credit_bureau_b_1_feature()
-        
-        self.create_person_2_feature()
-        self.create_applprev_2_feature()
-        self.create_credit_bureau_a_2_feature()
-        self.create_credit_bureau_b_2_feature()
-        
+        for dataset in self.used_dataset:
+            current_dataset_fe_pipeline: callable = getattr(
+                self, f'create_{dataset}_feature'
+            )
+            current_dataset_fe_pipeline()
+                        
         if not self.inference:
             self.add_fold_column()
 
