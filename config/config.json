@@ -17,7 +17,7 @@
     ],
     "DEPTH_2": [
         "applprev_2", "person_2",
-        "credit_bureau_a_2", "credit_bureau_b_2"
+        "credit_bureau_b_2"
     ],
     "TYPE_FEATURE": ["P", "M", "A", "D", "T", "L"]
 }
