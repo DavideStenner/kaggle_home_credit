@@ -40,22 +40,14 @@ class LgbmInit(ModelInit):
 
         self.special_column_list: list[str] = config_dict['SPECIAL_COLUMNS']
 
-        self.useless_col_list: list[str] = [
-            'case_id',
-            'date_decision',
-            'MONTH',
-            'WEEK_NUM',
-            'date_order_kfold',
-            'fold_info', 'current_fold', 'date_order_kfold'
-        ]
-        self.used_dataset: list[str] = [
-            "static_0", "static_cb_0", "person_1",
-            "applprev_1", "other_1",
-            "tax_registry_a_1", "tax_registry_b_1", "tax_registry_c_1",
-            "deposit_1", "debitcard_1", "person_2", "applprev_2",
-            "credit_bureau_a_1", "credit_bureau_b_1",
-            "credit_bureau_a_2", "credit_bureau_b_2"
-        ]
+        self.useless_col_list: list[str] = (
+            self.special_column_list +[
+                'fold_info', 'current_fold', 'date_order_kfold'
+            ]
+        )
+        self.used_dataset: list[str] = (
+            config_dict['DEPTH_0'] + config_dict['DEPTH_1'] + config_dict['DEPTH_2']
+        )
         self.log_evaluation: int = log_evaluation
 
         self.params_lgb: dict[str, Any] = params_lgb
