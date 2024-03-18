@@ -83,15 +83,17 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                     pl.when(
                         operation.dt.total_days()<0
                     ).then(None).otherwise(operation.dt.total_days())
-                ).alias(operation.meta.output_name()).cast(pl.Int64)
+                ).alias(operation.meta.output_name()).cast(pl.UInt16)
                 for operation in list_date_non_negative_operation
             ]
         ).with_columns(
             [
                 (
-                    operation.dt.total_days()
+                    pl.when(
+                        operation.dt.total_days().abs()>32700
+                    ).then(None).otherwise(operation.dt.total_days())
                     .alias(operation.meta.output_name())
-                    .cast(pl.Int64)
+                    .cast(pl.Int16)
                 )
                 for operation in list_generic_operation
             ]
