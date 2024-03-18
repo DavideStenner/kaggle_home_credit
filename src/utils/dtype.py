@@ -209,7 +209,7 @@ def get_mapping_info(
         mapper_column = get_mapper_numerical(
             data=data, type_mapping_reverse=TYPE_MAPPING_REVERSE,
             dtype_choices=[
-                pl.Int16,  pl.Int32, pl.Float32, pl.Int64
+                pl.Int32, pl.Float32, pl.Int64
             ], categorical_columns=mapper_mask_col.keys()
         )
         #no float64
