@@ -150,12 +150,12 @@ def track_memory_usage(processor: PreprocessPipeline) -> None:
         print(f"Peak memory usage: {gb_used:2f} GB; Time: {(time.time()-start_)/60} min")
         
     #save downcast version and try to import and fe them
-    print('\n\nDowncast dataset\n\n')
-    for dataset in processor.used_dataset:
-        save_downcast_and_test(processor=processor, dataset=dataset)
+    # print('\n\nDowncast dataset\n\n')
+    # for dataset in processor.used_dataset:
+    #     save_downcast_and_test(processor=processor, dataset=dataset)
 
-    print('\n\nEntire Dataset Downcasted\n\n')
-    downcasted_dataset_collect(processor=processor)
+    # print('\n\nEntire Dataset Downcasted\n\n')
+    # downcasted_dataset_collect(processor=processor)
     
     print('\n\nFE dataset\n\n')
     for dataset in processor.used_dataset:
@@ -164,9 +164,9 @@ def track_memory_usage(processor: PreprocessPipeline) -> None:
     print('\n\nEntire Dataset\n\n')
     test_collect(processor=processor, streaming=False)          
 
-    print('\n\nStarting on base dataset\n\n')
-    for dataset in processor.used_dataset:
-        test_base_dataset(processor=processor, dataset=dataset, streaming=False)
+    # print('\n\nStarting on base dataset\n\n')
+    # for dataset in processor.used_dataset:
+    #     test_base_dataset(processor=processor, dataset=dataset, streaming=False)
         
 
 if __name__=='__main__':
