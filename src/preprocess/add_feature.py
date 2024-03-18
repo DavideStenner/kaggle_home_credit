@@ -500,14 +500,14 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             self.person_1.filter(
                 pl.col('num_group1')!=0
             ).group_by('case_id').agg(
-                pl.len().alias('number_rowsX').cast(pl.Int16),
+                pl.len().alias('number_rowsX').cast(pl.UInt16),
                 pl.col('childnum_185L').max().cast(pl.Int16),
                 *[
                     (
                         pl.col(column_name)
                         .filter(
                             (pl.col(column_name)==self.mapper_mask['person_1'][column_name][self.hashed_missing_label])
-                        ).count().alias(f'{column_name}_a55475b1countX').cast(pl.Int16)
+                        ).count().alias(f'{column_name}_a55475b1countX').cast(pl.UInt16)
                     )
                     for column_name in [
                         'contaddr_district_15M', 'contaddr_zipcode_807M', 
@@ -532,7 +532,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                         )
                         .count()
                         .alias(f'{column_name}_{col_value}X')
-                        .cast(pl.Int16)
+                        .cast(pl.UInt16)
                     )
                     for column_name, col_value in [
                         (column_name, col_value) 
@@ -548,7 +548,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                         )
                         .len()
                         .alias(f'{column_name}_nullX')
-                        .cast(pl.Int16)
+                        .cast(pl.UInt16)
                     )
                     for column_name in [
                         'gender_992L', 'housingtype_772L', 
@@ -615,11 +615,11 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                     pl.col('case_id').filter(
                         (pl.col('num_group1')!=0) &
                         (pl.col('num_group2')==0)                
-                    ).count().alias('related_n_0_X').cast(pl.Int16),
+                    ).count().alias('related_n_0_X').cast(pl.UInt16),
                     pl.col('case_id').filter(
                         (pl.col('num_group1')==0) &
                         (pl.col('num_group2')!=0)                
-                    ).count().alias('related_0_n_X').cast(pl.Int16),   
+                    ).count().alias('related_0_n_X').cast(pl.UInt16),   
                 ] +
                 [
                     (
@@ -630,7 +630,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                         )
                         .count()
                         .alias(f'{col[:-1]}_{single_value}_0_n_' + col[-1])
-                        .cast(pl.Int16)
+                        .cast(pl.UInt16)
                     )
                     for col, single_value in zero_n_list
                 ] + 
@@ -643,7 +643,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                         )
                         .count()
                         .alias(f'{col[:-1]}_{single_value}_n_0_' + col[-1])
-                        .cast(pl.Int16)
+                        .cast(pl.UInt16)
                     )
                     for col, single_value in n_0_list
                 ]
@@ -733,11 +733,11 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                     pl.col('case_id').filter(
                         (pl.col('num_group1')!=0) &
                         (pl.col('num_group2')==0)                
-                    ).count().alias('related_n_0_X').cast(pl.Int16),
+                    ).count().alias('related_n_0_X').cast(pl.UInt16),
                     pl.col('case_id').filter(
                         (pl.col('num_group1')==0) &
                         (pl.col('num_group2')!=0)                
-                    ).count().alias('related_0_n_X').cast(pl.Int16),   
+                    ).count().alias('related_0_n_X').cast(pl.UInt16),   
                 ] +
                 [
                     (
@@ -748,7 +748,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                         )
                         .count()
                         .alias(f'{col[:-1]}_{single_value}_0_n_' + col[-1])
-                        .cast(pl.Int16)
+                        .cast(pl.UInt16)
                     )
                     for col, single_value in category_list
                 ] + 
@@ -757,7 +757,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                         (pl.col(col)==self.mapper_mask['applprev_2'][col][single_value])&
                         (pl.col('num_group1')!=0) &
                         (pl.col('num_group2')==0)
-                    ).count().alias(f'{col[:-1]}_{single_value}_n_0_' + col[-1]).cast(pl.Int16)
+                    ).count().alias(f'{col[:-1]}_{single_value}_n_0_' + col[-1]).cast(pl.UInt16)
                     for col, single_value in category_list
                 ]
             )
