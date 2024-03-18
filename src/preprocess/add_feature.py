@@ -124,7 +124,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                     (
                         pl.col('collater_valueofguarantee_1124L')
                         .count().alias('non_0_collater_valueofguarantee_1124L')
-                        .cast(pl.Int32)
+                        .cast(pl.UInt32)
                     )
             },
             {
@@ -137,8 +137,8 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
 
                 ),
                 'agg': (
-                    pl.col('pmts_dpd_1073P').count().alias('equal_0_pmts_dpd_1073P').cast(pl.Int32),
-                    pl.col('pmts_dpd_303P').count().alias('equal_0_pmts_dpd_303P').cast(pl.Int32),
+                    pl.col('pmts_dpd_1073P').count().alias('equal_0_pmts_dpd_1073P').cast(pl.UInt32),
+                    pl.col('pmts_dpd_303P').count().alias('equal_0_pmts_dpd_303P').cast(pl.UInt32),
                 )
             }
         ]
@@ -213,7 +213,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 ]
             ).group_by('case_id', maintain_order=True).agg(
                 #num group1 different group2
-                pl.col('num_group2').n_unique().alias('num_group2_X').cast(pl.Int32),
+                pl.col('num_group2').n_unique().alias('num_group2_X').cast(pl.UInt32),
 
                 #stat on all
                 pl.col('pmts_dpdvalue_108P').sum().alias('sum_pmts_dpdvalue_108P').cast(pl.Float32),
@@ -234,8 +234,8 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 pl.col('pmts_pmtsoverdue_635A').filter(pl.col('pmts_pmtsoverdue_635A')!=0).std().alias('std_no_0_pmts_pmtsoverdue_635A').cast(pl.Float32),
 
                 #count on 0 and not '
-                pl.col('pmts_dpdvalue_108P').filter(pl.col('pmts_dpdvalue_108P')==0).count().alias('equal_0_pmts_dpdvalue_108P').cast(pl.Int32),
-                pl.col('pmts_dpdvalue_108P').filter(pl.col('pmts_dpdvalue_108P')!=0).count().alias('unequal_0_pmts_dpdvalue_108P').cast(pl.Int32),
+                pl.col('pmts_dpdvalue_108P').filter(pl.col('pmts_dpdvalue_108P')==0).count().alias('equal_0_pmts_dpdvalue_108P').cast(pl.UInt32),
+                pl.col('pmts_dpdvalue_108P').filter(pl.col('pmts_dpdvalue_108P')!=0).count().alias('unequal_0_pmts_dpdvalue_108P').cast(pl.UInt32),
 
                 #how many change num->0 and 0->num
                 (
@@ -859,7 +859,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                     pl.when((pl.col(col) <0))
                     .then(None)
                     .otherwise(pl.col(col))
-                    .cast(pl.Int32).alias(col)
+                    .cast(pl.UInt32).alias(col)
                 )
                 for col in (
                     not_allowed_negative_dates + 
