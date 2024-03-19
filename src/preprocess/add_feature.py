@@ -1,7 +1,7 @@
 import warnings
 import polars as pl
 
-from typing import Union, Dict
+from typing import Union, Dict, Optional
 from itertools import product, chain
 
 from src.utils.other import change_name_with_type
@@ -9,6 +9,27 @@ from src.base.preprocess.add_feature import BaseFeature
 from src.preprocess.initialize import PreprocessInit
 
 class PreprocessAddFeature(BaseFeature, PreprocessInit):
+    
+    def filter_and_select_first_non_blank(
+        self, 
+        data: Union[pl.LazyFrame, pl.DataFrame],
+        filter_col: pl.Expr, col_list: Optional[list[str]], group_by: str = 'case_id'
+    ) -> Union[pl.LazyFrame, pl.DataFrame]:
+        
+        if col_list is None:
+            col_list = data.columns
+            
+        data = (
+            data.filter(
+                filter_col
+            ).select(col_list).group_by(group_by).agg(
+                (
+                    pl.col(col).filter(pl.col(col).is_not_null()).first()
+                    for col in col_list if col not in self.special_column_list
+                )
+            )
+        )
+        return data
     
     def add_fold_column(self) -> None:
         self.base_data = self.base_data.with_columns(
@@ -19,10 +40,13 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
     
     def create_credit_bureau_a_1_feature(self) -> None:
         warnings.warn('Only considering credit_bureau_a_1 info not related person for now...', UserWarning)
-        self.credit_bureau_a_1 = self.credit_bureau_a_1.filter(
-            pl.col('num_group1')==0
-        ).drop('num_group1')
         
+        self.credit_bureau_a_1 = self.filter_and_select_first_non_blank(
+            data=self.credit_bureau_a_1,
+            filter_col=pl.col('num_group1')==0,
+            col_list=[col for col in self.credit_bureau_a_1.columns if col != 'num_group1']
+        )
+
         list_date_non_negative_operation = [
             #range active contract to end
             (pl.col('dateofcredend_289D') - pl.col('dateofcredstart_181D')).alias('range_active_D'),
@@ -102,16 +126,20 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
     def create_credit_bureau_a_2_feature(self) -> None:
         warnings.warn('Only considering credit_bureau_a_2 num1==0', UserWarning)
         #aggregate and take first element
-        credit_bureau_a_2_first_categorical = self.credit_bureau_a_2.filter(
-            #current case
-            (pl.col('num_group1')==0) &
-            (pl.col('num_group2')==0)
-        ).select(
-            'case_id', 
-            'collater_typofvalofguarant_298M', 'collater_typofvalofguarant_407M',
-            'collater_valueofguarantee_1124L', 'collater_valueofguarantee_876L',
-            'collaterals_typeofguarante_359M', 'collaterals_typeofguarante_669M',
+        credit_bureau_a_2_first_categorical = self.filter_and_select_first_non_blank(
+            data=self.credit_bureau_a_2,
+            filter_col=(
+                (pl.col('num_group1')==0) &
+                (pl.col('num_group2')==0)
+            ),
+            col_list=[ 
+                'case_id', 
+                'collater_typofvalofguarant_298M', 'collater_typofvalofguarant_407M',
+                'collater_valueofguarantee_1124L', 'collater_valueofguarantee_876L',
+                'collaterals_typeofguarante_359M', 'collaterals_typeofguarante_669M'
+            ]
         )
+
         #optimization required
         operation_list = [
             {
@@ -179,9 +207,13 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         
     def create_credit_bureau_b_1_feature(self) -> None:
         warnings.warn('Only considering credit_bureau_b_1 info not related person for now...', UserWarning)
-        self.credit_bureau_b_1 = self.credit_bureau_b_1.filter(
-            pl.col('num_group1')==0
-        ).drop('num_group1')
+        self.credit_bureau_b_1 = self.filter_and_select_first_non_blank(
+            data=self.credit_bureau_b_1,
+            filter_col=(pl.col('num_group1')==0),
+            col_list=[ 
+                col for col in self.credit_bureau_b_1.columns if col!='num_group1'
+            ]
+        )
         
         list_operation = [
             #end - start active
@@ -259,25 +291,28 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         
     def create_debitcard_1_feature(self) -> None:
         warnings.warn('Only considering debitcard_1 info not related person for now...', UserWarning)
-        self.debitcard_1 = self.debitcard_1.filter(
-            pl.col('num_group1')==0
-        ).select(
-            [
+        self.debitcard_1 = self.filter_and_select_first_non_blank(
+            data=self.debitcard_1,
+            filter_col=(pl.col('num_group1')==0),
+            col_list=[
                 'case_id', 'last180dayaveragebalance_704A',
                 'last180dayturnover_1134A', 'last30dayturnover_651A',
                 'openingdate_857D'
             ]
         )
+
+
     def create_deposit_1_feature(self) -> None:
         warnings.warn('Only considering deposit_1 info not related person for now...', UserWarning)
-        self.deposit_1 = self.deposit_1.filter(
-            pl.col('num_group1')==0
-        ).select(
-            [
+        self.deposit_1 = self.filter_and_select_first_non_blank(
+            data=self.deposit_1,
+            filter_col=(pl.col('num_group1')==0),
+            col_list=[
                 'case_id', 'amount_416A',
                 'contractenddate_991D', 'openingdate_313D'
             ]
-        ).with_columns(
+        )
+        self.deposit_1 = self.deposit_1.with_columns(
             (
                 (
                     pl.col('contractenddate_991D') - 
@@ -298,6 +333,11 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             )
         )
     def create_static_0_feature(self) -> None:
+        self.static_0 = self.filter_and_select_first_non_blank(
+            data=self.static_0,
+            filter_col=pl.lit(True),
+            col_list=self.static_0.columns
+        )
         self.static_0 = self.static_0.with_columns(
             #INTRA DATASET DATE FEATURE
             (pl.col('dtlastpmtallstes_4499206D') - pl.col('firstdatedue_489D')).dt.total_days().alias('pmt_activity_gap_D').cast(pl.Int32),
@@ -398,6 +438,13 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 for col_1, col_2 in consecutive_pairs(list_col)
             ]
 
+        #ensure no duplicates
+        self.static_cb_0 = self.filter_and_select_first_non_blank(
+            data=self.static_cb_0,
+            filter_col=pl.lit(True),
+            col_list=self.static_cb_0.columns
+        )
+
         self.static_cb_0 = self.static_cb_0.with_columns(
             list_operator
         ).drop(
@@ -409,56 +456,56 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
 
     def create_tax_registry_a_1_feature(self) -> None:
         warnings.warn('Only considering tax_registry_a_1 info not related person for now...', UserWarning)
-        self.tax_registry_a_1 = self.tax_registry_a_1.filter(
-            pl.col('num_group1')==0
-        ).select(
-            [
+        self.tax_registry_a_1 = self.filter_and_select_first_non_blank(
+            data=self.tax_registry_a_1,
+            filter_col=(pl.col('num_group1')==0),
+            col_list=[
                 'case_id', 'amount_4527230A',
                 'recorddate_4527225D'
             ]
         )
+
     def create_tax_registry_b_1_feature(self) -> None:
         warnings.warn('Only considering tax_registry_b_1 info not related person for now...', UserWarning)
-
-        self.tax_registry_b_1 = self.tax_registry_b_1.filter(
-            pl.col('num_group1')==0
-        ).select(
-            [
+        self.tax_registry_b_1 = self.filter_and_select_first_non_blank(
+            data=self.tax_registry_b_1,
+            filter_col=(pl.col('num_group1')==0),
+            col_list=[
                 'case_id', 'amount_4917619A',
                 'deductiondate_4917603D'
             ]
         )
     def create_tax_registry_c_1_feature(self) -> None:
         warnings.warn('Only considering tax_registry_c_1 info not related person for now...', UserWarning)
-
-        self.tax_registry_c_1 = self.tax_registry_c_1.filter(
-            pl.col('num_group1')==0
-        ).select(
-            [
+        self.tax_registry_c_1 = self.filter_and_select_first_non_blank(
+            data=self.tax_registry_c_1,
+            filter_col=(pl.col('num_group1')==0),
+            col_list=[
                 'case_id', 'pmtamount_36A',
                 'processingdate_168D'
             ]
-        )
-                
+        )                
         
     def create_person_1_feature(self) -> None:
-        person_1 = self.person_1.filter(
-            pl.col('num_group1')==0
-        ).select(
-            [
-                'case_id',
-                'birth_259D', 
-                'contaddr_matchlist_1032L', 'contaddr_smempladdr_334L', 
-                'education_927M',
-                'empl_employedfrom_271D',
-                'empl_industry_691L', 'familystate_447L',
-                'housetype_905L', 
-                'incometype_1044T', 'isreference_387L', 'language1_981M',
-                'mainoccupationinc_384A', 'maritalst_703L',
-                'role_1084L', 'role_993L',
-                'safeguarantyflag_411L', 'type_25L', 'sex_738L'
-            ]
+        select_col_group_1 = [
+            'case_id',
+            'birth_259D', 
+            'contaddr_matchlist_1032L', 'contaddr_smempladdr_334L', 
+            'education_927M',
+            'empl_employedfrom_271D',
+            'empl_industry_691L', 'familystate_447L',
+            'housetype_905L', 
+            'incometype_1044T', 'isreference_387L', 'language1_981M',
+            'mainoccupationinc_384A', 'maritalst_703L',
+            'role_1084L', 'role_993L',
+            'safeguarantyflag_411L', 'type_25L', 'sex_738L'
+        ]
+        person_1 = self.filter_and_select_first_non_blank(
+            data=self.person_1,
+            filter_col=pl.col('num_group1')==0,
+            col_list=select_col_group_1
         )
+
         dict_agg_info: Dict[str, list[str]] = {
             'education_927M': [
                 "a55475b1", "P33_146_175",
@@ -652,27 +699,29 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
 
     def create_applprev_1_feature(self) -> None:
         warnings.warn('Only considering applprev_1 info not related person for now...', UserWarning)
-        self.applprev_1 = self.applprev_1.filter(
-            pl.col('num_group1')==0
-        ).select(
-            [
-                'case_id',
-                'actualdpd_943P', 'annuity_853A', 'approvaldate_319D',
-                'byoccupationinc_3656910L', 'cancelreason_3545846M',
-                'childnum_21L', 'creationdate_885D', 'credacc_actualbalance_314A',
-                'credacc_credlmt_575A', 'credacc_maxhisbal_375A',
-                'credacc_minhisbal_90A', 'credacc_status_367L',
-                'credacc_transactions_402L', 'credamount_590A',
-                'credtype_587L', 'currdebt_94A', 'dateactivated_425D',
-                'downpmt_134A', 'dtlastpmt_581D', 'dtlastpmtallstes_3545839D',
-                'education_1138M', 'employedfrom_700D', 'familystate_726L',
-                'firstnonzeroinstldate_307D', 'inittransactioncode_279L', 
-                'isbidproduct_390L', 'isdebitcard_527L', 'mainoccupationinc_437A',
-                'maxdpdtolerance_577P', 'pmtnum_8L', 'postype_4733339M',
-                'profession_152M', 'rejectreason_755M', 'rejectreasonclient_4145042M',
-                'revolvingaccount_394A', 'status_219L', 'tenor_203L'
-            ]
+        select_col_group_1 = [
+            'case_id',
+            'actualdpd_943P', 'annuity_853A', 'approvaldate_319D',
+            'byoccupationinc_3656910L', 'cancelreason_3545846M',
+            'childnum_21L', 'creationdate_885D', 'credacc_actualbalance_314A',
+            'credacc_credlmt_575A', 'credacc_maxhisbal_375A',
+            'credacc_minhisbal_90A', 'credacc_status_367L',
+            'credacc_transactions_402L', 'credamount_590A',
+            'credtype_587L', 'currdebt_94A', 'dateactivated_425D',
+            'downpmt_134A', 'dtlastpmt_581D', 'dtlastpmtallstes_3545839D',
+            'education_1138M', 'employedfrom_700D', 'familystate_726L',
+            'firstnonzeroinstldate_307D', 'inittransactioncode_279L', 
+            'isbidproduct_390L', 'isdebitcard_527L', 'mainoccupationinc_437A',
+            'maxdpdtolerance_577P', 'pmtnum_8L', 'postype_4733339M',
+            'profession_152M', 'rejectreason_755M', 'rejectreasonclient_4145042M',
+            'revolvingaccount_394A', 'status_219L', 'tenor_203L'
+        ]
+        self.applprev_1 = self.filter_and_select_first_non_blank(
+            data=self.applprev_1,
+            filter_col=pl.col('num_group1')==0,
+            col_list=select_col_group_1
         )
+
         self.applprev_1 = self.applprev_1.with_columns(
             #add day diff
             [
@@ -764,14 +813,17 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         )
 
     def create_other_1_feature(self) -> None:
-        self.other_1 = self.other_1.select(
-            [
+        self.other_1 = self.filter_and_select_first_non_blank(
+            data=self.other_1,
+            filter_col=pl.lit(True),
+            col_list=[
                 'case_id',
                 'amtdebitincoming_4809443A', 'amtdebitoutgoing_4809440A', 
                 'amtdepositbalance_4809441A', 'amtdepositincoming_4809444A',	
                 'amtdepositoutgoing_4809442A'
             ]
         )
+
     def create_feature(self) -> None:
         for dataset in self.used_dataset:
             current_dataset_fe_pipeline: callable = getattr(
