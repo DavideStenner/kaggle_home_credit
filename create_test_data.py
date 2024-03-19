@@ -9,7 +9,20 @@ def create_testing_dataset():
     from src.utils.import_utils import import_config
     from src.utils.import_file import read_multiple_parquet
     
-    
+    def create_duplicate_on_key(
+            dataset_: pl.LazyFrame, 
+        ) -> pl.DataFrame:
+        
+        dataset_: pl.DataFrame = dataset_.collect()
+
+        dataset_ = dataset_.with_columns(
+            pl.lit(np.random.randint(1, 10, size=dataset_.height)).alias('quantity_duplicates').cast(pl.UInt8)
+        ).select(
+            pl.exclude('quantity_duplicates').repeat_by('quantity_duplicates').explode()
+        )
+
+        return dataset_
+
     def create_random_value(dataset_: pl.LazyFrame, dataset_name: str, config_dict: Dict[str, Any]) -> pl.LazyFrame:
         from src.utils.dtype import TYPE_MAPPING
         
@@ -68,11 +81,19 @@ def create_testing_dataset():
         'random_dataset',
         'train',
     )
+    path_repeated_data = os.path.join(
+        config_dict['PATH_TESTING_DATA'],
+        'duplicated_dataset',
+        'train'
+    )
     if not os.path.isdir(path_blank_test_data):
         os.makedirs(path_blank_test_data)
     
     if not os.path.isdir(path_random_test_data):
         os.makedirs(path_random_test_data)
+
+    if not os.path.isdir(path_repeated_data):
+        os.makedirs(path_repeated_data)
 
     for pattern_ in  used_dataset:
         print('Saving', pattern_)
@@ -99,7 +120,7 @@ def create_testing_dataset():
         #must create an empty dataset with this information
         empty_dataset = other_info.clear(n=1000)
         
-        empty_special_dataset = (
+        empty_special_dataset: pl.DataFrame = (
             pl.concat(
                 [special_col_dataset, empty_dataset],
                 how='horizontal'
@@ -115,15 +136,24 @@ def create_testing_dataset():
 
         if pattern_ == 'base':
             random_dataset = dataset_
-
+            repeated_dataset = dataset_.collect()
+            
         else:
             random_dataset = create_random_value(
                 dataset_=dataset_, dataset_name=pattern_, config_dict=config_dict
             )
+            repeated_dataset = create_duplicate_on_key(dataset_=dataset_)
             
         random_dataset.sink_parquet(
             os.path.join(
                 path_random_test_data,
+                f'train_{pattern_}.parquet'
+            )
+        )
+        
+        repeated_dataset.write_parquet(
+            os.path.join(
+                path_repeated_data,
                 f'train_{pattern_}.parquet'
             )
         )
