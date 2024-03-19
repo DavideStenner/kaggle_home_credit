@@ -126,84 +126,65 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
     def create_credit_bureau_a_2_feature(self) -> None:
         warnings.warn('Only considering credit_bureau_a_2 num1==0', UserWarning)
         #aggregate and take first element
-        credit_bureau_a_2_first_categorical = self.filter_and_select_first_non_blank(
+        self.credit_bureau_a_2 = self.filter_and_select_first_non_blank(
             data=self.credit_bureau_a_2,
-            filter_col=(
-                (pl.col('num_group1')==0) &
-                (pl.col('num_group2')==0)
-            ),
-            col_list=[ 
-                'case_id', 
-                'collater_typofvalofguarant_298M', 'collater_typofvalofguarant_407M',
-                'collater_valueofguarantee_1124L', 'collater_valueofguarantee_876L',
-                'collaterals_typeofguarante_359M', 'collaterals_typeofguarante_669M'
+            filter_col=pl.col('num_group1')==0,
+            col_list=[
+                'case_id', 'num_group1', 'num_group2',
+                'pmts_dpd_303P', 'pmts_dpd_1073P'
             ]
         )
 
         #optimization required
         operation_list = [
-            {
-                'filter': (
-                    (pl.col('collater_valueofguarantee_1124L')!=0)&
-                    (pl.col('num_group1')==0)
-                ),
-                'agg':
-                    #has another collateral
-                    (
-                        pl.col('collater_valueofguarantee_1124L')
-                        .count().alias('non_0_collater_valueofguarantee_1124L')
-                        .cast(pl.UInt32)
-                    )
-            },
-            {
-                'filter': (
+            (
+                pl.col('pmts_dpd_1073P')
+                .filter(
                     (
                         (pl.col('pmts_dpd_303P')==0) |
                         (pl.col('pmts_dpd_1073P')==0)
-                    ) &
-                    (pl.col('num_group1')==0)
-
-                ),
-                'agg': (
-                    pl.col('pmts_dpd_1073P').count().alias('equal_0_pmts_dpd_1073P').cast(pl.UInt32),
-                    pl.col('pmts_dpd_303P').count().alias('equal_0_pmts_dpd_303P').cast(pl.UInt32),
-                )
-            }
-        ]
-        operation_list += [
-            {
-                'filter': (
-                    (pl.col(col)!=0) &
-                    (pl.col('num_group1')==0)
-                ),
-                'agg': (
-                    pl.col(col).sum().alias(f'sum_no_0_{col}').cast(pl.Float32),
-                    pl.col(col).mean().alias(f'mean_no_0_{col}').cast(pl.Float32),
-                    pl.col(col).std().alias(f'std_no_0_{col}').cast(pl.Float32),
-                )
-            }
-            for col in ['pmts_dpd_303P', 'pmts_dpd_1073P']
-
-        ]
-
-        credit_bureau_a_2 = self.credit_bureau_a_2.select('case_id').unique().join(
-            credit_bureau_a_2_first_categorical,
-            on='case_id', how='left'
-        )
-
-        for operator_dict in operation_list:
-            credit_bureau_a_2 = credit_bureau_a_2.join(
-                (
-                    self.credit_bureau_a_2.filter(
-                        operator_dict['filter']
-                    ).group_by('case_id').agg(
-                        operator_dict['agg']
                     )
-                ),
-                on='case_id', how='left'
+                )
+                .count()
+                .alias('equal_0_pmts_dpd_1073P').cast(pl.UInt32)
             )
-        
-        self.credit_bureau_a_2 = credit_bureau_a_2
+        ]
+        for col in ['pmts_dpd_303P', 'pmts_dpd_1073P']:
+            base_expr = (
+                pl.col(col)
+                .filter(
+                    (pl.col(col)!=0)
+                )
+            )
+            operation_list.extend(
+                [
+                    (
+                        base_expr
+                        .sum()
+                        .alias(f'sum_no_0_{col}').cast(pl.Float32)
+                    ),
+                    (
+                        base_expr
+                        .mean()
+                        .alias(f'mean_no_0_{col}').cast(pl.Float32)
+                    ),
+                    (
+                        base_expr
+                        .max()
+                        .alias(f'max_no_0_{col}').cast(pl.Float32)
+                    ),
+                    (
+                        base_expr
+                        .std()
+                        .alias(f'std_no_0_{col}').cast(pl.Float32)
+                    )
+                ]
+            )
+        self.credit_bureau_a_2 = (
+            self.credit_bureau_a_2
+            .group_by('case_id')
+            .agg(operation_list)
+        )
         
     def create_credit_bureau_b_1_feature(self) -> None:
         warnings.warn('Only considering credit_bureau_b_1 info not related person for now...', UserWarning)
