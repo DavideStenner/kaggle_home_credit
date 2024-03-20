@@ -1,15 +1,61 @@
 import os
 import gc
+import pandas as pd
 import polars as pl
 import lightgbm as lgb
 
 from functools import partial
+from typing import Any
 
 from src.base.model.training import ModelTrain
 from src.model.lgbm.initialize import LgbmInit
 from src.model.metric.official_metric import lgb_eval_gini_stability
  
 class LgbmTrainer(ModelTrain, LgbmInit):
+    def select_model_feature(self) -> None:
+        #select only feature which has stability over different folder
+        stability_info: pd.DataFrame = pd.read_excel(
+            self.feature_stability_path
+        )
+        structural_feature: list[str] = (
+            self.useless_col_list + 
+            [self.fold_name, self.target_col_name]
+        )
+        def seflect_by_missing_feature(config_dict: dict[str, Any], structural_feature: list[str]) -> list[str]:
+            data = pl.scan_parquet(
+                os.path.join(
+                    self.config_dict['PATH_PARQUET_DATA'],
+                    'data.parquet'
+                )
+            )
+            total_rows: int = data.select(pl.count()).collect().item()
+
+            statistic_missing_on_col = data.select(
+                [
+                    pl.col(col).null_count().mean()/total_rows
+                    for col in data.columns
+                    if col not in structural_feature
+                ] 
+            ).collect().to_dicts()[0]
+            
+            return [col for col, pct_missing in statistic_missing_on_col.items() if pct_missing>0.95]
+        
+        def select_stability_feature(stability_info: pd.DataFrame) -> list[str]:
+            position_stability_treshold = min(
+                stability_info.loc[
+                    stability_info['count_useless_on_fold']>1
+                ].index
+            )
+            return stability_info.loc[
+                position_stability_treshold:,
+                'feature'
+            ].tolist()
+        
+        # self.feature_stability_useless_list += select_stability_feature(stability_info=stability_info)
+        self.feature_stability_useless_list += seflect_by_missing_feature(
+            config_dict=self.config_dict, structural_feature=structural_feature
+        )
+
     def _init_train(self) -> None:
         data = pl.scan_parquet(
             os.path.join(
@@ -18,10 +64,19 @@ class LgbmTrainer(ModelTrain, LgbmInit):
             )
         )
 
-        print('Using all feature')
+        excluded_feature = len(self.feature_stability_useless_list)
+        if excluded_feature==0:
+            print('Using all feature')
+        else:
+            print(f'Excluded {excluded_feature} feature')
+            
         self.feature_list = [
             col for col in data.columns
-            if col not in self.useless_col_list + [self.fold_name, self.target_col_name]
+            if col not in (
+                self.useless_col_list + 
+                [self.fold_name, self.target_col_name] +
+                self.feature_stability_useless_list
+            )
         ]
 
         #save feature list locally for later
