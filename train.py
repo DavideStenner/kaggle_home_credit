@@ -30,6 +30,7 @@ if __name__=='__main__':
         evaluate_stability=True, evaluate_shap=False
     )
     trainer.train_explain()
+    # trainer.train_with_stability_selection()
     
     if args.xgb:
         raise NotImplementedError
