@@ -9,7 +9,10 @@ from typing import Any
 
 from src.base.model.training import ModelTrain
 from src.model.lgbm.initialize import LgbmInit
-from src.model.metric.official_metric import lgb_eval_gini_stability
+from src.model.metric.official_metric import (
+    lgb_eval_gini_stability, lgb_avg_gini_part_of_stability,
+    lgb_residual_part_of_stability, lgb_slope_part_of_stability
+)
  
 class LgbmTrainer(ModelTrain, LgbmInit):
     def select_model_feature(self) -> None:
@@ -148,12 +151,18 @@ class LgbmTrainer(ModelTrain, LgbmInit):
                 test_filtered.select(self.target_col_name).collect().to_pandas().to_numpy('float32').reshape((-1))
             )
 
-            metric_lgb = partial(
-                lgb_eval_gini_stability, 
-                test_filtered.select(
-                    ["WEEK_NUM", "target"]
-                ).collect().to_pandas()
-            )
+            test_metric_df = test_filtered.select(
+                ["WEEK_NUM", "target"]
+            ).collect().to_pandas()
+            
+            metric_lgb_list = [
+                partial(function_, test_metric_df)
+                for function_ in
+                [
+                    #add other metric for debug purpose
+                    lgb_eval_gini_stability,
+                ]
+            ]
             
             print('Start training')
             model = lgb.train(
@@ -165,7 +174,7 @@ class LgbmTrainer(ModelTrain, LgbmInit):
                 valid_sets=[test_matrix],
                 valid_names=['valid'],
                 callbacks=callbacks_list,
-                feval=metric_lgb
+                feval=metric_lgb_list
             )
 
             model.save_model(
