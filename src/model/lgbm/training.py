@@ -21,7 +21,7 @@ class LgbmTrainer(ModelTrain, LgbmInit):
             self.useless_col_list + 
             [self.fold_name, self.target_col_name]
         )
-        def seflect_by_missing_feature(config_dict: dict[str, Any], structural_feature: list[str]) -> list[str]:
+        def select_by_missing_feature(config_dict: dict[str, Any], structural_feature: list[str]) -> list[str]:
             data = pl.scan_parquet(
                 os.path.join(
                     self.config_dict['PATH_PARQUET_DATA'],
@@ -51,10 +51,10 @@ class LgbmTrainer(ModelTrain, LgbmInit):
                 'feature'
             ].tolist()
         
-        # self.feature_stability_useless_list += select_stability_feature(stability_info=stability_info)
-        self.feature_stability_useless_list += seflect_by_missing_feature(
-            config_dict=self.config_dict, structural_feature=structural_feature
-        )
+        self.feature_stability_useless_list += select_stability_feature(stability_info=stability_info)
+        # self.feature_stability_useless_list += select_by_missing_feature(
+        #     config_dict=self.config_dict, structural_feature=structural_feature
+        # )
 
     def _init_train(self) -> None:
         data = pl.scan_parquet(
