@@ -59,6 +59,13 @@ class LgbmInit(ModelInit):
         self.best_result: dict[str, Union[int, float]] = None
         
         self.feature_list: list[str] = []
+        
+        #feature stability
+        self.feature_stability_path: str = os.path.join(
+            self.experiment_path, 'feature_stability_importances.xlsx'
+        )
+        self.feature_stability_useless_list: list[str] = []
+        
         self.get_categorical_columns(data_columns=data_columns)
     
     def convert_feature_name_with_dataset(self, mapper_dict: Dict[str, Union[str, dict, float]]):

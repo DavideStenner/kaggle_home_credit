@@ -286,7 +286,7 @@ class LgbmExplainer(LgbmInit):
 
 
         feature_importances.to_excel(
-            os.path.join(self.experiment_path, 'feature_stability_importances.xlsx'),
+            self.feature_stability_path,
             index=False
         )
 
