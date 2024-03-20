@@ -266,6 +266,12 @@ class LgbmExplainer(LgbmInit):
             [f'fold_{fold_}_rank' for fold_ in range(self.n_fold)]
         ].std(axis=1)
 
+        feature_importances['count_useless_on_fold'] = (
+            feature_importances[
+                [f'fold_{fold_}' for fold_ in range(self.n_fold)]
+            ]==0
+        ).sum(axis=1)
+        
         feature_importances = (
             feature_importances
             .sort_values(by='rank_average', ascending=True)
@@ -368,6 +374,26 @@ class LgbmExplainer(LgbmInit):
         
         fig.savefig(
             os.path.join(self.experiment_insight_path, 'logloss_over_week.png')
+        )
+        plt.close(fig)
+
+        #TARGET OVER TIME
+        target_in_time = (
+            oof_prediction.to_pandas()
+            .sort_values("date_decision")
+            .groupby(["date_decision", "fold"])[["target"]]
+            .mean()
+        ).reset_index().rename(columns={0: 'target'})
+
+        fig = plt.figure(figsize=(12,8))
+        sns.lineplot(
+            data=target_in_time, 
+            x="date_decision", y="target", hue='fold'
+        )
+        plt.title(f"Target mean over date decision")
+        
+        fig.savefig(
+            os.path.join(self.experiment_insight_path, 'target_over_date.png')
         )
         plt.close(fig)
 
