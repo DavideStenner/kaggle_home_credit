@@ -462,7 +462,8 @@ class LgbmExplainer(LgbmInit):
     def get_shap_insight(
         self, 
         sample_shap_: int = 10_000,
-        top_interaction: int=5
+        top_interaction: int=5,
+        select_fold: int = None
     ) -> None:
         #define private function
         print('Starting to calculate shap')
@@ -507,6 +508,10 @@ class LgbmExplainer(LgbmInit):
         shap_list: list[np.ndarray] = []
         
         for fold_ in range(self.n_fold):
+            if select_fold is not None:
+                if fold_!=select_fold:
+                    continue
+                
             print(f'Shap folder {fold_}')
             fold_data = pl.scan_parquet(
                 os.path.join(
