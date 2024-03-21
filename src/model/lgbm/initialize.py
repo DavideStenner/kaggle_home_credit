@@ -85,7 +85,7 @@ class LgbmInit(ModelInit):
         self.feature_dataset = pd.DataFrame(
             [
                 [
-                    next((dataset for dataset in self.used_dataset if dataset in col)),
+                    next((dataset for dataset in ['base'] + self.used_dataset if dataset in col)),
                     col
                 ]
                 for col in self.feature_list
