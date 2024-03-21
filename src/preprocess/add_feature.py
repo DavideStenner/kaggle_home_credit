@@ -4,6 +4,7 @@ import polars as pl
 
 from typing import Union, Dict, Optional
 from itertools import product, chain
+from functools import partial
 
 from src.utils.other import change_name_with_type
 from src.base.preprocess.add_feature import BaseFeature
@@ -808,13 +809,13 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
 
     def create_base_data_feature(self) -> None:
         
-        def regress_resid(pl_series: pl.Series) -> pl.Series:
+        def regress_resid(col_y: str, pl_series: pl.Series) -> pl.Series:
             df: pl.Series = pl_series.struct.unnest()
             
             if df.shape[0] < 6:
                 return None
             
-            y = df['base_date_number_cases'].to_numpy()
+            y = df[col_y].to_numpy()
             x = np.arange(len(y))
             
             a, _ = np.polyfit(x, y, 1)   
@@ -824,7 +825,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         number_cases_by_date = self.base_data.group_by('date_decision').agg(
             pl.count().alias('base_date_number_cases').cast(pl.UInt32),   
         )
-        number_target_by_date = self.base_data.group_by('date_decision').agg(
+
         self.base_data = self.base_data.join(
             number_cases_by_date,
             on='date_decision', how='left'
@@ -835,7 +836,8 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             .sort('date_decision')
         )
         #create average over previous n days
-        for period_ in ['7d', '15d', '30d']:
+
+        for period_ in ['7d', '14d', '30d']:
 
             rolling_info = (
                 sorted_info
@@ -847,7 +849,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                     pl.col('base_date_number_cases').min().cast(pl.UInt32).alias(f'base_date_number_cases_min_{period_}_X'),
                     pl.col('base_date_number_cases').mean().cast(pl.Float32).alias(f'base_date_number_cases_mean_{period_}_X'),
                     pl.col('base_date_number_cases').std().cast(pl.Float32).alias(f'base_date_number_cases_std_{period_}_X'),
-                    pl.struct(["base_date_number_cases"]).map_elements(regress_resid).cast(pl.Float32).alias(f'base_date_number_cases_slope_{period_}_X')
+                    pl.struct(["base_date_number_cases"]).map_elements(partial(regress_resid, "base_date_number_cases")).cast(pl.Float32).alias(f'base_date_number_cases_slope_{period_}_X')
                 )
             )
 
