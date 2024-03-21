@@ -322,7 +322,9 @@ class LgbmExplainer(LgbmInit):
         #score plot
         fig = plt.figure(figsize=(12,8))
         sns.lineplot(
-            data=oof_prediction, 
+            data=oof_prediction.filter(
+                pl.len().over('date_decision')>30
+            ), 
             x="date_decision", y="score", hue='fold'
         )
         plt.title(f"Score prediction over date_decision")
