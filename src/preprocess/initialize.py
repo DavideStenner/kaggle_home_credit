@@ -12,9 +12,7 @@ class PreprocessInit(BaseInit):
         self.embarko_skip: int = embarko_skip
         self.n_folds: int = config_dict['N_FOLD']
         self.fold_time_col: str = 'date_order_kfold'
-        self.depth_dataset: Dict[str, str] = {
-            'depth_0': ["static_0", "static_cb_0"]
-        }
+
         self.inference: bool = False
         self.path_file_pattern: str = '*/train_{pattern_file}*.parquet'
         
