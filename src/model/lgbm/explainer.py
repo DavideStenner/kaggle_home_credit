@@ -1,4 +1,5 @@
 import os
+import shap
 import numpy as np
 import polars as pl
 import pandas as pd
@@ -598,3 +599,41 @@ class LgbmExplainer(LgbmInit):
             os.path.join(self.experiment_shap_path, 'array_shap_interaction.csv'),
             index=False
         )
+        
+    def get_shap_beeswark(
+        self, 
+        select_fold: int,
+        sample_shap_: int = 10_000,
+    ) -> None:
+        #define private function
+        print('Starting to calculate shap')
+
+        self.load_best_result()
+        self.load_model_list()
+        self.load_used_feature()
+        
+        feature_data = (
+            pl.scan_parquet(
+                os.path.join(
+                    self.config_dict['PATH_PARQUET_DATA'],
+                    'data.parquet'
+                )
+            )
+            .with_columns(
+                (
+                    pl.col('fold_info').str.split(', ')
+                    .list.get(select_fold).alias('current_fold')
+                )
+            )
+            .filter(
+                (pl.col('current_fold') == 'v')
+            )
+            .select(self.feature_list)
+            .collect().to_pandas()
+            .sample(sample_shap_)
+            .to_numpy('float32')
+        )
+        model = self.model_list[select_fold]
+        shap_values = shap.TreeExplainer(model).shap_values(feature_data)
+        
+        shap.summary_plot(shap_values, features=feature_data, feature_names=self.feature_list)
