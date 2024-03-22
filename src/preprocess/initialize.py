@@ -47,6 +47,18 @@ class PreprocessInit(BaseInit):
             config_dict['DEPTH_0'] + config_dict['DEPTH_1'] + config_dict['DEPTH_2']
         )
         self._initialize_empty_dataset()
+        self._correct_list_date_col()
+        
+    def _correct_list_date_col(self):
+        self.negative_allowed_dates_date_decision = [
+            col for col in self.negative_allowed_dates_date_decision
+            if any([dataset in col for dataset in self.used_dataset])
+        ]
+        self.calc_also_year_dates_date_decision = [
+            col for col in self.calc_also_year_dates_date_decision
+            if any([dataset in col for dataset in self.used_dataset])
+        ]
+
         
     def _initialize_empty_dataset(self):
         self.base_data: Union[pl.LazyFrame, pl.DataFrame] = None
