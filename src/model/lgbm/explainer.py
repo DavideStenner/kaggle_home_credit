@@ -400,6 +400,26 @@ class LgbmExplainer(LgbmInit):
         )
         plt.close(fig)
 
+        #STD over time
+        target_in_time = (
+            oof_prediction.to_pandas()
+            .sort_values("date_decision")
+            .groupby(["date_decision", "fold"])[["target"]]
+            .std()
+        ).reset_index().rename(columns={0: 'target'})
+
+        fig = plt.figure(figsize=(12,8))
+        sns.lineplot(
+            data=target_in_time, 
+            x="date_decision", y="target", hue='fold'
+        )
+        plt.title(f"Target std over date decision")
+        
+        fig.savefig(
+            os.path.join(self.experiment_insight_path, 'target_std_over_date.png')
+        )
+        plt.close(fig)
+
     def get_oof_prediction(self) -> None:
         self.load_pickle_model_list()
         self.load_used_feature()
