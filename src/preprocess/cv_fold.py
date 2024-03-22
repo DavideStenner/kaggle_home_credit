@@ -105,6 +105,21 @@ def get_fold(
     return fold_split
 
 class PreprocessFoldCreator(BaseCVFold, PreprocessInit):
+    def create_time_series_fold(self):
+        """Used only for train test validation on single fold in future"""
+        self.data = self.data.with_columns(
+            (
+                pl.when(
+                    pl.col('WEEK_NUM') <= 60 - self.embarko_skip
+                )
+                .then(pl.lit('t'))
+                .when(
+                    pl.col('WEEK_NUM') >= 60
+                ).then(pl.lit('v')).otherwise(pl.lit('n'))
+                .alias(f'current_fold')
+            )
+        )
+        
     def create_fold(self):        
         data_for_split = self.data.select([self.fold_time_col]).to_pandas() 
         fold_split = get_fold(
