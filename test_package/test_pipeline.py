@@ -135,6 +135,21 @@ class TestPipeline(unittest.TestCase):
         except Exception as e:
             self.fail(e)
     
+    def test_missing_dataset_pipeline(self):
+        config_dict = import_config()
+        config_dict['PATH_ORIGINAL_DATA'] = os.path.join(
+            config_dict['PATH_TESTING_DATA'],
+            'missing_dataset',
+        )
+
+        pipeline_data = PreprocessPipeline(
+            config_dict=config_dict, 
+            embarko_skip=6
+        )
+        try:
+            pipeline_data.test_all()
+        except Exception as e:
+            self.fail(e)
 
     def test_pipeline_on_test_data(self):
         try:

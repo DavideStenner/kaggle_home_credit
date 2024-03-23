@@ -76,6 +76,11 @@ def create_testing_dataset():
         'empty_dataset',
         'train',
     )
+    path_missing_test_data = os.path.join(
+        config_dict['PATH_TESTING_DATA'],
+        'missing_dataset',
+        'train',
+    )
     path_random_test_data = os.path.join(
         config_dict['PATH_TESTING_DATA'],
         'random_dataset',
@@ -86,15 +91,13 @@ def create_testing_dataset():
         'duplicated_dataset',
         'train'
     )
-    if not os.path.isdir(path_blank_test_data):
-        os.makedirs(path_blank_test_data)
+    for path_folder_test in [
+        path_blank_test_data, path_random_test_data,
+        path_repeated_data, path_missing_test_data
+    ]:
+        if not os.path.isdir(path_folder_test):
+            os.makedirs(path_folder_test)
     
-    if not os.path.isdir(path_random_test_data):
-        os.makedirs(path_random_test_data)
-
-    if not os.path.isdir(path_repeated_data):
-        os.makedirs(path_repeated_data)
-
     for pattern_ in  used_dataset:
         print('Saving', pattern_)
         dataset_ = read_multiple_parquet(
@@ -133,17 +136,27 @@ def create_testing_dataset():
                 f'train_{pattern_}.parquet'
             )
         )
-
+        
         if pattern_ == 'base':
             random_dataset = dataset_
             repeated_dataset = dataset_.collect()
-            
+            missing_dataset = dataset_
+
         else:
             random_dataset = create_random_value(
                 dataset_=dataset_, dataset_name=pattern_, config_dict=config_dict
             )
             repeated_dataset = create_duplicate_on_key(dataset_=dataset_)
-            
+            #CREATE EMPTY DATASET -> NO ROW
+            missing_dataset = dataset_.clear()
+
+        missing_dataset.sink_parquet(
+            os.path.join(
+                path_missing_test_data,
+                f'train_{pattern_}.parquet'
+            )
+        )
+
         random_dataset.sink_parquet(
             os.path.join(
                 path_random_test_data,
