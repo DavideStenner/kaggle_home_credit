@@ -1,5 +1,6 @@
 import os
 import gc
+import numpy as np
 import pandas as pd
 import polars as pl
 import lightgbm as lgb
@@ -191,10 +192,23 @@ class LgbmTrainer(ModelTrain, LgbmInit):
             
             _ = gc.collect()
 
-    def time_series_fold_train(self) -> None:
+    def time_series_fold_train(self) -> dict[str, Any]:
         
-        self._init_train()
-        
+        data = pl.scan_parquet(
+            os.path.join(
+                self.config_dict['PATH_PARQUET_DATA'],
+                'data.parquet'
+            )
+        )
+                    
+        self.feature_list = [
+            col for col in data.columns
+            if col not in (
+                self.useless_col_list + 
+                [self.fold_name, self.target_col_name] +
+                self.feature_stability_useless_list
+            )
+        ]
         
         progress = {}
 
@@ -205,18 +219,11 @@ class LgbmTrainer(ModelTrain, LgbmInit):
                 show_stdv=False
             )
         ]
-        print('Collecting dataset')
-        fold_data = pl.scan_parquet(
-            os.path.join(
-                self.config_dict['PATH_PARQUET_DATA'],
-                'data.parquet'
-            )
-        )
-            
-        train_filtered = fold_data.filter(
+        print('Collecting dataset')            
+        train_filtered = data.filter(
             (pl.col('current_fold') == 't')
         )
-        test_filtered = fold_data.filter(
+        test_filtered = data.filter(
             (pl.col('current_fold') == 'v')
         )
             
@@ -275,9 +282,12 @@ class LgbmTrainer(ModelTrain, LgbmInit):
         
         best_gini_stability = progress['valid'][self.metric_eval][best_position]
         best_gini_slope = progress['valid']['gini_slope'][best_position]
-        print(best_position)
-        print(best_gini_stability)
-        print(best_gini_slope)
+
+        return {
+            'best_position': best_position,
+            'best_gini_stability': best_gini_stability,
+            'best_gini_slope': best_gini_slope
+        }
         
     def single_fold_train(self) -> None:
         self.load_best_result()
