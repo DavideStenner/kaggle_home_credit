@@ -808,55 +808,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         )
 
     def create_base_data_feature(self) -> None:
-        
-        def regress_resid(col_y: str, pl_series: pl.Series) -> pl.Series:
-            df: pl.Series = pl_series.struct.unnest()
-            
-            if df.shape[0] < 6:
-                return None
-            
-            y = df[col_y].to_numpy()
-            x = np.arange(len(y))
-            
-            a, _ = np.polyfit(x, y, 1)   
-
-            return a
-                
-        number_cases_by_date = self.base_data.group_by('date_decision').agg(
-            pl.count().alias('base_date_number_cases').cast(pl.UInt32),   
-        )
-
-        self.base_data = self.base_data.join(
-            number_cases_by_date,
-            on='date_decision', how='left'
-        )
-        
-        sorted_info = (
-            number_cases_by_date
-            .sort('date_decision')
-        )
-        #create average over previous n days
-
-        for period_ in ['7d', '14d', '30d']:
-
-            rolling_info = (
-                sorted_info
-                .rolling(
-                    index_column='date_decision', period=period_, check_sorted=False
-                ).agg(
-                    pl.col('base_date_number_cases').sum().cast(pl.UInt32).alias(f'base_date_number_cases_sum_{period_}_X'),
-                    pl.col('base_date_number_cases').max().cast(pl.UInt32).alias(f'base_date_number_cases_max_{period_}_X'),
-                    pl.col('base_date_number_cases').min().cast(pl.UInt32).alias(f'base_date_number_cases_min_{period_}_X'),
-                    pl.col('base_date_number_cases').mean().cast(pl.Float32).alias(f'base_date_number_cases_mean_{period_}_X'),
-                    pl.col('base_date_number_cases').std().cast(pl.Float32).alias(f'base_date_number_cases_std_{period_}_X'),
-                    pl.struct(["base_date_number_cases"]).map_elements(partial(regress_resid, "base_date_number_cases")).cast(pl.Float32).alias(f'base_date_number_cases_slope_{period_}_X')
-                )
-            )
-
-            self.base_data = self.base_data.join(
-                rolling_info,
-                on='date_decision', how='left'
-            )
+        pass
 
     
     def create_feature(self) -> None:        
