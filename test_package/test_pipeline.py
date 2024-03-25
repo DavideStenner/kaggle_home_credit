@@ -154,6 +154,8 @@ class TestPipeline(unittest.TestCase):
     def test_pipeline_on_test_data(self):
         try:
             config = import_config()
+            _, experiment_name = import_params(model='lgb')
+            
             pipeline_data = PreprocessPipeline(
                 config_dict=config, 
                 embarko_skip=6
@@ -161,7 +163,7 @@ class TestPipeline(unittest.TestCase):
             pipeline_data.begin_inference()
 
             trainer = LgbmPipeline(
-                experiment_name='person_1_more_lgb',
+                experiment_name=experiment_name + "_lgb",
                 params_lgb={},
                 config_dict=config,
                 metric_eval='gini_stability', log_evaluation=50, 
