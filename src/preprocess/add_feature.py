@@ -48,83 +48,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             filter_col=pl.col('num_group1')==0,
             col_list=[col for col in self.credit_bureau_a_1.columns if col != 'num_group1']
         )
-
-        list_date_non_negative_operation = [
-            #range active contract to end
-            (pl.col('dateofcredend_289D') - pl.col('dateofcredstart_181D')).alias('range_active_D'),
-            #range closed contract to end
-            (pl.col('dateofcredend_353D') - pl.col('dateofcredstart_739D')).alias('range_close_D'),
-            #range of update between active and closed
-            (pl.col('lastupdate_1112D')- pl.col('lastupdate_388D')).alias('range_update_D'),
-            #end - last update active
-            (pl.col('dateofcredend_289D') - pl.col('lastupdate_1112D')).alias('end_active_last_update_D'),
-            #update - start active
-            (pl.col('lastupdate_1112D')- pl.col('dateofcredstart_181D')).alias('update_start_active_D'),
-            #end - last update closed
-            (pl.col('dateofcredend_353D') - pl.col('lastupdate_388D')).alias('end_closed_last_update_D'),
-            #update - start closed
-            (pl.col('lastupdate_388D')- pl.col('dateofcredstart_739D')).alias('update_start_closed_D'),
-            #% difference worst date with maximum number of past due active vs closed
-            (pl.col('numberofoverdueinstlmaxdat_641D') - pl.col('numberofoverdueinstlmaxdat_148D')).alias('numberofoverdueinstlmaxdat_active_closed_D'),
-            #difference worst date with maximum number of past due active vs start of closed
-            (pl.col('numberofoverdueinstlmaxdat_148D') - pl.col('dateofcredstart_739D')).alias('numberofoverdueinstlmaxdat_closed_start_D'),
-            #difference worst date with maximum number of past due active vs start of active
-            (pl.col('numberofoverdueinstlmaxdat_641D') - pl.col('dateofcredstart_181D')).alias('numberofoverdueinstlmaxdat_active_start_D'),
-            #difference worst date with maximum number of past due active vs end of closed
-            (pl.col('dateofcredend_289D') - pl.col('numberofoverdueinstlmaxdat_148D')).alias('numberofoverdueinstlmaxdat_closed_end_D'),
-            #difference worst date with maximum number of past due active vs end of active
-            (pl.col('dateofcredend_353D') - pl.col('numberofoverdueinstlmaxdat_641D')).alias('numberofoverdueinstlmaxdat_active_end_D'),
-            #% difference worst date with highest outstanding of past due active vs closed
-            (pl.col('overdueamountmax2date_1142D') - pl.col('overdueamountmax2date_1002D')).alias('overdueamountmax2date_active_closed_D'),
-            #difference worst date with highest outstanding of past due active vs start of closed
-            (pl.col('overdueamountmax2date_1002D') - pl.col('dateofcredstart_739D')).alias('overdueamountmax2date_active_closed_start_D'),
-            #difference worst date with highest outstanding of past due active vs start of active
-            (pl.col('overdueamountmax2date_1142D') - pl.col('dateofcredstart_181D')).alias('overdueamountmax2date_active_active_start_D'),
-            #difference worst date with highest outstanding of past due active vs end of closed
-            (pl.col('dateofcredend_289D') - pl.col('overdueamountmax2date_1002D')).alias('overdueamountmax2date_active_closed_end_D'),
-            #difference worst date with highest outstanding of past due active vs end of active
-            (pl.col('dateofcredend_353D') - pl.col('overdueamountmax2date_1142D')).alias('overdueamountmax2date_active_active_end_D'),
-        ]
-
-        list_generic_operation = [
-            #difference of end active and closed
-            (pl.col('dateofcredend_289D') - pl.col('dateofcredend_353D')).alias('range_end_active_closed_D'),
-            #difference of start active and closed
-            (pl.col('dateofcredstart_181D') - pl.col('dateofcredstart_739D')).alias('range_start_active_closed_D'),
-            #difference end activate and refresh date
-            (pl.col('dateofcredend_289D') - pl.col('refreshdate_3813885D')).alias('range_end_active_refresh_D'),
-            #difference start activate and refresh date
-            (pl.col('dateofcredstart_181D') - pl.col('refreshdate_3813885D')).alias('range_start_active_refresh_D'),
-            #difference end closed and refresh date
-            (pl.col('dateofcredend_353D') - pl.col('refreshdate_3813885D')).alias('range_end_closed_refresh_D'),
-            #difference start closed and refresh date
-            (pl.col('dateofcredstart_739D') - pl.col('refreshdate_3813885D')).alias('range_start_closed_refresh_D'),
-            #difference between end of repayment and closure -> renotiation
-            (pl.col('dateofcredend_353D') - pl.col('dateofrealrepmt_138D')).alias('range_end_repmt_closed_D'),
-        ]
-
-        self.credit_bureau_a_1 = self.credit_bureau_a_1.with_columns(
-            [
-                (
-                    pl.when(
-                        operation.dt.total_days()<0
-                    ).then(None).otherwise(operation.dt.total_days())
-                ).alias(operation.meta.output_name()).cast(pl.UInt16)
-                for operation in list_date_non_negative_operation
-            ]
-        ).with_columns(
-            [
-                (
-                    pl.when(
-                        operation.dt.total_days().abs()>32700
-                    ).then(None).otherwise(operation.dt.total_days())
-                    .alias(operation.meta.output_name())
-                    .cast(pl.Int16)
-                )
-                for operation in list_generic_operation
-            ]
-        )
-    
+            
     def create_credit_bureau_a_2_feature(self) -> None:
         warnings.warn('Only considering credit_bureau_a_2 num1==0', UserWarning)
         #aggregate and take first element
@@ -198,24 +122,6 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             ]
         )
         
-        list_operation = [
-            #end - start active
-            (pl.col('contractmaturitydate_151D') - pl.col('contractdate_551D')).alias('range_start_end_active_D'),
-            #update - start active
-            (pl.col('lastupdate_260D') - pl.col('contractdate_551D')).alias('range_start_update_active_D'),
-            #end - update active
-            (pl.col('contractmaturitydate_151D') - pl.col('lastupdate_260D')).alias('range_end_update_active_D'),
-        ]
-        self.credit_bureau_b_1 = self.credit_bureau_b_1.with_columns(
-            [
-                (
-                    operation.dt.total_days()
-                    .alias(operation.meta.output_name())
-                )
-                for operation in list_operation
-            ]
-        )
-
     def create_credit_bureau_b_2_feature(self) -> None:
         warnings.warn('Only considering credit_bureau_b_2 num1==0', UserWarning)
         self.credit_bureau_b_2 = (
@@ -295,49 +201,14 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 'contractenddate_991D', 'openingdate_313D'
             ]
         )
-        self.deposit_1 = self.deposit_1.with_columns(
-            (
-                (
-                    pl.col('contractenddate_991D') - 
-                    pl.col('openingdate_313D')
-                ).dt.total_days()
-                .alias('duration_contract_date_D')
-                .cast(pl.Int32)
-            ),
-            (
-                (
-                    (
-                        pl.col('contractenddate_991D') - 
-                        pl.col('openingdate_313D')
-                    ).dt.total_days()//365
-                )
-                .alias('duration_contract_date_year_diff_D')
-                .cast(pl.Int32)
-            )
-        )
+
     def create_static_0_feature(self) -> None:
         self.static_0 = self.filter_and_select_first_non_blank(
             data=self.static_0,
             filter_col=pl.lit(True),
             col_list=self.static_0.columns
         )
-        self.static_0 = self.static_0.with_columns(
-            #INTRA DATASET DATE FEATURE
-            (pl.col('dtlastpmtallstes_4499206D') - pl.col('firstdatedue_489D')).dt.total_days().alias('pmt_activity_gap_D').cast(pl.Int32),
-            (pl.col('lastrepayingdate_696D') - pl.col('firstdatedue_489D')).dt.total_days().alias('pmt_activity_gap_2_D').cast(pl.Int32),
-            (pl.col('datelastinstal40dpd_247D') - pl.col('maxdpdinstldate_3546855D')).dt.total_days().alias('delniquency_severity_D').cast(pl.Int32),
-            (pl.col('validfrom_1069D') - pl.col('firstclxcampaign_1125D')).dt.total_days().alias('gap_campaign_D').cast(pl.Int32),
-            (pl.col('lastapplicationdate_877D') - pl.col('lastactivateddate_801D')).dt.total_days().alias('last_active_range_D').cast(pl.Int32),
-            (pl.col('lastapprdate_640D') - pl.col('lastapplicationdate_877D')).dt.total_days().alias('approval_application_D').cast(pl.Int32),
-            (pl.col('lastrejectdate_50D') - pl.col('lastapplicationdate_877D')).dt.total_days().alias('reject_application_D').cast(pl.Int32),
-            (pl.col('datelastunpaid_3546854D') - pl.col('lastrepayingdate_696D')).dt.total_days().alias('repayment_consistency_D').cast(pl.Int32),
-            (pl.col('payvacationpostpone_4187118D') - pl.col('datelastunpaid_3546854D')).dt.total_days().alias('payment_holiday_D').cast(pl.Int32),
-            (pl.col('lastdelinqdate_224D') - pl.col('datelastinstal40dpd_247D')).dt.total_days().alias('delinquency_frequency_D').cast(pl.Int32),
-            (pl.col('datelastinstal40dpd_247D') - pl.col('dtlastpmtallstes_4499206D')).dt.total_days().alias('delinquency_pmt_speed_D').cast(pl.Int32),
-            (pl.col('datelastinstal40dpd_247D') - pl.col('lastrepayingdate_696D')).dt.total_days().alias('delinquency_pmt_speed_2_D').cast(pl.Int32),
-            (pl.col('validfrom_1069D') - pl.col('lastactivateddate_801D')).dt.total_days().alias('client_campaign_overlap_D').cast(pl.Int32),
-            (pl.col('dtlastpmtallstes_4499206D') - pl.col('lastrepayingdate_696D')).dt.total_days().alias('payment_method_analysis_D').cast(pl.Int32),
-            
+        self.static_0 = self.static_0.with_columns(            
             #NUMERIC FEATURE
             (pl.col('maxdpdlast24m_143P')-pl.col('avgdbddpdlast24m_3658932P')).alias('delinquency_interactionX').cast(pl.Int32),
             (pl.col('numinstpaidearly_338L')-pl.col('pctinstlsallpaidlate1d_3546856L')).alias('pmt_efficiencyX').cast(pl.Float32),
@@ -704,33 +575,6 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             filter_col=pl.col('num_group1')==0,
             col_list=select_col_group_1
         )
-
-        self.applprev_1 = self.applprev_1.with_columns(
-            #add day diff
-            [
-                ( 
-                    pl.col(col) -
-                    pl.col('creationdate_885D')
-                ).dt.total_days()
-                .cast(pl.Int32).alias(col)
-                for col in self.applprev_1.columns
-                if (col[-1] == "D") & (col != 'creationdate_885D')
-            ]
-        ).with_columns(
-            #add also year diff
-            [
-                (
-                    (pl.col(col)//365)
-                    .cast(pl.Int32).alias(
-                        change_name_with_type(
-                            col, '_year_diff_'
-                        )
-                    )
-                )
-                for col in self.applprev_1.columns
-                if (col[-1] == "D") & (col != 'creationdate_885D')
-            ]
-        )
     
     def create_applprev_2_feature(self) -> None:
         warnings.warn('Only considering applprev_2 info relate to 0...', UserWarning)
@@ -932,55 +776,189 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             ]
         ).drop('applprev_1_creationdate_885D')
 
-    def add_difference_to_date_birth(self) -> None:
-        """
-        Everything which isn't touched until now and it's a date
-        will be confrontend with date decision
-        """
-        type_list = self.data.dtypes
+    def create_intra_diff_date(self) -> None:
         
-        dates_to_transform = [
-            col for i, col in enumerate(self.data.columns)
-            if (col[-1]=='D') & (type_list[i] == pl.Date)
+        def robust_cast_type(operator: pl.Expr, pl_type: pl.DataType) -> pl.Expr:
+            max_type_used = {
+                pl.Int16: 32767,
+                pl.UInt16: 65535-1,
+                pl.UInt32: 4_294_967_295-1,
+                pl.Int32: 2_147_483_647-1,
+            }
+            casted_type = (
+                pl.when(
+                    operator.abs()>max_type_used[pl_type]
+                ).then(None).otherwise(operator)
+                .cast(pl_type)
+            )
+            return casted_type
+        
+        #PLACEHOLDER
+        # self.applprev_1 = self.applprev_1.with_columns(
+        #     #add day diff
+        #     [
+        #         ( 
+        #             pl.col(col) -
+        #             pl.col('creationdate_885D')
+        #         ).dt.total_days()
+        #         .cast(pl.Int32).alias(col)
+        #         for col in self.applprev_1.columns
+        #         if (col[-1] == "D") & (col != 'creationdate_885D')
+        #     ]
+        # ).with_columns(
+        #     #add also year diff
+        #     [
+        #         (
+        #             (pl.col(col)//365)
+        #             .cast(pl.Int32).alias(
+        #                 change_name_with_type(
+        #                     col, '_year_diff_'
+        #                 )
+        #             )
+        #         )
+        #         for col in self.applprev_1.columns
+        #         if (col[-1] == "D") & (col != 'creationdate_885D')
+        #     ]
+        # )
+
+        #credit_bureau_a_1
+        list_date_non_negative_operation = [
+            #range active contract to end
+            (pl.col('credit_bureau_a_1_dateofcredend_289D') - pl.col('credit_bureau_a_1_dateofcredstart_181D')).alias('credit_bureau_a_1_range_active_D'),
+            #range closed contract to end
+            (pl.col('credit_bureau_a_1_dateofcredend_353D') - pl.col('credit_bureau_a_1_dateofcredstart_739D')).alias('credit_bureau_a_1_range_close_D'),
+            #range of update between active and closed
+            (pl.col('credit_bureau_a_1_lastupdate_1112D')- pl.col('credit_bureau_a_1_lastupdate_388D')).alias('credit_bureau_a_1_range_update_D'),
+            #end - last update active
+            (pl.col('credit_bureau_a_1_dateofcredend_289D') - pl.col('credit_bureau_a_1_lastupdate_1112D')).alias('credit_bureau_a_1end_active_last_update_D'),
+            #update - start active
+            (pl.col('credit_bureau_a_1_lastupdate_1112D')- pl.col('credit_bureau_a_1_dateofcredstart_181D')).alias('credit_bureau_a_1_update_start_active_D'),
+            #end - last update closed
+            (pl.col('credit_bureau_a_1_dateofcredend_353D') - pl.col('credit_bureau_a_1_lastupdate_388D')).alias('credit_bureau_a_1_end_closed_last_update_D'),
+            #update - start closed
+            (pl.col('credit_bureau_a_1_lastupdate_388D')- pl.col('credit_bureau_a_1_dateofcredstart_739D')).alias('credit_bureau_a_1_update_start_closed_D'),
+            #% difference worst date with maximum number of past due active vs closed
+            (pl.col('credit_bureau_a_1_numberofoverdueinstlmaxdat_641D') - pl.col('credit_bureau_a_1_numberofoverdueinstlmaxdat_148D')).alias('credit_bureau_a_1_numberofoverdueinstlmaxdat_active_closed_D'),
+            #difference worst date with maximum number of past due active vs start of closed
+            (pl.col('credit_bureau_a_1_numberofoverdueinstlmaxdat_148D') - pl.col('credit_bureau_a_1_dateofcredstart_739D')).alias('credit_bureau_a_1_numberofoverdueinstlmaxdat_closed_start_D'),
+            #difference worst date with maximum number of past due active vs start of active
+            (pl.col('credit_bureau_a_1_numberofoverdueinstlmaxdat_641D') - pl.col('credit_bureau_a_1_dateofcredstart_181D')).alias('credit_bureau_a_1_numberofoverdueinstlmaxdat_active_start_D'),
+            #difference worst date with maximum number of past due active vs end of closed
+            (pl.col('credit_bureau_a_1_dateofcredend_289D') - pl.col('credit_bureau_a_1_numberofoverdueinstlmaxdat_148D')).alias('credit_bureau_a_1_numberofoverdueinstlmaxdat_closed_end_D'),
+            #difference worst date with maximum number of past due active vs end of active
+            (pl.col('credit_bureau_a_1_dateofcredend_353D') - pl.col('credit_bureau_a_1_numberofoverdueinstlmaxdat_641D')).alias('credit_bureau_a_1_numberofoverdueinstlmaxdat_active_end_D'),
+            #% difference worst date with highest outstanding of past due active vs closed
+            (pl.col('credit_bureau_a_1_overdueamountmax2date_1142D') - pl.col('credit_bureau_a_1_overdueamountmax2date_1002D')).alias('credit_bureau_a_1_overdueamountmax2date_active_closed_D'),
+            #difference worst date with highest outstanding of past due active vs start of closed
+            (pl.col('credit_bureau_a_1_overdueamountmax2date_1002D') - pl.col('credit_bureau_a_1_dateofcredstart_739D')).alias('credit_bureau_a_1_overdueamountmax2date_active_closed_start_D'),
+            #difference worst date with highest outstanding of past due active vs start of active
+            (pl.col('credit_bureau_a_1_overdueamountmax2date_1142D') - pl.col('credit_bureau_a_1_dateofcredstart_181D')).alias('credit_bureau_a_1_overdueamountmax2date_active_active_start_D'),
+            #difference worst date with highest outstanding of past due active vs end of closed
+            (pl.col('credit_bureau_a_1_dateofcredend_289D') - pl.col('credit_bureau_a_1_overdueamountmax2date_1002D')).alias('credit_bureau_a_1_overdueamountmax2date_active_closed_end_D'),
+            #difference worst date with highest outstanding of past due active vs end of active
+            (pl.col('credit_bureau_a_1_dateofcredend_353D') - pl.col('credit_bureau_a_1_overdueamountmax2date_1142D')).alias('credit_bureau_a_1_overdueamountmax2date_active_active_end_D'),
         ]
-        
-        #calculate day diff respect to date_decision
-        self.data = self.data.with_columns(
+
+        list_generic_operation = (
+            #credit_bureau_a_1
+            [
+                #difference of end active and closed
+                (pl.col('credit_bureau_a_1_dateofcredend_289D') - pl.col('credit_bureau_a_1_dateofcredend_353D')).alias('credit_bureau_a_1_range_end_active_closed_D'),
+                #difference of start active and closed
+                (pl.col('credit_bureau_a_1_dateofcredstart_181D') - pl.col('credit_bureau_a_1_dateofcredstart_739D')).alias('credit_bureau_a_1_range_start_active_closed_D'),
+                #difference end activate and refresh date
+                (pl.col('credit_bureau_a_1_dateofcredend_289D') - pl.col('credit_bureau_a_1_refreshdate_3813885D')).alias('credit_bureau_a_1_range_end_active_refresh_D'),
+                #difference start activate and refresh date
+                (pl.col('credit_bureau_a_1_dateofcredstart_181D') - pl.col('credit_bureau_a_1_refreshdate_3813885D')).alias('credit_bureau_a_1_range_start_active_refresh_D'),
+                #difference end closed and refresh date
+                (pl.col('credit_bureau_a_1_dateofcredend_353D') - pl.col('credit_bureau_a_1_refreshdate_3813885D')).alias('credit_bureau_a_1_range_end_closed_refresh_D'),
+                #difference start closed and refresh date
+                (pl.col('credit_bureau_a_1_dateofcredstart_739D') - pl.col('credit_bureau_a_1_refreshdate_3813885D')).alias('credit_bureau_a_1_range_start_closed_refresh_D'),
+                #difference between end of repayment and closure -> renotiation
+                (pl.col('credit_bureau_a_1_dateofcredend_353D') - pl.col('credit_bureau_a_1_dateofrealrepmt_138D')).alias('credit_bureau_a_1_range_end_repmt_closed_D'),
+            ] +
+            #credit_bureau_b_1
+            [
+                #end - start active
+                (pl.col('credit_bureau_b_1_contractmaturitydate_151D') - pl.col('credit_bureau_b_1_contractdate_551D')).alias('credit_bureau_b_1_range_start_end_active_D'),
+                #update - start active
+                (pl.col('credit_bureau_b_1_lastupdate_260D') - pl.col('credit_bureau_b_1_contractdate_551D')).alias('credit_bureau_b_1_range_start_update_active_D'),
+                #end - update active
+                (pl.col('credit_bureau_b_1_contractmaturitydate_151D') - pl.col('credit_bureau_b_1_lastupdate_260D')).alias('credit_bureau_b_1_range_end_update_active_D'),
+            ] +
+            #deposit_1
             [
                 (
-                    (
-                        pl.col('person_1_birth_259D') - pl.col(col)
-                    )
-                    .dt.total_days()
-                    .alias(
-                        change_name_with_type(
-                            col, '_birth_diff_'
-                        )
-                    )
-                    .cast(pl.Int32)
+                    (pl.col('deposit_1_contractenddate_991D') - pl.col('deposit_1_openingdate_313D'))
+                    .alias('deposit_1_duration_contract_date_D')
                 )
-                for col in dates_to_transform
-            ] + [
-                (
-                    (
-                        (
-                            pl.col('person_1_birth_259D') - pl.col(col)
-                        )
-                        .dt.total_days()//365
-                    )
-                    .alias(
-                        change_name_with_type(
-                            col, '_birth_year_diff_'
-                        )
-                    )
-                    .cast(pl.Int32)
-                )
-                for col in self.calc_also_year_dates_date_decision
+            ] +
+            #static_0
+            [
+                (pl.col('static_0_dtlastpmtallstes_4499206D') - pl.col('static_0_firstdatedue_489D')).alias('static_0_pmt_activity_gap_D'),
+                (pl.col('static_0_lastrepayingdate_696D') - pl.col('static_0_firstdatedue_489D')).alias('static_0_pmt_activity_gap_2_D'),
+                (pl.col('static_0_datelastinstal40dpd_247D') - pl.col('static_0_maxdpdinstldate_3546855D')).alias('static_0_delniquency_severity_D'),
+                (pl.col('static_0_validfrom_1069D') - pl.col('static_0_firstclxcampaign_1125D')).alias('static_0_gap_campaign_D'),
+                (pl.col('static_0_lastapplicationdate_877D') - pl.col('static_0_lastactivateddate_801D')).alias('static_0_last_active_range_D'),
+                (pl.col('static_0_lastapprdate_640D') - pl.col('static_0_lastapplicationdate_877D')).alias('static_0_approval_application_D'),
+                (pl.col('static_0_lastrejectdate_50D') - pl.col('static_0_lastapplicationdate_877D')).alias('static_0_reject_application_D'),
+                (pl.col('static_0_datelastunpaid_3546854D') - pl.col('static_0_lastrepayingdate_696D')).alias('static_0_repayment_consistency_D'),
+                (pl.col('static_0_payvacationpostpone_4187118D') - pl.col('static_0_datelastunpaid_3546854D')).alias('static_0_payment_holiday_D'),
+                (pl.col('static_0_lastdelinqdate_224D') - pl.col('static_0_datelastinstal40dpd_247D')).alias('static_0_delinquency_frequency_D'),
+                (pl.col('static_0_datelastinstal40dpd_247D') - pl.col('static_0_dtlastpmtallstes_4499206D')).alias('static_0_delinquency_pmt_speed_D'),
+                (pl.col('static_0_datelastinstal40dpd_247D') - pl.col('static_0_lastrepayingdate_696D')).alias('static_0_delinquency_pmt_speed_2_D'),
+                (pl.col('static_0_validfrom_1069D') - pl.col('static_0_lastactivateddate_801D')).alias('static_0_client_campaign_overlap_D'),
+                (pl.col('static_0_dtlastpmtallstes_4499206D') - pl.col('static_0_lastrepayingdate_696D')).alias('static_0_payment_method_analysis_D'),
             ]
+        )
+
+        list_date_non_negative_operation = [
+            pl.when(
+                    operation < 0
+            ).then(None).otherwise(operation)
+            .alias(operation.meta.output_name())
+            for operation in list_date_non_negative_operation
+        ]
+        list_date_non_negative_operation = [
+            (
+                #robustness over type casting
+                #downcast credit_bureau_a_1 which takes lot's of ram
+                robust_cast_type(
+                    operation, pl.UInt16
+                )
+                .alias(operation.meta.output_name())
+                if 'credit_bureau_a_1' in operation.meta.output_name()
+                else 
+                    robust_cast_type(
+                        operation, pl.UInt32
+                    ).alias(operation.meta.output_name())
+            )
+            for operation in list_date_non_negative_operation
+        ]
+
+        list_generic_operation = [
+            (
+                #robustness over type casting
+                robust_cast_type(
+                    operation, pl.Int16
+                ).alias(operation.meta.output_name())
+                if 'credit_bureau_a_1' in operation.meta.output_name()
+                else robust_cast_type(
+                    operation, pl.Int32
+                ).alias(operation.meta.output_name())
+            )
+            for operation in list_generic_operation
+        ]
+
+        self.data = self.data.with_columns(
+            list_generic_operation +
+            list_date_non_negative_operation
         )
 
     def add_additional_feature(self) -> None:
         self.add_difference_to_date_decision()
+        #DEACTIVATED FOR NOW
+        #self.create_intra_diff_date()
         
     def merge_all(self) -> None:
         self.add_dataset_name_to_feature()
