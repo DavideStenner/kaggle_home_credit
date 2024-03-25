@@ -47,7 +47,7 @@ class LgbmTrainer(ModelTrain, LgbmInit):
         def select_stability_feature(stability_info: pd.DataFrame) -> list[str]:
             position_stability_treshold = min(
                 stability_info.loc[
-                    stability_info['count_useless_on_fold']>1
+                    stability_info['count_useless_on_fold']>0
                 ].index
             )
             return stability_info.loc[
