@@ -980,7 +980,6 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         )
 
     def add_additional_feature(self) -> None:
-        self.add_difference_to_date_birth()
         self.add_difference_to_date_decision()
         
     def merge_all(self) -> None:
