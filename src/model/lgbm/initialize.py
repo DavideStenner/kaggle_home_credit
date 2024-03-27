@@ -48,6 +48,9 @@ class LgbmInit(ModelInit):
         self.used_dataset: list[str] = (
             config_dict['DEPTH_0'] + config_dict['DEPTH_1'] + config_dict['DEPTH_2']
         )
+        self.special_dataset: list[str] = [
+            'tax_registry_1'
+        ]
         self.log_evaluation: int = log_evaluation
 
         self.params_lgb: dict[str, Any] = params_lgb
@@ -85,7 +88,7 @@ class LgbmInit(ModelInit):
         self.feature_dataset = pd.DataFrame(
             [
                 [
-                    next((dataset for dataset in ['base'] + self.used_dataset if dataset in col)),
+                    next((dataset for dataset in ['base'] + self.used_dataset + self.special_dataset if dataset in col)),
                     col
                 ]
                 for col in self.feature_list
