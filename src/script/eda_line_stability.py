@@ -1,3 +1,7 @@
+import os
+import sys
+sys.path.append(os.getcwd())
+
 def get_line_stability() -> None:
 
     import warnings
@@ -35,7 +39,4 @@ def get_line_stability() -> None:
             raise(e)
         
 if __name__=='__main__':
-    import os
-    import sys
-    sys.path.append(os.getcwd())
     get_line_stability()

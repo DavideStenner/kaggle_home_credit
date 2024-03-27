@@ -1,4 +1,7 @@
 import os
+import sys
+sys.path.append(os.getcwd())
+
 import time
 import psutil
 import warnings
@@ -170,6 +173,10 @@ def track_memory_usage(processor: PreprocessPipeline) -> None:
         
 
 if __name__=='__main__':
+    import os
+    import sys
+    sys.path.append(os.getcwd())
+
     config_dict = import_config()
     
     #filter useless warning

@@ -1,3 +1,7 @@
+import os
+import sys
+sys.path.append(os.getcwd())
+    
 def create_testing_dataset():
     
     import os
