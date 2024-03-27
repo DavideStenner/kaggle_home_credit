@@ -341,15 +341,43 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         )
         
     def create_tax_registry_b_1_feature(self) -> None:
-        warnings.warn('Only considering tax_registry_b_1 info not related person for now...', UserWarning)
-        self.tax_registry_b_1 = self.filter_and_select_first_non_blank(
-            data=self.tax_registry_b_1,
-            filter_col=(pl.col('num_group1')==0),
-            col_list=[
-                'case_id', 'amount_4917619A',
-                'deductiondate_4917603D'
-            ]
+        self.tax_registry_b_1 = (
+            self.tax_registry_b_1
+            .group_by('case_id')
+            .agg(
+                (
+                    pl.col('amount_4917619A').sum()
+                    .cast(pl.Float32).alias('sum_amount_4917619A')
+                ),
+                (
+                    pl.col('amount_4917619A').std()
+                    .cast(pl.Float32).alias('std_amount_4917619A')
+                ),
+                (
+                    pl.col('amount_4917619A').mean()
+                    .cast(pl.Float32).alias('mean_amount_4917619A')
+                ),
+                (
+                    pl.col('num_group1').max()
+                    .cast(pl.UInt16).alias('num_deductionX')
+                ),
+                (
+                    pl.col('name_4917606M').n_unique()
+                    .cast(pl.UInt16).alias('number_workerX')
+                ),
+                (
+                    pl.col('deductiondate_4917603D').min()
+                    .cast(pl.Date)
+                    .alias('min_deductiondate_4917603D')
+                ),
+                (
+                    pl.col('deductiondate_4917603D').max()
+                    .cast(pl.Date)
+                    .alias('max_deductiondate_4917603D')
+                )
+            )
         )
+        
     def create_tax_registry_c_1_feature(self) -> None:
         warnings.warn('Only considering tax_registry_c_1 info not related person for now...', UserWarning)
         self.tax_registry_c_1 = self.filter_and_select_first_non_blank(
@@ -881,6 +909,10 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         ]
 
         list_generic_operation = (
+            #tax registration_b_1
+            [
+                (pl.col('tax_registry_b_1_max_deductiondate_4917603D') - pl.col('tax_registry_b_1_min_deductiondate_4917603D')).alias('tax_registry_b_1_range_deductiondate_4917603D')
+            ],
             #credit_bureau_a_1
             [
                 #difference of end active and closed
