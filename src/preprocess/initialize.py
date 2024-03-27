@@ -23,7 +23,8 @@ class PreprocessInit(BaseInit):
         self.negative_allowed_dates_date_decision: list[str] = [
             'static_cb_0_assignmentdate_238D',
             'static_cb_0_assignmentdate_4527235D', 'static_cb_0_responsedate_1012D',
-            'static_cb_0_responsedate_4527233D', 'static_cb_0_responsedate_4917613D'
+            'static_cb_0_responsedate_4527233D', 'static_cb_0_responsedate_4917613D',
+            'tax_registry_a_1_recorddate_4527225D'
         ]
         #calculate day diff and year diff to date_decision
         self.calc_also_year_dates_date_decision: list[str] = [
