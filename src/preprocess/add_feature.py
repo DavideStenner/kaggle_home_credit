@@ -309,16 +309,37 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         )
 
     def create_tax_registry_a_1_feature(self) -> None:
-        warnings.warn('Only considering tax_registry_a_1 info not related person for now...', UserWarning)
-        self.tax_registry_a_1 = self.filter_and_select_first_non_blank(
-            data=self.tax_registry_a_1,
-            filter_col=(pl.col('num_group1')==0),
-            col_list=[
-                'case_id', 'amount_4527230A',
-                'recorddate_4527225D'
-            ]
+        self.tax_registry_a_1 = (
+            self.tax_registry_a_1
+            .group_by('case_id')
+            .agg(
+                (
+                    pl.col('amount_4527230A').sum()
+                    .cast(pl.Float32).alias('sum_amount_4527230A')
+                ),
+                (
+                    pl.col('amount_4527230A').std()
+                    .cast(pl.Float32).alias('std_amount_4527230A')
+                ),
+                (
+                    pl.col('amount_4527230A').mean()
+                    .cast(pl.Float32).alias('mean_amount_4527230A')
+                ),
+                (
+                    pl.col('num_group1').max()
+                    .cast(pl.UInt16).alias('num_deductionX')
+                ),
+                (
+                    pl.col('name_4527232M').n_unique()
+                    .cast(pl.UInt16).alias('number_workerX')
+                ),
+                (
+                    pl.col('recorddate_4527225D').first()
+                    .cast(pl.Date)
+                )
+            )
         )
-
+        
     def create_tax_registry_b_1_feature(self) -> None:
         warnings.warn('Only considering tax_registry_b_1 info not related person for now...', UserWarning)
         self.tax_registry_b_1 = self.filter_and_select_first_non_blank(
