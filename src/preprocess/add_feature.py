@@ -798,6 +798,64 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 )
             )
 
+    def add_tax_registration_merge(self) -> None:
+        """
+        Tax registration a1, b2, c2 are different dataset merge them on a same feature
+        doing average over main feature
+        """
+        amount_list: list[str] = [
+            'tax_registry_a_1_{operation}_amount_4527230A',
+            'tax_registry_b_1_{operation}_amount_4917619A',
+            'tax_registry_c_1_{operation}_pmtamount_36A',
+        ]
+        self.data = self.data.with_columns(
+            [
+                (
+                    pl.sum_horizontal(
+                        pl.col(
+                            [
+                                amount.format(operation=operation) 
+                                for amount in amount_list
+                            ]
+                        )/3
+                    )
+                    .alias(f'tax_registry_1_{operation}_amountX')
+                    .cast(pl.Float32)
+                )
+                for operation in ['sum', 'mean', 'std']
+            ] +
+            [
+                (
+                    pl.sum_horizontal(
+                        pl.col(
+                            [
+                                'tax_registry_a_1_num_deductionX',
+                                'tax_registry_b_1_num_deductionX',
+                                'tax_registry_c_1_num_deductionX'
+                            ]
+                        )/3
+                    )
+                    .alias(f'tax_registry_1_num_deductionX')
+                    .cast(pl.Float32)
+                )
+            ] +
+            [
+                (
+                    pl.sum_horizontal(
+                        pl.col(
+                            [
+                                'tax_registry_a_1_number_workerX',
+                                'tax_registry_b_1_number_workerX',
+                                'tax_registry_c_1_number_workerX'
+                            ]
+                        )/3
+                    )
+                    .alias(f'tax_registry_1_number_workerX')
+                    .cast(pl.Float32)
+                )
+            ]
+        )
+        
     def add_difference_to_date_decision(self) -> None:
         """
         Everything which isn't touched until now and it's a date
@@ -1071,6 +1129,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
 
     def add_additional_feature(self) -> None:
         self.add_difference_to_date_decision()
+        self.add_tax_registration_merge()
         #DEACTIVATED FOR NOW
         #self.create_intra_diff_date()
         
