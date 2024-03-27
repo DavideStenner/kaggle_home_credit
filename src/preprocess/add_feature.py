@@ -179,17 +179,50 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         )
         
     def create_debitcard_1_feature(self) -> None:
-        warnings.warn('Only considering debitcard_1 info not related person for now...', UserWarning)
-        self.debitcard_1 = self.filter_and_select_first_non_blank(
-            data=self.debitcard_1,
-            filter_col=(pl.col('num_group1')==0),
-            col_list=[
-                'case_id', 'last180dayaveragebalance_704A',
-                'last180dayturnover_1134A', 'last30dayturnover_651A',
-                'openingdate_857D'
-            ]
-        )
+        
+        col_to_retrieve_list: list[str] = [
+            'last180dayaveragebalance_704A', 
+            'last180dayturnover_1134A', 'last30dayturnover_651A'
+        ]
 
+        self.debitcard_1 = (
+            self.debitcard_1
+            .group_by('case_id')
+            .agg(
+                [
+                    pl.col('num_group1').max().alias('num_debitcardX').cast(pl.UInt16)
+                ] +
+                #last info
+                [
+                    (
+                        pl.col(col_)
+                        .filter(pl.col(col_).is_not_null())
+                        .last()
+                        .cast(pl.Float32)
+                        .alias(f'last_{col_}')
+                    )
+                    for col_ in col_to_retrieve_list
+                ] +
+                [
+                    (
+                        pl.col(col_)
+                        .max()
+                        .cast(pl.Float32)
+                        .alias(f'max_{col_}')
+                    )
+                    for col_ in col_to_retrieve_list
+                ] +
+                [
+                    (
+                        pl.col(col_)
+                        .min()
+                        .cast(pl.Float32)
+                        .alias(f'min_{col_}')
+                    )
+                    for col_ in col_to_retrieve_list
+                ]
+            )
+        )
 
     def create_deposit_1_feature(self) -> None:
         warnings.warn('Only considering deposit_1 info not related person for now...', UserWarning)
