@@ -225,14 +225,152 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         )
 
     def create_deposit_1_feature(self) -> None:
-        warnings.warn('Only considering deposit_1 info not related person for now...', UserWarning)
-        self.deposit_1 = self.filter_and_select_first_non_blank(
-            data=self.deposit_1,
-            filter_col=(pl.col('num_group1')==0),
-            col_list=[
-                'case_id', 'amount_416A',
-                'contractenddate_991D', 'openingdate_313D'
-            ]
+        closed_contract_expr: pl.Expr = (
+            pl.col('amount_416A')
+            .filter(pl.col('contractenddate_991D').is_not_null())
+            .cast(pl.Float32)
+        )
+        open_contract_expr: pl.Expr = (
+            pl.col('amount_416A')
+            .filter(pl.col('contractenddate_991D').is_null())
+            .cast(pl.Float32)
+        )
+
+        self.deposit_1 = (
+            self.deposit_1
+            .group_by('case_id')
+            .agg(
+                #average range diff for closed contract
+                [
+                    (
+                        (
+                            pl.col('contractenddate_991D').cast(pl.Date) - 
+                            pl.col('openingdate_313D').cast(pl.Date)
+                        )
+                        .filter(pl.col('contractenddate_991D').is_not_null())
+                        .dt.total_days()
+                        .mean()
+                        .alias('mean_duration_closed_contract_amount_416A')
+                        .cast(pl.Float32)
+                    ),
+                    (
+                        (
+                            pl.col('contractenddate_991D').cast(pl.Date) - 
+                            pl.col('openingdate_313D').cast(pl.Date)
+                        )
+                        .filter(
+                            (pl.col('contractenddate_991D').is_not_null())&
+                            (pl.col('amount_416A') == 0.)
+                        )
+                        .dt.total_days()
+                        .mean()
+                        .alias('mean_duration_empty_closed_contract_amount_416A')
+                        .cast(pl.Float32)
+                    ),
+                ] +
+                #total amount closed contract
+                [
+                    (
+                        closed_contract_expr
+                        .mean()
+                        .alias(f'mean_closed_contract_amount_416A')
+                    ),
+                    (
+                        closed_contract_expr
+                        .sum()
+                        .alias(f'sum_closed_contract_amount_416A')
+                    ),
+                    (
+                        closed_contract_expr
+                        .std()
+                        .alias(f'std_closed_contract_amount_416A')
+                    )
+                ] + 
+                #total amount open contract
+                [
+                    (
+                        open_contract_expr
+                        .sum()
+                        .alias(f'sum_open_contract_amount_416A')
+                    ),
+                                (
+                        open_contract_expr
+                        .mean()
+                        .alias(f'mean_open_contract_amount_416A')
+                    ),
+                    (
+                        open_contract_expr
+                        .std()
+                        .alias(f'std_open_contract_amount_416A')
+                    )
+                ] +
+                #number close empty contract
+                [
+                    (
+                        
+                        pl.col('amount_416A')
+                        .filter(
+                            (pl.col('contractenddate_991D').is_not_null()) &
+                            (pl.col('amount_416A') == 0.)
+                        )
+                        .count()
+                        .alias(f'number_empty_closed_contract_amount_416A')
+                        .cast(pl.UInt16)
+                    ),
+                    (
+                        
+                        pl.col('amount_416A')
+                        .filter(
+                            (pl.col('contractenddate_991D').is_null()) &
+                            (pl.col('amount_416A') == 0.)
+                        )
+                        .count()
+                        .alias(f'number_empty_open_contract_amount_416A')
+                        .cast(pl.UInt16)
+                    )
+                ] +
+                # #number non empty contract
+                [
+                    (
+                        
+                        pl.col('amount_416A')
+                        .filter(
+                            (pl.col('contractenddate_991D').is_not_null()) &
+                            (pl.col('amount_416A') > 0.)
+                        )
+                        .count()
+                        .alias(f'number_not_empty_closed_contract_amount_416A')
+                        .cast(pl.UInt16)
+                    ),
+                    (
+                        
+                        pl.col('amount_416A')
+                        .filter(
+                            (pl.col('contractenddate_991D').is_null()) &
+                            (pl.col('amount_416A') > 0.)
+                        )
+                        .count()
+                        .alias(f'number_not_empty_open_contract_amount_416A')
+                        .cast(pl.UInt16)
+                    ),
+                ] +
+                [
+                    (
+                        pl.col('num_group1')
+                        .filter(pl.col('contractenddate_991D').is_not_null())
+                        .max()
+                        .alias('number_not_closed_contractX')
+                        .cast(pl.UInt16)
+                    ),
+                    (
+                        pl.col('num_group1')
+                        .filter(pl.col('contractenddate_991D').is_null())
+                        .max()
+                        .alias('number_closed_contractX')
+                        .cast(pl.UInt16)
+                    )
+                ]
+            )
         )
 
     def create_static_0_feature(self) -> None:

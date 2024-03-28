@@ -36,7 +36,6 @@ class PreprocessInit(BaseInit):
             'static_0_maxdpdinstldate_3546855D', 'static_cb_0_assignmentdate_238D',
             'static_cb_0_assignmentdate_4955616D', 'static_0_lastrepayingdate_696D',
             'person_1_birth_259D', 'person_1_empl_employedfrom_271D',
-            'deposit_1_contractenddate_991D', 'deposit_1_openingdate_313D'
         ]
         self.mapper_mask: Dict[str, Dict[str, int]] = None
         self.mapper_dtype: Dict[str, Dict[str, str]] = None
