@@ -993,7 +993,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             ).alias('amtdebitnetX').cast(pl.Float32),
             (
                 pl.col('amtdepositincoming_4809444A')-
-                pl.col('amtdepositoutgoing_4809442A ')
+                pl.col('amtdepositoutgoing_4809442A')
             ).alias('amtdepositnetX').cast(pl.Float32),
         )
 
