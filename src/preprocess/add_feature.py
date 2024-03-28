@@ -986,6 +986,15 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 'amtdepositbalance_4809441A', 'amtdepositincoming_4809444A',	
                 'amtdepositoutgoing_4809442A'
             ]
+        ).with_columns(
+            (
+                pl.col('amtdebitincoming_4809443A')-
+                pl.col('amtdebitoutgoing_4809440A')
+            ).alias('amtdebitnetX').cast(pl.Float32),
+            (
+                pl.col('amtdepositincoming_4809444A')-
+                pl.col('amtdepositoutgoing_4809442A ')
+            ).alias('amtdepositnetX').cast(pl.Float32),
         )
 
     def create_base_data_feature(self) -> None:
