@@ -220,6 +220,15 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                         .alias(f'min_{col_}')
                     )
                     for col_ in col_to_retrieve_list
+                ] +
+                [
+                    (
+                        pl.col(col_)
+                        .mean()
+                        .cast(pl.Float32)
+                        .alias(f'mean_{col_}')
+                    )
+                    for col_ in col_to_retrieve_list
                 ]
             )
         )
@@ -369,6 +378,33 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                         .alias('number_closed_contractX')
                         .cast(pl.UInt16)
                     )
+                ] +
+                #generical aggregation
+                [
+                    (
+                        pl_operator('amount_416A')
+                        .alias(f'{pl_operator.__name__}_amount_416A')
+                        .cast(pl.Float32)
+                    )
+                    for pl_operator in [pl.min, pl.max, pl.mean, pl.std, pl.sum]
+                ] +
+                #generical date aggregation
+                [
+                    (
+                        pl_operator('contractenddate_991D')
+                        .alias(f'{pl_operator.__name__}_contractenddate_991D')
+                        .cast(pl.Float32)
+                    )
+                    for pl_operator in [pl.min, pl.max]
+                ] +
+                #generical date aggregation
+                [
+                    (
+                        pl_operator('openingdate_313D')
+                        .alias(f'{pl_operator.__name__}_openingdate_313D')
+                        .cast(pl.Float32)
+                    )
+                    for pl_operator in [pl.min, pl.max]
                 ]
             )
         )
@@ -485,6 +521,24 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             .group_by('case_id')
             .agg(
                 (
+                    pl.col('amount_4527230A').filter(pl.col('num_group1')==0)
+                    .first()
+                    .cast(pl.Float32).alias('first_amount_4527230A')                    
+                ),
+                (
+                    pl.col('amount_4527230A').filter(pl.col('num_group1')==pl.col('num_group1').max())
+                    .first()
+                    .cast(pl.Float32).alias('last_amount_4527230A')                    
+                ),
+                (
+                    pl.col('amount_4527230A').min()
+                    .cast(pl.Float32).alias('min_amount_4527230A')
+                ),
+                (
+                    pl.col('amount_4527230A').max()
+                    .cast(pl.Float32).alias('max_amount_4527230A')
+                ),
+                (
                     pl.col('amount_4527230A').sum()
                     .cast(pl.Float32).alias('sum_amount_4527230A')
                 ),
@@ -516,6 +570,24 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             self.tax_registry_b_1
             .group_by('case_id')
             .agg(
+                (
+                    pl.col('amount_4917619A').filter(pl.col('num_group1')==0)
+                    .first()
+                    .cast(pl.Float32).alias('first_amount_4917619A')                    
+                ),
+                (
+                    pl.col('amount_4917619A').filter(pl.col('num_group1')==pl.col('num_group1').max())
+                    .first()
+                    .cast(pl.Float32).alias('last_amount_4917619A')                    
+                ),
+                (
+                    pl.col('amount_4917619A').min()
+                    .cast(pl.Float32).alias('min_amount_4917619A')
+                ),
+                (
+                    pl.col('amount_4917619A').max()
+                    .cast(pl.Float32).alias('max_amount_4917619A')
+                ),
                 (
                     pl.col('amount_4917619A').sum()
                     .cast(pl.Float32).alias('sum_amount_4917619A')
@@ -554,6 +626,24 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             self.tax_registry_c_1
             .group_by('case_id')
             .agg(
+                (
+                    pl.col('pmtamount_36A').filter(pl.col('num_group1')==0)
+                    .first()
+                    .cast(pl.Float32).alias('first_pmtamount_36A')                    
+                ),
+                (
+                    pl.col('pmtamount_36A').filter(pl.col('num_group1')==pl.col('num_group1').max())
+                    .first()
+                    .cast(pl.Float32).alias('last_pmtamount_36A')                    
+                ),
+                (
+                    pl.col('pmtamount_36A').min()
+                    .cast(pl.Float32).alias('min_pmtamount_36A')
+                ),
+                (
+                    pl.col('pmtamount_36A').max()
+                    .cast(pl.Float32).alias('max_pmtamount_36A')
+                ),
                 (
                     pl.col('pmtamount_36A').sum()
                     .cast(pl.Float32).alias('sum_pmtamount_36A')
@@ -960,7 +1050,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                     .alias(f'tax_registry_1_{operation}_amountX')
                     .cast(pl.Float32)
                 )
-                for operation in ['sum', 'mean', 'std']
+                for operation in ['first', 'last', 'min', 'max', 'sum', 'mean', 'std']
             ] +
             [
                 (
