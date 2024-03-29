@@ -230,15 +230,16 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         )
         
     def create_credit_bureau_b_1_feature(self) -> None:
-        warnings.warn('Only considering credit_bureau_b_1 info not related person for now...', UserWarning)
-        self.credit_bureau_b_1 = self.filter_and_select_first_non_blank(
-            data=self.credit_bureau_b_1,
-            filter_col=(pl.col('num_group1')==0),
-            col_list=[ 
-                col for col in self.credit_bureau_b_1.columns if col!='num_group1'
-            ]
+        list_generic_feature: list[pl.Expr] = self.add_generic_feature(
+            self.credit_bureau_b_1, 'credit_bureau_b_1'
         )
-        
+
+        self.credit_bureau_b_1 = (
+            self.credit_bureau_b_1
+            .group_by('case_id')
+            .agg(list_generic_feature)
+        )
+
     def create_credit_bureau_b_2_feature(self) -> None:
         warnings.warn('Only considering credit_bureau_b_2 num1==0', UserWarning)
         self.credit_bureau_b_2 = (
