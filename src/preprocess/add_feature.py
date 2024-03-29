@@ -485,33 +485,8 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                         .cast(pl.UInt16)
                     )
                 ] +
-                #generical aggregation
-                [
-                    (
-                        pl_operator('amount_416A')
-                        .alias(f'{pl_operator.__name__}_amount_416A')
-                        .cast(pl.Float32)
-                    )
-                    for pl_operator in [pl.min, pl.max, pl.mean, pl.std, pl.sum]
-                ] +
-                #generical date aggregation
-                [
-                    (
-                        pl_operator('contractenddate_991D')
-                        .alias(f'{pl_operator.__name__}_contractenddate_991D')
-                        .cast(pl.Float32)
-                    )
-                    for pl_operator in [pl.min, pl.max]
-                ] +
-                #generical date aggregation
-                [
-                    (
-                        pl_operator('openingdate_313D')
-                        .alias(f'{pl_operator.__name__}_openingdate_313D')
-                        .cast(pl.Float32)
-                    )
-                    for pl_operator in [pl.min, pl.max]
-                ]
+                #generic feature
+                list_generic_feature
             )
         )
 
