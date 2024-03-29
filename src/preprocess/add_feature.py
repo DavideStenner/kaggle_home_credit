@@ -11,6 +11,123 @@ from src.base.preprocess.add_feature import BaseFeature
 from src.preprocess.initialize import PreprocessInit
 
 class PreprocessAddFeature(BaseFeature, PreprocessInit):
+    def add_generic_feature(
+            self, 
+            data: Union[pl.DataFrame, pl.LazyFrame], 
+            dataset_name: str
+        ) -> list[pl.Expr]:
+        """
+        Generical expresion which can be combined in an agg(case_id) adding more expression
+        Used when no domain knowledge can be applied
+
+        Args:
+            data (Union[pl.DataFrame, pl.LazyFrame]): initial dataset
+
+        Returns:
+            pl.Expr: list of expression
+        """
+        numerical_columns_list :list[str] = [
+            col 
+            for col in data.columns 
+            if col[-1] in ['A', 'L', 'P', 'T']
+        ]
+        date_columns_list :list[str] = [
+            col
+            for col in data.columns 
+            if col[-1] == 'D'
+        ]
+        categorical_columns_list :list[str] = [
+            col
+            for col in data.columns 
+            if col[-1] == 'M'
+        ]
+        categorical_columns_with_hashed_null: list[str] = [
+            col for col in categorical_columns_list
+            if self.hashed_missing_label in self.mapper_mask[dataset_name][col].keys()
+        ]
+        #numerical expression
+        numerical_expr_list: list[pl.Expr] = [
+            (
+                pl_operator(col_name)
+                .alias(f'{pl_operator.__name__}_{col_name}')
+            )
+            for pl_operator, col_name in product(
+                self.numerical_aggregator,
+                numerical_columns_list
+            )
+        ]
+        numerical_expr_list: list[pl.Expr] = [
+            (
+                pl_expr.cast(pl.Float32)
+                if 
+                    (
+                        ('mean' == pl_expr.meta.output_name()[:4])|
+                        ('std' == pl_expr.meta.output_name()[:3])
+                    )
+                else pl_expr
+            )
+            for pl_expr in numerical_expr_list
+        ]
+        categorical_expr_list: list[pl.Expr] = (
+            [
+                (
+                    pl.col(col)
+                    .filter(
+                        pl.col(col)!=
+                        self.mapper_mask[dataset_name][col][self.hashed_missing_label]
+                    )
+                    .drop_nulls().mode().first()
+                    .alias(f'not_hashed_missing_mode_{col}')
+                )
+                for col in categorical_columns_with_hashed_null
+            ] + 
+            [
+                (
+                    pl.col(col)
+                    .drop_nulls().mode().first()
+                    .alias(f'mode_{col}')
+                )
+                for col in categorical_columns_list
+            ] +
+            [
+                (
+                    pl.col(col).n_unique()
+                    .alias(f'n_unique_{col}')
+                )
+                for col in categorical_columns_list
+            ]
+        )
+
+        date_expr_list: list[pl.Expr] = [
+            (
+                pl_operator(col_name)
+                .alias(f'{pl_operator.__name__}_{col_name}')
+            )
+            for pl_operator, col_name in product(
+                self.date_aggregator,
+                date_columns_list
+            )
+        ]
+        count_expr_list: list[pl.Expr] = (
+            [
+                (
+                    pl.col(col).max()
+                    .alias(f'max_{col}')
+                    .cast(pl.UInt16)
+                )
+                for col in ['num_group1', 'num_group2']
+                if col in data.columns
+            ]
+        )
+        result_expr_list: list[pl.Expr] = (
+            numerical_expr_list +
+            categorical_expr_list +
+            date_expr_list +
+            count_expr_list
+        )
+
+        return result_expr_list
+
     
     def filter_and_select_first_non_blank(
         self, 
