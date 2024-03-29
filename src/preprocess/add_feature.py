@@ -303,12 +303,23 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             'last180dayturnover_1134A', 'last30dayturnover_651A'
         ]
 
+        list_generic_feature: list[pl.Expr] = self.add_generic_feature(
+            self.debitcard_1, 'debitcard_1'
+        )
         self.debitcard_1 = (
             self.debitcard_1
             .group_by('case_id')
             .agg(
+                #first info
                 [
-                    pl.col('num_group1').max().alias('num_debitcardX').cast(pl.UInt16)
+                    (
+                        pl.col(col_)
+                        .filter(pl.col(col_).is_not_null())
+                        .first()
+                        .cast(pl.Float32)
+                        .alias(f'first_{col_}')
+                    )
+                    for col_ in col_to_retrieve_list
                 ] +
                 #last info
                 [
@@ -321,33 +332,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                     )
                     for col_ in col_to_retrieve_list
                 ] +
-                [
-                    (
-                        pl.col(col_)
-                        .max()
-                        .cast(pl.Float32)
-                        .alias(f'max_{col_}')
-                    )
-                    for col_ in col_to_retrieve_list
-                ] +
-                [
-                    (
-                        pl.col(col_)
-                        .min()
-                        .cast(pl.Float32)
-                        .alias(f'min_{col_}')
-                    )
-                    for col_ in col_to_retrieve_list
-                ] +
-                [
-                    (
-                        pl.col(col_)
-                        .mean()
-                        .cast(pl.Float32)
-                        .alias(f'mean_{col_}')
-                    )
-                    for col_ in col_to_retrieve_list
-                ]
+                list_generic_feature
             )
         )
 
@@ -361,6 +346,9 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             pl.col('amount_416A')
             .filter(pl.col('contractenddate_991D').is_null())
             .cast(pl.Float32)
+        )
+        list_generic_feature: list[pl.Expr] = self.add_generic_feature(
+            self.deposit_1, 'deposit_1'
         )
 
         self.deposit_1 = (
