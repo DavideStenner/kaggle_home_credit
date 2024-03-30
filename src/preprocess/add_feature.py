@@ -110,6 +110,16 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 date_columns_list
             )
         ]
+        date_expr_list += [
+            (
+                (
+                    pl.max(col_name) - pl.min(col_name)
+                ).dt.total_days()
+                .cast(pl.UInt32)
+                .alias(f'range_{col_name}')
+            )
+            for col_name in date_columns_list
+        ]
         count_expr_list: list[pl.Expr] = (
             [
                 (
