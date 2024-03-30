@@ -249,7 +249,26 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         self.credit_bureau_b_1 = (
             self.credit_bureau_b_1
             .group_by('case_id')
-            .agg(list_generic_feature)
+            .agg(
+                [
+                    (
+                        pl.col('contractmaturitydate_151D') - pl.col('contractdate_551D')
+                    ).dt.total_days().mean()
+                    .cast(pl.Float32)
+                    .alias('mean_duration_contractmaturitydate_151D_contractdate_551D'),
+                    (
+                        pl.col('lastupdate_260D') - pl.col('contractdate_551D')
+                    ).dt.total_days().mean()
+                    .cast(pl.Float32)
+                    .alias('mean_duration_lastupdate_260D_contractdate_551D'),
+                    (
+                        pl.col('contractmaturitydate_151D') - pl.col('lastupdate_260D')
+                    ).dt.total_days().mean()
+                    .cast(pl.Float32)
+                    .alias('mean_duration_contractmaturitydate_151D_lastupdate_260D')
+                ] +
+                list_generic_feature
+            )
         )
 
     def create_credit_bureau_b_2_feature(self) -> None:
