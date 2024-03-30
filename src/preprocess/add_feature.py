@@ -729,6 +729,13 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                     pl.col('deductiondate_4917603D').max()
                     .cast(pl.Date)
                     .alias('max_deductiondate_4917603D')
+                ),
+                (
+                    (
+                        pl.max('deductiondate_4917603D') - pl.min('deductiondate_4917603D')
+                    ).dt.total_days()
+                    .cast(pl.UInt16)
+                    .alias(f'range_deductiondate_4917603D')
                 )
             )
         )
@@ -784,7 +791,14 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 (
                     pl.col('processingdate_168D').max()
                     .cast(pl.Date)
-                    .alias('max_deductiondate_4917603D')
+                    .alias('max_processingdate_168D')
+                ),
+                (
+                    (
+                        pl.max('processingdate_168D') - pl.min('processingdate_168D')
+                    ).dt.total_days()
+                    .cast(pl.UInt16)
+                    .alias(f'range_processingdate_168D')
                 )
             )
         )                
@@ -1201,6 +1215,20 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                     )
                     .alias(f'tax_registry_1_number_workerX')
                     .cast(pl.Float32)
+                )
+            ] +
+            [
+                (
+                    pl.sum_horizontal(
+                        pl.col(
+                            [
+                                'tax_registry_b_1_range_deductiondate_4917603D',
+                                'tax_registry_c_1_range_processingdate_168D'
+                            ]
+                        )/2
+                    )
+                    .alias(f'tax_registry_1_range_date')
+                    .cast(pl.UInt16)
                 )
             ]
         )
