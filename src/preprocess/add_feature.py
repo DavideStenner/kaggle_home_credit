@@ -1015,30 +1015,70 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         )
 
     def create_applprev_1_feature(self) -> None:
-        warnings.warn('Only considering applprev_1 info not related person for now...', UserWarning)
-        select_col_group_1 = [
-            'case_id',
-            'actualdpd_943P', 'annuity_853A', 'approvaldate_319D',
-            'byoccupationinc_3656910L', 'cancelreason_3545846M',
-            'childnum_21L', 'creationdate_885D', 'credacc_actualbalance_314A',
-            'credacc_credlmt_575A', 'credacc_maxhisbal_375A',
-            'credacc_minhisbal_90A', 'credacc_status_367L',
-            'credacc_transactions_402L', 'credamount_590A',
-            'credtype_587L', 'currdebt_94A', 'dateactivated_425D',
-            'downpmt_134A', 'dtlastpmt_581D', 'dtlastpmtallstes_3545839D',
-            'education_1138M', 'employedfrom_700D', 'familystate_726L',
-            'firstnonzeroinstldate_307D', 'inittransactioncode_279L', 
-            'isbidproduct_390L', 'isdebitcard_527L', 'mainoccupationinc_437A',
-            'maxdpdtolerance_577P', 'pmtnum_8L', 'postype_4733339M',
-            'profession_152M', 'rejectreason_755M', 'rejectreasonclient_4145042M',
-            'revolvingaccount_394A', 'status_219L', 'tenor_203L'
-        ]
-        self.applprev_1 = self.filter_and_select_first_non_blank(
-            data=self.applprev_1,
-            filter_col=pl.col('num_group1')==0,
-            col_list=select_col_group_1
+        self.applprev_1 = self.applprev_1.drop('district_544M', 'profession_152M')
+
+        #filter past
+        self.applprev_1 = self.applprev_1.join(
+            self.base_data.select('case_id', 'date_decision'),
+            on='case_id', how='left'
+        ).filter(
+            (pl.col('date_decision') > pl.col('creationdate_885D'))
+        ).drop('date_decision')
+
+        list_generic_feature: list[pl.Expr] = self.add_generic_feature(
+            self.applprev_1, 'applprev_1'
         )
-    
+        date_col_diff: list[str] = [
+            'dateactivated_425D', 'dtlastpmt_581D', 
+            'dtlastpmtallstes_3545839D', 
+            'employedfrom_700D', 'firstnonzeroinstldate_307D'
+        ]
+        dtype_select = {
+            'min': pl.Int32,
+            'max': pl.Int32,
+            'mean': pl.Float32
+        }
+        self.applprev_1 = (
+            self.applprev_1
+            #utils for aggregation
+            .with_columns(
+                [
+                    (pl.col(col) - pl.col('creationdate_885D')).dt.total_days()
+                    .alias(f'diff_{col}_creationdate_885D')
+                    for col in date_col_diff
+                ] +
+                [
+                    (pl.col(col) - pl.col('approvaldate_319D')).dt.total_days()
+                    .alias(f'diff_{col}_approvaldate_319D')
+                    for col in date_col_diff
+                ]
+            )
+            .group_by('case_id')
+            .agg(
+                #diff aggregation to creationdate_885D
+                [
+                    pl_operator(f'diff_{col}_creationdate_885D')
+                    .alias(f'{pl_operator.__name__}_duration_{col}_creationdate_885D')
+                    .cast(dtype_select[pl_operator.__name__])
+                    for pl_operator, col in product(
+                        [pl.mean] + self.date_aggregator,
+                        date_col_diff
+                    )
+                ] +
+                #diff to approvaldate_319D
+                [
+                    pl_operator(f'diff_{col}_approvaldate_319D')
+                    .alias(f'{pl_operator.__name__}_duration_{col}_approvaldate_319D')
+                    .cast(dtype_select[pl_operator.__name__])
+                    for pl_operator, col in product(
+                        [pl.mean] + self.date_aggregator,
+                        date_col_diff
+                    )
+                ] +
+                list_generic_feature
+            )
+        )
+            
     def create_applprev_2_feature(self) -> None:
         warnings.warn('Only considering applprev_2 info relate to 0...', UserWarning)
 
@@ -1242,8 +1282,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         
         dates_to_transform = [
             col for i, col in enumerate(self.data.columns)
-            if (col[-1]=='D') & (type_list[i] == pl.Date) &
-            (col not in ['applprev_1_creationdate_885D'])
+            if (col[-1]=='D') & (type_list[i] == pl.Date)
         ]
         not_allowed_negative_dates = [
             col
@@ -1302,24 +1341,6 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             ]
         )
 
-        #correct applprev_1 columns depending on date decision -> no future decision
-        self.data = self.data.with_columns(
-            
-            [
-                (
-                    pl.when(
-                        (pl.col('date_decision') - pl.col('applprev_1_creationdate_885D'))
-                        .dt.total_days() <0
-                    )
-                    .then(None)
-                    .otherwise(pl.col(col))
-                    .cast(pl.Int32).alias(col)
-                )
-                for col in self.data.columns
-                if (col[-1]=='D') & ('applprev_1_' in col) & (col != 'applprev_1_creationdate_885D')
-            ]
-        ).drop('applprev_1_creationdate_885D')
-
     def create_intra_diff_date(self) -> None:
         
         def robust_cast_type(operator: pl.Expr, pl_type: pl.DataType) -> pl.Expr:
@@ -1337,34 +1358,6 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             )
             return casted_type
         
-        #PLACEHOLDER
-        # self.applprev_1 = self.applprev_1.with_columns(
-        #     #add day diff
-        #     [
-        #         ( 
-        #             pl.col(col) -
-        #             pl.col('creationdate_885D')
-        #         ).dt.total_days()
-        #         .cast(pl.Int32).alias(col)
-        #         for col in self.applprev_1.columns
-        #         if (col[-1] == "D") & (col != 'creationdate_885D')
-        #     ]
-        # ).with_columns(
-        #     #add also year diff
-        #     [
-        #         (
-        #             (pl.col(col)//365)
-        #             .cast(pl.Int32).alias(
-        #                 change_name_with_type(
-        #                     col, '_year_diff_'
-        #                 )
-        #             )
-        #         )
-        #         for col in self.applprev_1.columns
-        #         if (col[-1] == "D") & (col != 'creationdate_885D')
-        #     ]
-        # )
-
         #credit_bureau_a_1
         list_date_non_negative_operation = [
             #range active contract to end
