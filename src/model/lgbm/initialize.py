@@ -134,19 +134,20 @@ class LgbmInit(ModelInit):
             mapper_mask = self.convert_feature_name_with_dataset(
                 json.load(file)
             )
+        cat_col_list = list(
+            chain(
+                *[
+                    list(type_mapping.keys())
+                    for _, type_mapping in mapper_mask.items()
+                    if any(type_mapping)
+                ]
+            )
+        )
+        cat_col_list += [f'not_hashed_missing_mode_{col}' for col in cat_col_list]
+        cat_col_list += [f'mode_{col}' for col in cat_col_list]
 
         self.categorical_col_list: set[str] = (
-            set(
-                list(
-                    chain(
-                        *[
-                            list(type_mapping.keys())
-                            for _, type_mapping in mapper_mask.items()
-                            if any(type_mapping)
-                        ]
-                    )
-                )
-            ).intersection(set(data_columns))
+            set(cat_col_list).intersection(set(data_columns))
         )
     def create_experiment_structure(self) -> None:
         if not os.path.isdir(self.experiment_path):
