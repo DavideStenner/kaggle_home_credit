@@ -82,6 +82,26 @@ class LgbmInit(ModelInit):
             mapper_dict.items()
         }
     
+    def __get_categorical_columns_list(self, mapper_mask: Dict[str, Union[str, dict, float]]) -> list[str]:
+        cat_list_col = [
+            (
+                [
+                    dataset_name + '_' + col
+                    for col in col_mapper.keys()
+                ] +
+                [
+                    dataset_name + '_' + 'mode_' + col
+                    for col in col_mapper.keys()
+                ] +
+                [
+                    dataset_name + '_' + 'not_hashed_missing_mode_' + col
+                    for col in col_mapper.keys()
+                ]
+            )
+            for dataset_name, col_mapper in mapper_mask.items()
+        ]
+        return list(chain(*cat_list_col))
+    
     def get_dataset_columns(self) -> None:
         self.load_used_feature()
         
@@ -131,24 +151,14 @@ class LgbmInit(ModelInit):
                 'mapper_mask.json'
             ), 'r'
         ) as file:
-            mapper_mask = self.convert_feature_name_with_dataset(
+            cat_col_list = self.__get_categorical_columns_list(
                 json.load(file)
             )
-        cat_col_list = list(
-            chain(
-                *[
-                    list(type_mapping.keys())
-                    for _, type_mapping in mapper_mask.items()
-                    if any(type_mapping)
-                ]
-            )
-        )
-        cat_col_list += [f'not_hashed_missing_mode_{col}' for col in cat_col_list]
-        cat_col_list += [f'mode_{col}' for col in cat_col_list]
 
         self.categorical_col_list: set[str] = (
             set(cat_col_list).intersection(set(data_columns))
         )
+        
     def create_experiment_structure(self) -> None:
         if not os.path.isdir(self.experiment_path):
             os.makedirs(self.experiment_path)
