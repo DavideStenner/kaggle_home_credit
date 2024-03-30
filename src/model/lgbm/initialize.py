@@ -71,7 +71,7 @@ class LgbmInit(ModelInit):
         
         self.get_categorical_columns(data_columns=data_columns)
     
-    def convert_feature_name_with_dataset(self, mapper_dict: Dict[str, Union[str, dict, float]]):
+    def __convert_feature_name_with_dataset(self, mapper_dict: Dict[str, Union[str, dict, float]]):
         return {
             dataset_name: {
                 #add dataset name to column as new feature for duplicated column name
@@ -123,7 +123,7 @@ class LgbmInit(ModelInit):
                 'mapper_dtype.json'
             ), 'r'
         ) as file:
-            mapper_dtype = self.convert_feature_name_with_dataset(
+            mapper_dtype = self.__convert_feature_name_with_dataset(
                 json.load(file)
             )
         self.original_feature_dataset = pd.DataFrame(
