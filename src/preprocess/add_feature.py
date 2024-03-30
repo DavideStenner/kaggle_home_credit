@@ -26,20 +26,22 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         Returns:
             pl.Expr: list of expression
         """
+        categorical_columns_list :list[str] = [
+            col
+            for col in data.columns 
+            if col in self.mapper_mask[dataset_name].keys()
+        ]
         numerical_columns_list :list[str] = [
             col 
             for col in data.columns 
-            if col[-1] in ['A', 'L', 'P', 'T']
+            if 
+                (col[-1] in ['A', 'L', 'P', 'T']) &
+                (col not in categorical_columns_list)
         ]
         date_columns_list :list[str] = [
             col
             for col in data.columns 
             if col[-1] == 'D'
-        ]
-        categorical_columns_list :list[str] = [
-            col
-            for col in data.columns 
-            if col[-1] == 'M'
         ]
         categorical_columns_with_hashed_null: list[str] = [
             col for col in categorical_columns_list
