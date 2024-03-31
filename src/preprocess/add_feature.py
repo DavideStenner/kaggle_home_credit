@@ -9,6 +9,7 @@ from functools import partial
 from src.utils.other import change_name_with_type
 from src.base.preprocess.add_feature import BaseFeature
 from src.preprocess.initialize import PreprocessInit
+from src.utils.dtype import TYPE_MAPPING
 
 class PreprocessAddFeature(BaseFeature, PreprocessInit):
     def add_generic_feature(
@@ -26,6 +27,10 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         Returns:
             pl.Expr: list of expression
         """
+        mapper_column_cast = {
+            col: TYPE_MAPPING[dtype_str]
+            for col, dtype_str in self.mapper_dtype[dataset_name].items()
+        }
         categorical_columns_list :list[str] = [
             col
             for col in data.columns 
@@ -66,7 +71,12 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                         ('mean' == pl_expr.meta.output_name()[:4])|
                         ('std' == pl_expr.meta.output_name()[:3])
                     )
-                else pl_expr
+                else (
+                    pl_expr.cast(mapper_column_cast[pl_expr.meta.output_name().split('_', 1)[-1]])
+                    if ('min' in pl_expr.meta.output_name()) or ('max' in pl_expr.meta.output_name())
+                    else
+                    pl_expr
+                )
             )
             for pl_expr in numerical_expr_list
         ]
@@ -80,6 +90,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                     )
                     .drop_nulls().mode().first()
                     .alias(f'not_hashed_missing_mode_{col}')
+                    .cast(mapper_column_cast[col])
                 )
                 for col in categorical_columns_with_hashed_null
             ] + 
@@ -88,6 +99,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                     pl.col(col)
                     .drop_nulls().mode().first()
                     .alias(f'mode_{col}')
+                    .cast(mapper_column_cast[col])
                 )
                 for col in categorical_columns_list
             ] +
@@ -95,6 +107,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 (
                     pl.col(col).n_unique()
                     .alias(f'n_unique_{col}')
+                    .cast(mapper_column_cast[col])
                 )
                 for col in categorical_columns_list
             ]
