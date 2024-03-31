@@ -1179,14 +1179,43 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
     def create_base_data_feature(self) -> None:
         pass
 
-    
+    def creat_null_feature(self, dataset_name: str) -> None:
+        current_dataset: Union[pl.LazyFrame, pl.DataFrame] = getattr(
+            self, dataset_name
+        )
+        current_dataset = current_dataset.with_columns(
+            [
+                pl.sum_horizontal(
+                    pl.col(
+                        [col for col in current_dataset.columns if col[-1] == type_col]
+                    ).is_null()
+                ).alias(f'count_null_{type_col}').cast(pl.UInt16)
+                for type_col in ['A', 'L', 'P', 'T', 'D', 'M']
+                if any([col for col in current_dataset.columns if col[-1] == type_col])
+            ] +
+            [
+                pl.sum_horizontal(
+                    pl.col(
+                        [col for col in current_dataset.columns if col[-1] in ['A', 'L', 'P', 'T', 'D', 'M']]
+                    ).is_null()
+                ).alias('all_count_null_X').cast(pl.UInt16)
+            ]
+        )
+        setattr(
+            self,
+            dataset_name,
+            current_dataset
+        )
+
     def create_feature(self) -> None:        
         for dataset in ['base_data'] + self.used_dataset:
             current_dataset_fe_pipeline: callable = getattr(
                 self, f'create_{dataset}_feature'
             )
             current_dataset_fe_pipeline()
-                        
+            if dataset != 'base_data':
+                self.creat_null_feature(dataset_name=dataset)
+            
         if not self.inference:
             self.add_fold_column()
 
@@ -1214,6 +1243,20 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 )
             )
 
+    def add_null_feature(self) -> None:
+        """Add null count feature"""
+        self.data = self.data.with_columns(
+            pl.sum_horizontal(
+                pl.col(
+                    [
+                        col for col in self.data.columns
+                        if 'all_count_null_X' in col
+                    ]
+                )
+            ).cast(pl.UInt16).alias('base_all_count_null_X')
+        )
+        
+        
     def add_tax_registration_merge(self) -> None:
         """
         Tax registration a1, b2, c2 are different dataset merge them on a same feature
@@ -1513,9 +1556,8 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
     def add_additional_feature(self) -> None:
         self.add_difference_to_date_decision()
         self.add_tax_registration_merge()
-        #DEACTIVATED FOR NOW
-        #self.create_intra_diff_date()
-        
+        self.add_null_feature()
+                
     def merge_all(self) -> None:
         self.add_dataset_name_to_feature()
         
