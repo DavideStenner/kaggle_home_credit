@@ -261,6 +261,9 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
 
         self.credit_bureau_b_1 = (
             self.credit_bureau_b_1
+            .drop(
+                'credlmt_1052A', 'residualamount_1093A', 'residualamount_127A'
+            )
             .group_by('case_id')
             .agg(
                 [
