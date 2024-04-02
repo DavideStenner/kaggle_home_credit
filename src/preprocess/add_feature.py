@@ -255,15 +255,16 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         )
         
     def create_credit_bureau_b_1_feature(self) -> None:
+        #empty column
+        self.credit_bureau_b_1 = self.credit_bureau_b_1.drop(
+            'credlmt_1052A', 'residualamount_1093A', 'residualamount_127A'
+        )
         list_generic_feature: list[pl.Expr] = self.add_generic_feature(
             self.credit_bureau_b_1, 'credit_bureau_b_1'
         )
 
         self.credit_bureau_b_1 = (
             self.credit_bureau_b_1
-            .drop(
-                'credlmt_1052A', 'residualamount_1093A', 'residualamount_127A'
-            )
             .group_by('case_id')
             .agg(
                 [
