@@ -603,14 +603,8 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 'firstquarter_103L', 'secondquarter_766L', 'thirdquarter_1082L',
                 'fourthquarter_440L'
             ],
-            'number_rejected': [
-                'forweek_601L', 'formonth_118L', 
-                'forquarter_462L', 'foryear_618L', 
-                'for3years_128L'
-            ],
             'number_cancelations': [
-                'forweek_1077L', 'formonth_206L', 'forquarter_1017L', 'foryear_818L',
-                'for3years_584L'
+                'foryear_818L', 'for3years_584L'
             ]
         }
         list_operator = []
@@ -635,6 +629,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             ).dt.total_days().cast(pl.Int32).alias(f'{col_1}_diff_{col_2}')
             for col_1, col_2 in [
                 ['responsedate_1012D', 'assignmentdate_238D'],
+                #always 0
                 ['responsedate_4527233D', 'assignmentdate_4527235D'],
                 ['responsedate_4917613D', 'assignmentdate_4955616D']
             ]
@@ -705,7 +700,11 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         ).drop(
             [
                 'birthdate_574D', 'dateofbirth_337D', 'dateofbirth_342D',
-                'numberofqueries_373L'
+                'for3years_128L',
+                'description_5085714M', 
+                'forweek_601L', 'forquarter_462L', 'foryear_618L', 
+                'formonth_118L',
+                'forweek_1077L', 'formonth_206L', 'forquarter_1017L', 
             ]
         )
 
@@ -1311,15 +1310,18 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                     }
                 )
             )
-
-    def add_null_feature(self) -> None:
-        """Add null count feature"""
+    
+    def drop_useless_feature_manual(self) -> None:
+        """Drop manually useless feature"""
         #drop useless null features
         self.data = self.data.drop(
             'other_1_count_null_A', 'other_1_all_count_null_X',
             'tax_registry_a_1_count_null_D', 'tax_registry_b_1_count_null_D', 'tax_registry_c_1_count_null_D',
-            'applprev_1_min_isbidproduct_390L'
+            'applprev_1_min_isbidproduct_390L', 'static_cb_0_count_null_M'
         )
+
+    def add_null_feature(self) -> None:
+        """Add null count feature"""
         self.data = self.data.with_columns(
             pl.sum_horizontal(
                 pl.col(
@@ -1631,6 +1633,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
     def add_additional_feature(self) -> None:
         self.add_difference_to_date_decision()
         self.add_tax_registration_merge()
+        self.drop_useless_feature_manual()
         self.add_null_feature()
                 
     def merge_all(self) -> None:
