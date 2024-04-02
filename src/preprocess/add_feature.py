@@ -1314,6 +1314,12 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
 
     def add_null_feature(self) -> None:
         """Add null count feature"""
+        #drop useless null features
+        self.data = self.data.drop(
+            'other_1_count_null_A', 'other_1_all_count_null_X',
+            'tax_registry_a_1_count_null_D', 'tax_registry_b_1_count_null_D', 'tax_registry_c_1_count_null_D',
+            'applprev_1_min_isbidproduct_390L'
+        )
         self.data = self.data.with_columns(
             pl.sum_horizontal(
                 pl.col(
