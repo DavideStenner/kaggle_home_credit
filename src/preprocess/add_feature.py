@@ -977,7 +977,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                             )
                         )
                         .count()
-                        .alias(f'{column_name}_{col_value}X')
+                        .alias(f'{column_name}_{col_value}_count_X')
                         .cast(pl.UInt16)
                     )
                     for column_name, col_value in [
