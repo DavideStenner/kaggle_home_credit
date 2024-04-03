@@ -544,6 +544,11 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             filter_col=pl.lit(True),
             col_list=self.static_0.columns
         )
+        
+        self.static_0 = self.static_0.drop(
+            'previouscontdistrict_112M', 'deferredmnthsnum_166L',
+            'applicationcnt_361L'
+        )
         self.static_0 = self.static_0.with_columns(            
             #NUMERIC FEATURE
             (pl.col('maxdpdlast24m_143P')-pl.col('avgdbddpdlast24m_3658932P')).alias('delinquency_interactionX').cast(pl.Int32),
@@ -1317,7 +1322,8 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         self.data = self.data.drop(
             'other_1_count_null_A', 'other_1_all_count_null_X',
             'tax_registry_a_1_count_null_D', 'tax_registry_b_1_count_null_D', 'tax_registry_c_1_count_null_D',
-            'applprev_1_min_isbidproduct_390L', 'static_cb_0_count_null_M'
+            'applprev_1_min_isbidproduct_390L', 'static_cb_0_count_null_M',
+            'static_0_count_null_M'
         )
 
     def add_null_feature(self) -> None:
