@@ -985,15 +985,15 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                         for column_name, col_value_list in dict_agg_info.items() 
                         for col_value in col_value_list
                     ]
-                ],
-                *[
+                ] +
+                [
                     (
                         pl.col(column_name)
                         .filter(
                             (pl.col(column_name).is_null())
                         )
                         .len()
-                        .alias(f'{column_name}_nullX')
+                        .alias(f'{column_name}_countnull_X')
                         .cast(pl.UInt16)
                     )
                     for column_name in [
