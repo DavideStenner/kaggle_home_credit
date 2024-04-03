@@ -1005,6 +1005,24 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                     ]
                 ]
             )
+        ).with_columns(
+            [
+                (
+                    (
+                        pl.col('number_rowsX') - 
+                        pl.col(f'{col}_countnull_X')
+                    )
+                    .alias(f'{col}_number_info_x')
+                    .cast(pl.UInt16)
+                )
+                for col in [
+                    'gender_992L', 'housingtype_772L', 
+                    'maritalst_703L', 'persontype_1072L', 
+                    'persontype_792L', 'relationshiptoclient_415T', 
+                    'relationshiptoclient_642T', 'role_1084L', 'role_993L', 
+                    'type_25L'
+                ]
+            ]
         )
         
         self.person_1 = (
