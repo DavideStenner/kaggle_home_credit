@@ -899,7 +899,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             'empl_industry_691L', 'familystate_447L',
             'housetype_905L', 
             'incometype_1044T', 'isreference_387L', 'language1_981M',
-            'mainoccupationinc_384A', 'maritalst_703L',
+            'mainoccupationinc_384A',
             'role_1084L', 'role_993L',
             'safeguarantyflag_411L', 'type_25L', 'sex_738L'
         ]
@@ -950,22 +950,11 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             self.person_1.filter(
                 pl.col('num_group1')!=0
             ).group_by('case_id').agg(
-                pl.len().alias('number_rowsX').cast(pl.UInt16),
-                pl.col('childnum_185L').max().cast(pl.Int16),
-                *[
-                    (
-                        pl.col(column_name)
-                        .filter(
-                            (pl.col(column_name)==self.mapper_mask['person_1'][column_name][self.hashed_missing_label])
-                        ).count().alias(f'{column_name}_a55475b1countX').cast(pl.UInt16)
-                    )
-                    for column_name in [
-                        'contaddr_district_15M', 'contaddr_zipcode_807M', 
-                        'empladdr_district_926M', 'empladdr_zipcode_114M',
-                        'registaddr_zipcode_184M'
-                    ]
-                ],
-                *[
+                [
+                    pl.len().alias('number_rowsX').cast(pl.UInt16),
+                    pl.col('childnum_185L').max().cast(pl.Int16),
+                ] +
+                [
                     (
                         pl.col(column_name)
                         .filter(
@@ -1323,7 +1312,8 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             'other_1_count_null_A', 'other_1_all_count_null_X',
             'tax_registry_a_1_count_null_D', 'tax_registry_b_1_count_null_D', 'tax_registry_c_1_count_null_D',
             'applprev_1_min_isbidproduct_390L', 'static_cb_0_count_null_M',
-            'static_0_count_null_M'
+            'static_0_count_null_M', 'person_1_count_null_A',
+            'person_1_count_null_T', 'person_1_count_null_M'
         )
 
     def add_null_feature(self) -> None:
