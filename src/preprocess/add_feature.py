@@ -907,6 +907,13 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             data=self.person_1,
             filter_col=pl.col('num_group1')==0,
             col_list=select_col_group_1
+        ).with_columns(
+            (
+                pl.col('empl_employedfrom_271D') - 
+                pl.col('birth_259D')
+            ).dt.total_days()
+            .alias('empl_employedfrom_271D_diff_birth_259D')
+            .cast(pl.Int32)
         )
 
         dict_agg_info: Dict[str, list[str]] = {
