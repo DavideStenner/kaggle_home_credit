@@ -183,14 +183,44 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         )
     
     def create_credit_bureau_a_1_feature(self) -> None:
-        warnings.warn('Only considering credit_bureau_a_1 info not related person for now...', UserWarning)
-        
-        self.credit_bureau_a_1 = self.filter_and_select_first_non_blank(
-            data=self.credit_bureau_a_1,
-            filter_col=pl.col('num_group1')==0,
-            col_list=[col for col in self.credit_bureau_a_1.columns if col != 'num_group1']
+        self.credit_bureau_a_1 = self.credit_bureau_a_1.with_columns(
+            pl.date(
+                pl.col('dpdmaxdateyear_896T'),
+                pl.col('dpdmaxdatemonth_442T'),
+                1
+            ).cast(pl.Date).alias('dpdmaxdate_closed_D'),
+            pl.date(
+                pl.col('dpdmaxdateyear_596T'),
+                pl.col('dpdmaxdatemonth_89T'),
+                1
+            ).cast(pl.Date).alias('dpdmaxdate_active_D'),
+            pl.date(
+                pl.col('overdueamountmaxdateyear_994T'),
+                pl.col('overdueamountmaxdatemonth_284T'),
+                1
+            ).cast(pl.Date).alias('overdueamountmaxdate_closed_D'),
+            pl.date(
+                pl.col('overdueamountmaxdateyear_2T'),
+                pl.col('overdueamountmaxdatemonth_365T'),
+                1
+            ).cast(pl.Date).alias('overdueamountmaxdate_active_D')
+        ).drop(
+            'refreshdate_3813885D',
+            'dpdmaxdatemonth_442T', 'dpdmaxdatemonth_89T',
+            'dpdmaxdateyear_596T', 'dpdmaxdateyear_896T',
+            'overdueamountmaxdatemonth_284T', 'overdueamountmaxdatemonth_365T',
+            'overdueamountmaxdateyear_2T', 'overdueamountmaxdateyear_994T'
         )
-            
+        
+        list_generic_feature: list[pl.Expr] = self.add_generic_feature(
+            self.credit_bureau_a_1, 'credit_bureau_a_1'
+        )
+        self.credit_bureau_a_1 = (
+            self.credit_bureau_a_1
+            .group_by('case_id')
+            .agg(list_generic_feature)
+        )
+
     def create_credit_bureau_a_2_feature(self) -> None:
         warnings.warn('Only considering credit_bureau_a_2 num1==0', UserWarning)
         #aggregate and take first element
@@ -1338,7 +1368,8 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             'tax_registry_a_1_count_null_D', 'tax_registry_b_1_count_null_D', 'tax_registry_c_1_count_null_D',
             'applprev_1_min_isbidproduct_390L', 'static_cb_0_count_null_M',
             'static_0_count_null_M', 'person_1_count_null_A',
-            'person_1_count_null_T', 'person_1_count_null_M'
+            'person_1_count_null_T', 'person_1_count_null_M',
+            'credit_bureau_a_1_std_debtoverdue_47A', 'credit_bureau_a_1_std_debtoutstand_525A'
         )
 
     def add_null_feature(self) -> None:
