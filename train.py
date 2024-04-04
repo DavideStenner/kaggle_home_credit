@@ -27,10 +27,9 @@ if __name__=='__main__':
         params_lgb=params_model,
         config_dict=config_dict, data_columns=home_credit_preprocessor.feature_list,
         metric_eval='gini_stability', log_evaluation=50, 
-        evaluate_stability=True, evaluate_shap=False
+        evaluate_stability=False, evaluate_shap=False
     )
     trainer.train_explain()
-    # trainer.train_with_stability_selection()
     
     if args.xgb:
         raise NotImplementedError
