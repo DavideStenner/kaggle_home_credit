@@ -29,6 +29,9 @@ class LgbmInit(ModelInit):
         self.experiment_insight_path: str = os.path.join(
             self.experiment_path, 'insight'
         )
+        self.experiment_insight_train_path: str = os.path.join(
+            self.experiment_insight_path, 'training'
+        )
         self.experiment_shap_path: str = os.path.join(
             self.experiment_path, 'shap'
         )
@@ -160,16 +163,12 @@ class LgbmInit(ModelInit):
         )
         
     def create_experiment_structure(self) -> None:
-        if not os.path.isdir(self.experiment_path):
-            os.makedirs(self.experiment_path)
-            
-        #plot
-        if not os.path.isdir(self.experiment_insight_path):
-            os.makedirs(self.experiment_insight_path)
-        
-        #shap
-        if not os.path.isdir(self.experiment_shap_path):
-            os.makedirs(self.experiment_shap_path)
+        for dir_path in [
+            self.experiment_path, self.experiment_insight_path, 
+            self.experiment_shap_path, self.experiment_insight_train_path
+        ]:
+            if not os.path.isdir(dir_path):
+                os.makedirs(dir_path)
             
     def load_model(self) -> None: 
         self.load_used_feature()

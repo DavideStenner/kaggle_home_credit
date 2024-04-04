@@ -37,7 +37,7 @@ class LgbmExplainer(LgbmInit):
 
         fig.savefig(
             os.path.join(
-                self.experiment_insight_path, f'{name_plot}.png'
+                self.experiment_insight_train_path, f'{name_plot}.png'
             )
         )
         plt.close(fig)
