@@ -14,7 +14,7 @@ from src.model.lgbm.initialize import LgbmInit
 class LgbmExplainer(LgbmInit):       
     def plot_train_curve(self, 
             progress_df: pd.DataFrame, 
-            variable_to_plot: Union[str, list], 
+            variable_to_plot: Union[str, list],  metric_to_eval: str,
             name_plot: str, 
             best_epoch_lgb:int
         ) -> None:
@@ -27,13 +27,13 @@ class LgbmExplainer(LgbmInit):
             data=progress_df[['time'] + variable_to_plot].melt(
                 id_vars='time',
                 value_vars=variable_to_plot,
-                var_name='metric_fold', value_name=self.metric_eval
+                var_name='metric_fold', value_name=metric_to_eval
             ), 
-            x="time", y=self.metric_eval, hue='metric_fold'
+            x="time", y=metric_to_eval, hue='metric_fold'
         )
         plt.axvline(x=best_epoch_lgb, color='blue', linestyle='--')
 
-        plt.title(f"Training plot curve of {self.metric_eval}")
+        plt.title(f"Training plot curve of {metric_to_eval}")
 
         fig.savefig(
             os.path.join(
@@ -53,21 +53,27 @@ class LgbmExplainer(LgbmInit):
             'time': range(self.params_lgb['n_round']),
         }
 
-        progress_dict.update(
+        list_metric = self.progress_list[0]['valid'].keys()
+        
+        for metric_ in list_metric:
+            progress_dict.update(
                 {
-                    f"{self.metric_eval}_fold_{i}": self.progress_list[i]['valid'][self.metric_eval]
+                    f"{metric_}_fold_{i}": self.progress_list[i]['valid'][metric_]
                     for i in range(self.n_fold)
                 }
             )
 
         progress_df = pd.DataFrame(progress_dict)
-        progress_df[f"average_{self.metric_eval}"] = progress_df.loc[
-            :, [self.metric_eval in x for x in progress_df.columns]
-        ].mean(axis =1)
         
-        progress_df[f"std_{self.metric_eval}"] = progress_df.loc[
-            :, [self.metric_eval in x for x in progress_df.columns]
-        ].std(axis =1)
+        for metric_ in list_metric:
+            
+            progress_df[f"average_{metric_}"] = progress_df.loc[
+                :, [metric_ in x for x in progress_df.columns]
+            ].mean(axis =1)
+        
+            progress_df[f"std_{metric_}"] = progress_df.loc[
+                :, [metric_ in x for x in progress_df.columns]
+            ].std(axis =1)
 
         best_epoch_lgb = int(progress_df[f"average_{self.metric_eval}"].argmax())
         best_score_lgb = progress_df.loc[
@@ -84,23 +90,29 @@ class LgbmExplainer(LgbmInit):
             'best_epoch': best_epoch_lgb+1,
             'best_score': best_score_lgb
         }
-        #plot cv score
-        self.plot_train_curve(
-            progress_df=progress_df, 
-            variable_to_plot=f'average_{self.metric_eval}', name_plot='average_training_curve', 
-            best_epoch_lgb=best_epoch_lgb
-        )
+        
+        for metric_ in list_metric:
+            #plot cv score
+            self.plot_train_curve(
+                progress_df=progress_df, 
+                variable_to_plot=f'average_{metric_}', metric_to_eval=metric_,
+                name_plot=f'average_{metric_}_training_curve', 
+                best_epoch_lgb=best_epoch_lgb
+            )
+            #plot every fold score
+            self.plot_train_curve(
+                progress_df=progress_df, 
+                variable_to_plot=[f'{metric_}_fold_{x}' for x in range(self.n_fold)],
+                metric_to_eval=metric_,
+                name_plot=f'training_{metric_}_curve_by_fold', 
+                best_epoch_lgb=best_epoch_lgb
+            )
+
         #plot std score
         self.plot_train_curve(
             progress_df=progress_df, 
-            variable_to_plot=f'std_{self.metric_eval}', name_plot='std_training_curve', 
-            best_epoch_lgb=best_epoch_lgb
-        )
-        #plot every fold score
-        self.plot_train_curve(
-            progress_df=progress_df, 
-            variable_to_plot=[f'{self.metric_eval}_fold_{x}' for x in range(self.n_fold)], 
-            name_plot='training_curve_by_fold', 
+            variable_to_plot=f'std_{self.metric_eval}', metric_to_eval=self.metric_eval,
+            name_plot='std_training_curve', 
             best_epoch_lgb=best_epoch_lgb
         )
         
