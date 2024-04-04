@@ -149,13 +149,13 @@ class LgbmExplainer(LgbmInit):
         plt.title(f"50 TOP feature importance over {self.n_fold} average")
 
         fig.savefig(
-            os.path.join(self.experiment_insight_path, 'importance_plot.png')
+            os.path.join(self.experiment_insight_feat_imp_path, 'importance_plot.png')
         )
         plt.close(fig)
         
         #feature importance excel
         feature_importances.to_excel(
-            os.path.join(self.experiment_path, 'feature_importances.xlsx'),
+            os.path.join(self.experiment_insight_feat_imp_path, 'feature_importances.xlsx'),
             index=False
         )
         #add dataset
@@ -173,7 +173,7 @@ class LgbmExplainer(LgbmInit):
         plt.title(f"Top type feature")
         
         fig.savefig(
-            os.path.join(self.experiment_insight_path, 'top_type_feature.png')
+            os.path.join(self.experiment_insight_feat_imp_path, 'top_type_feature.png')
         )
         plt.close(fig)
         
@@ -186,7 +186,7 @@ class LgbmExplainer(LgbmInit):
         plt.title(f"Top type feature by dataset")
         
         fig.savefig(
-            os.path.join(self.experiment_insight_path, 'top_type_feature_by_dataset.png')
+            os.path.join(self.experiment_insight_feat_imp_path, 'top_type_feature_by_dataset.png')
         )
         plt.close(fig)
 
@@ -200,7 +200,7 @@ class LgbmExplainer(LgbmInit):
         plt.title(f"Rank Top feature by dataset")
         
         fig.savefig(
-            os.path.join(self.experiment_insight_path, 'top_feature_by_dataset.png')
+            os.path.join(self.experiment_insight_feat_imp_path, 'top_feature_by_dataset.png')
         )
         plt.close(fig)
 
@@ -215,7 +215,7 @@ class LgbmExplainer(LgbmInit):
 
             fig.savefig(
                 os.path.join(
-                    self.experiment_insight_path, 
+                    self.experiment_insight_feat_imp_path, 
                     f'importance_plot_{dataset_name}.png'
                 )
             )
@@ -232,7 +232,7 @@ class LgbmExplainer(LgbmInit):
         plt.title(f"Top dataset importance mean gain")
 
         fig.savefig(
-            os.path.join(self.experiment_insight_path, 'dataset_importance_plot.png')
+            os.path.join(self.experiment_insight_feat_imp_path, 'dataset_importance_plot.png')
         )
         plt.close(fig)
 
@@ -242,7 +242,7 @@ class LgbmExplainer(LgbmInit):
         plt.title(f"Top dataset importance mean rank gain")
 
         fig.savefig(
-            os.path.join(self.experiment_insight_path, 'dataset_importance_rank_plot.png')
+            os.path.join(self.experiment_insight_feat_imp_path, 'dataset_importance_rank_plot.png')
         )
         plt.close(fig)
     
