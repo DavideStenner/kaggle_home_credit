@@ -1327,66 +1327,54 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         )
             
     def create_applprev_2_feature(self) -> None:
-        warnings.warn('Only considering applprev_2 info relate to 0...', UserWarning)
 
-        category_list = {
-            "cacccardblochreas_147M": [
-                'P127_74_114', 'a55475b1',
-                'P133_119_56', 'P23_105_103',
-                'P19_60_110', 'P33_145_161',
-                'P201_63_60', 'P17_56_144',
-                'P41_107_150'
-            ],
-            "conts_type_509L": ['PHONE',
-                'SECONDARY_MOBILE', 'EMPLOYMENT_PHONE',
-                'PRIMARY_EMAIL', 'ALTERNATIVE_PHONE',
-                'PRIMARY_MOBILE', 'WHATSAPP',
-                'HOME_PHONE',
-            ],
-            "credacc_cards_status_52L": ['RENEWED', 'CANCELLED', 'UNCONFIRMED', 'ACTIVE', 'BLOCKED', 'INACTIVE']
-        }
-        category_list = list(
-            chain(
-                *[
-                    list(product([key], value))
-                    for key, value in category_list.items()
-                ]
-            )
-        )
-        self.applprev_2 = self.applprev_2.group_by('case_id').agg(
-            (
-                [
-                    pl.col('case_id').filter(
-                        (pl.col('num_group1')!=0) &
-                        (pl.col('num_group2')==0)                
-                    ).count().alias('related_n_0_X').cast(pl.UInt16),
-                    pl.col('case_id').filter(
-                        (pl.col('num_group1')==0) &
-                        (pl.col('num_group2')!=0)                
-                    ).count().alias('related_0_n_X').cast(pl.UInt16),   
-                ] +
-                [
-                    (
-                        pl.col(col).filter(
-                            (pl.col(col)==self.mapper_mask['applprev_2'][col][single_value])&
-                            (pl.col('num_group1')==0) &
-                            (pl.col('num_group2')!=0)
-                        )
-                        .count()
-                        .alias(f'{col[:-1]}_{single_value}_0_n_' + col[-1])
-                        .cast(pl.UInt16)
-                    )
-                    for col, single_value in category_list
-                ] + 
-                [
-                    pl.col(col).filter(
-                        (pl.col(col)==self.mapper_mask['applprev_2'][col][single_value])&
-                        (pl.col('num_group1')!=0) &
-                        (pl.col('num_group2')==0)
-                    ).count().alias(f'{col[:-1]}_{single_value}_n_0_' + col[-1]).cast(pl.UInt16)
-                    for col, single_value in category_list
-                ]
-            )
+        categorical_columns_list = [
+            'cacccardblochreas_147M', 'conts_type_509L',
+            'credacc_cards_status_52L'
+        ]
+        features_list = self.add_generic_feature(self.applprev_2, 'applprev_2')
+        
+        self.applprev_2 = self.applprev_2.group_by(
+            ['case_id', 'num_group1']
+        ).agg(features_list)
+        
+        self.applprev_2 = self.applprev_2.group_by(
+            'case_id'
+        ).agg(
+            [
+                pl.col(f'not_hashed_missing_mode_cacccardblochreas_147M')
+                .drop_nulls()
+                .mode()
+                .first()
+                .alias('group1_mode_not_hashed_missing_mode_cacccardblochreas_147M'),
+                
+                pl.col(f'not_hashed_missing_mode_cacccardblochreas_147M')
+                .n_unique()
+                .alias('group1_nunique_not_hashed_missing_mode_cacccardblochreas_147M'),
+            
+                pl.col('num_group1')
+                .max()
+                .alias('max_num_group1')
+            ] +
+            [
+                pl_operator(col_name)
+                .alias(f'{pl_operator.__name__}_{col_name}')
+                for pl_operator, col_name in product(
+                    self.numerical_aggregator,
+                    ['max_num_group2'] +
+                    [f'n_unique_{col}' for col in categorical_columns_list]
+                )
+            ] +
+            [
+                pl.col(f'mode_{col}').mode().first()
+                .alias(f'num_group1_mode_mode_{col}')
+                for col in categorical_columns_list
+            ] +
+            [
+                pl.col(f'mode_{col}').n_unique()
+                .alias(f'num_group1_n_unique_mode_{col}')
+                for col in categorical_columns_list
+            ] 
         )
 
     def create_other_1_feature(self) -> None:
