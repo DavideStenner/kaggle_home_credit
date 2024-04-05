@@ -320,60 +320,176 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         )
 
     def create_credit_bureau_b_2_feature(self) -> None:
-        warnings.warn('Only considering credit_bureau_b_2 num1==0', UserWarning)
+        
+        product_operator_numerical_col = product(
+            self.numerical_aggregator, 
+            ['pmts_dpdvalue_108P', 'pmts_pmtsoverdue_635A']
+        )
+        #get feature for each contract
         self.credit_bureau_b_2 = (
-            self.credit_bureau_b_2.filter(
-                #current case
-                (pl.col('num_group1')==0)
-            ).sort(
+            self.credit_bureau_b_2.sort(
                 [
-                    'num_group1', 'num_group2'
+                    'case_id', 'num_group1', 'num_group2'
                 ]
-            ).group_by('case_id', maintain_order=True).agg(
-                #num group1 different group2
-                pl.col('num_group2').n_unique().alias('num_group2_X').cast(pl.UInt32),
-
-                #stat on all
-                pl.col('pmts_dpdvalue_108P').sum().alias('sum_pmts_dpdvalue_108P').cast(pl.Float32),
-                pl.col('pmts_dpdvalue_108P').mean().alias('mean_pmts_dpdvalue_108P').cast(pl.Float32),
-                pl.col('pmts_dpdvalue_108P').std().alias('std_pmts_dpdvalue_108P').cast(pl.Float32),
-                
-                pl.col('pmts_pmtsoverdue_635A').sum().alias('sum_pmts_pmtsoverdue_635A').cast(pl.Float32),
-                pl.col('pmts_pmtsoverdue_635A').mean().alias('mean_pmts_pmtsoverdue_635A').cast(pl.Float32),
-                pl.col('pmts_pmtsoverdue_635A').std().alias('std_pmts_pmtsoverdue_635A').cast(pl.Float32),
-
-                #stat on not '
-                pl.col('pmts_dpdvalue_108P').filter(pl.col('pmts_dpdvalue_108P')!=0).sum().alias('sum_no_0_pmts_dpdvalue_108P').cast(pl.Float32),
-                pl.col('pmts_dpdvalue_108P').filter(pl.col('pmts_dpdvalue_108P')!=0).mean().alias('mean_no_0_pmts_dpdvalue_108P').cast(pl.Float32),
-                pl.col('pmts_dpdvalue_108P').filter(pl.col('pmts_dpdvalue_108P')!=0).std().alias('std_no_0_pmts_dpdvalue_108P').cast(pl.Float32),
-
-                pl.col('pmts_pmtsoverdue_635A').filter(pl.col('pmts_pmtsoverdue_635A')!=0).sum().alias('sum_no_0_pmts_pmtsoverdue_635A').cast(pl.Float32),
-                pl.col('pmts_pmtsoverdue_635A').filter(pl.col('pmts_pmtsoverdue_635A')!=0).mean().alias('mean_no_0_pmts_pmtsoverdue_635A').cast(pl.Float32),
-                pl.col('pmts_pmtsoverdue_635A').filter(pl.col('pmts_pmtsoverdue_635A')!=0).std().alias('std_no_0_pmts_pmtsoverdue_635A').cast(pl.Float32),
-
-                #count on 0 and not '
-                pl.col('pmts_dpdvalue_108P').filter(pl.col('pmts_dpdvalue_108P')==0).count().alias('equal_0_pmts_dpdvalue_108P').cast(pl.UInt32),
-                pl.col('pmts_dpdvalue_108P').filter(pl.col('pmts_dpdvalue_108P')!=0).count().alias('unequal_0_pmts_dpdvalue_108P').cast(pl.UInt32),
-
-                #how many change num->0 and 0->num
-                (
-                    pl.when(
-                        (pl.col('pmts_dpdvalue_108P')!=0) &
-                        (pl.col('pmts_dpdvalue_108P').shift()==0)
+            ).group_by(by=['case_id', 'num_group1'], maintain_order=True).agg(
+                [
+                    #num pmt
+                    pl.col('num_group2').max().alias('num_pmt_X').cast(pl.UInt32),
+                    #range date
+                    (
+                        (
+                            pl.max('pmts_date_1107D') - pl.min('pmts_date_1107D')
+                        ).dt.total_days()
+                        .cast(pl.UInt32)
+                        .alias(f'range_pmts_date_1107D')
                     )
-                    .then(1).otherwise(0)
-                    .mean().alias('mean_change_0_not_0_pmts_dpdvalue_108P').cast(pl.Float32)
-                ),
-                (
-                    pl.when(
-                        (pl.col('pmts_dpdvalue_108P')==0) &
-                        (pl.col('pmts_dpdvalue_108P').shift()!=0)
+                ] +
+                #date operator
+                [
+                    (
+                        pl_operator('pmts_date_1107D')
+                        .alias(f'{pl_operator.__name__}_pmts_date_1107D')
                     )
-                    .then(1).otherwise(0)
-                    .mean().alias('mean_change_not_0_0_pmts_dpdvalue_108P').cast(pl.Float32)
-                )
+                    for pl_operator in self.date_aggregator
+                ] +
+                #stat on all numerical
+                [
+                    (
+                        pl_operator(col_name)
+                        .alias(f'{pl_operator.__name__}_{col_name}')
+                        .cast(pl.Float32)
+                    )
+                    for pl_operator, col_name in product_operator_numerical_col
+                ] +
+                #stats on all numerical != 0
+                [
+                    (
+                        pl_operator(col_name).filter(pl.col(col_name)!=0)
+                        .alias(f'{pl_operator.__name__}_no_0_{col_name}')
+                        .cast(pl.Float32)
+                    )
+                    for pl_operator, col_name in product_operator_numerical_col    
+                ] +
+                [
+                    #count on 0 and not '
+                    pl.col('pmts_dpdvalue_108P').filter(pl.col('pmts_dpdvalue_108P')==0).count().alias('equal_0_pmts_dpdvalue_108P').cast(pl.UInt32),
+                    pl.col('pmts_dpdvalue_108P').filter(pl.col('pmts_dpdvalue_108P')!=0).count().alias('unequal_0_pmts_dpdvalue_108P').cast(pl.UInt32),
+                    pl.col('pmts_pmtsoverdue_635A').filter(pl.col('pmts_pmtsoverdue_635A')==0).count().alias('equal_0_pmts_pmtsoverdue_635A').cast(pl.UInt32),
+                    pl.col('pmts_pmtsoverdue_635A').filter(pl.col('pmts_pmtsoverdue_635A')!=0).count().alias('unequal_0_pmts_pmtsoverdue_635A').cast(pl.UInt32),
+                ] +
+                #from 0 to not 0 count and statistic on these breaking point
+                [
+                    (
+                        pl.col(col)
+                        .filter(
+                            (pl.col(col)!=0) &
+                            (pl.col(col).shift()==0)
+                        )
+                        .count()
+                        .cast(pl.UInt32)
+                        .alias(f'count_change_0_not_0_{col}')
+                    )
+                    for col in ['pmts_dpdvalue_108P', 'pmts_pmtsoverdue_635A']
+                ] +
+                [
+                    (
+                        pl_operator(col_name)
+                        .filter(
+                            (pl.col(col_name)!=0) &
+                            (pl.col(col_name).shift()==0)
+                        )
+                        .cast(pl.Float32)
+                        .alias(f'{pl_operator.__name__}_change_0_not_0_{col_name}')
+                    )
+                    for pl_operator, col_name in product_operator_numerical_col 
+                ] +
+                #from not 0 to 0 count on these breaking point
+                [
+                    (
+                        pl.col(col)
+                        .filter(
+                            (pl.col(col)==0) &
+                            (pl.col(col).shift()!=0)
+                        )
+                        .count()
+                        .cast(pl.UInt32)
+                        .alias(f'count_change_not_0_to_0_{col}')
+                    )
+                    for col in ['pmts_dpdvalue_108P', 'pmts_pmtsoverdue_635A']
+                ]
             )
         )
+        warnings.warn('Missing optimization dtype over credit_bureau_b_2', UserWarning)
+        
+        #aggregate contract for each case id
+        self.credit_bureau_b_2 = (
+            self.credit_bureau_b_2
+            .group_by('case_id')
+            .agg(
+                [
+                    pl.col('num_group1').max().alias('num_contract_X').cast(pl.UInt32),
+                ] +
+                [
+                    pl_operation(col_name)
+                    .alias(f'{pl_operation.__name__}_over_group2_{col_name}')
+                    for pl_operation, col_name in product(
+                        self.numerical_aggregator,
+                        [
+                            'num_pmt_X',
+                            'range_pmts_date_1107D',
+                            'equal_0_pmts_dpdvalue_108P', 'unequal_0_pmts_dpdvalue_108P',
+                            'equal_0_pmts_pmtsoverdue_635A', 'unequal_0_pmts_pmtsoverdue_635A'
+                        ] +
+                        [
+                            f'{pl_operator.__name__}_{col_name}'
+                            for pl_operator, col_name in product_operator_numerical_col
+                        ] +
+                        [
+                            f'{pl_operator.__name__}_no_0_{col_name}'
+                            for pl_operator, col_name in product_operator_numerical_col
+                        ] +
+                        [
+                            f'{pl_operator.__name__}_change_0_not_0_{col_name}'
+                            for pl_operator, col_name in product_operator_numerical_col
+                        ] +
+                        [
+                            f'count_change_0_not_0_{col_name}'
+                            for col_name in ['pmts_dpdvalue_108P', 'pmts_pmtsoverdue_635A']
+                        ] +
+                        [
+                            f'count_change_not_0_to_0_{col_name}'
+                            for col_name in ['pmts_dpdvalue_108P', 'pmts_pmtsoverdue_635A']
+                        ]
+                    )
+                ] +
+                [
+                    pl_operation(col_name)
+                    .alias(f'{pl_operation.__name__}_over_group2_{col_name}')
+                    .cast(pl.Date)
+                    for pl_operation, col_name in product(
+                        self.date_aggregator + [pl.mean],
+                        ['min_pmts_date_1107D', 'max_pmts_date_1107D']
+                    )
+                ]
+            )
+        )
+        
+        #downcast to float32
+        col_list = self.credit_bureau_b_2.columns
+        dtype_list = self.credit_bureau_b_2.dtypes
+        col_to_float32 = [
+            col_list[i]
+            for i in range(len(col_list))
+            if dtype_list[i] == pl.Float64
+        ]
+
+        self.credit_bureau_b_2 = self.credit_bureau_b_2.with_columns(
+            [
+                pl.col(col).cast(pl.Float32)
+                for col in col_to_float32
+            ]
+        )
+        
         
     def create_debitcard_1_feature(self) -> None:
         
@@ -1370,7 +1486,9 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             'applprev_1_min_isbidproduct_390L', 'static_cb_0_count_null_M',
             'static_0_count_null_M', 'person_1_count_null_A',
             'person_1_count_null_T', 'person_1_count_null_M',
-            'credit_bureau_a_1_std_debtoverdue_47A', 'credit_bureau_a_1_std_debtoutstand_525A'
+            'credit_bureau_a_1_std_debtoverdue_47A', 'credit_bureau_a_1_std_debtoutstand_525A',
+            'credit_bureau_b_2_count_null_A', 'credit_bureau_b_2_count_null_P',
+            'credit_bureau_b_2_count_null_D', 'credit_bureau_b_2_all_count_null_X'
         )
 
     def add_null_feature(self) -> None:
