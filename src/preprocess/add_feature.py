@@ -256,67 +256,54 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         )
 
     def create_credit_bureau_a_2_feature(self) -> None:
-        warnings.warn('Only considering credit_bureau_a_2 num1==0', UserWarning)
+        warnings.warn('Only numerical feature for credit_bureau_a_2', UserWarning)
+        categorical_features: list[str] = [
+            'collater_typofvalofguarant_298M', 'collater_typofvalofguarant_407M',
+            'collaterals_typeofguarante_359M', 'collaterals_typeofguarante_669M'
+        ]
+        numerical_features: list[str] = [
+            'collater_valueofguarantee_1124L', 'collater_valueofguarantee_876L',
+            'pmts_dpd_1073P', 'pmts_dpd_303P',
+        ]
         #aggregate and take first element
-        self.credit_bureau_a_2 = self.filter_and_select_first_non_blank(
-            data=self.credit_bureau_a_2,
-            filter_col=pl.col('num_group1')==0,
-            col_list=[
-                'case_id', 'num_group1', 'num_group2',
-                'pmts_dpd_303P', 'pmts_dpd_1073P'
+        self.credit_bureau_a_2 = self.credit_bureau_a_2.select(
+            ['case_id', 'num_group1', 'num_group2'] +
+            [
+                pl.col(col).cast(pl.Float32).alias(col)
+                for col in numerical_features
+            ]
+        )
+        
+        features_list = self.add_generic_feature(self.credit_bureau_a_2, 'credit_bureau_a_2')
+
+        self.credit_bureau_a_2 = self.credit_bureau_a_2.group_by(
+            ['case_id', 'num_group1']
+        ).agg(features_list)
+
+        self.credit_bureau_a_2 = self.credit_bureau_a_2.group_by(
+            'case_id'
+        ).agg(
+            [           
+                pl.col('num_group1')
+                .max()
+                .cast(pl.UInt32)
+                .alias('max_num_group1')
+            ] +
+            [
+                    pl_operation(col_name)
+                    .alias(f'{pl_operation.__name__}_over_group2_{col_name}')
+                    for pl_operation, col_name in product(
+                        self.numerical_aggregator,
+                        ['max_num_group2'] + 
+                        [
+                            col for col in self.credit_bureau_a_2.columns
+                            if any([feat in col for feat in numerical_features])
+                        ]
+                    )
+                        
             ]
         )
 
-        #optimization required
-        operation_list = [
-            (
-                pl.col('pmts_dpd_1073P')
-                .filter(
-                    (
-                        (pl.col('pmts_dpd_303P')==0) |
-                        (pl.col('pmts_dpd_1073P')==0)
-                    )
-                )
-                .count()
-                .alias('equal_0_pmts_dpd_1073P').cast(pl.UInt32)
-            )
-        ]
-        for col in ['pmts_dpd_303P', 'pmts_dpd_1073P']:
-            base_expr = (
-                pl.col(col)
-                .filter(
-                    (pl.col(col)!=0)
-                )
-            )
-            operation_list.extend(
-                [
-                    (
-                        base_expr
-                        .sum()
-                        .alias(f'sum_no_0_{col}').cast(pl.Float32)
-                    ),
-                    (
-                        base_expr
-                        .mean()
-                        .alias(f'mean_no_0_{col}').cast(pl.Float32)
-                    ),
-                    (
-                        base_expr
-                        .max()
-                        .alias(f'max_no_0_{col}').cast(pl.Float32)
-                    ),
-                    (
-                        base_expr
-                        .std()
-                        .alias(f'std_no_0_{col}').cast(pl.Float32)
-                    )
-                ]
-            )
-        self.credit_bureau_a_2 = (
-            self.credit_bureau_a_2
-            .group_by('case_id')
-            .agg(operation_list)
-        )
         
     def create_credit_bureau_b_1_feature(self) -> None:
         #empty column
@@ -452,7 +439,6 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 ]
             )
         )
-        warnings.warn('Missing optimization dtype over credit_bureau_b_2', UserWarning)
         
         #aggregate contract for each case id
         self.credit_bureau_b_2 = (
