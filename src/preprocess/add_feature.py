@@ -80,6 +80,11 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 numerical_expr_list.append(
                     pl_expr.cast(mapper_column_cast[original_col_name])
                 )
+            #cast is uint16
+            elif (operator_applied == 'count'):
+                numerical_expr_list.append(
+                    pl_expr.cast(pl.UInt16)
+                )
             else:
                 numerical_expr_list.append(
                     pl_expr
@@ -114,6 +119,29 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                     .alias(f'n_unique_{col}')
                     .cast(mapper_column_cast[col])
                 )
+                for col in categorical_columns_list
+            ] +
+            [
+                (
+                    pl.col(col)
+                    if col not in categorical_columns_with_hashed_null
+                    else 
+                        pl.col(col)
+                    .filter(
+                        pl.col(col)!=
+                        self.mapper_mask[dataset_name][col][self.hashed_missing_label]
+                    )
+                )
+                .count()
+                .alias(f'count_not_missing_not_hashednull_{col}')
+                .cast(pl.UInt16)
+                for col in categorical_columns_list
+            ] +
+            [
+                pl.col(col)
+                .count()
+                .alias(f'count_not_missing_{col}')
+                .cast(pl.UInt16)
                 for col in categorical_columns_list
             ]
         )
@@ -1313,7 +1341,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                     .alias(f'{pl_operator.__name__}_duration_{col}_creationdate_885D')
                     .cast(dtype_select[pl_operator.__name__])
                     for pl_operator, col in product(
-                        [pl.mean] + self.date_aggregator,
+                        [pl.mean, pl.min, pl.max],
                         date_col_diff
                     )
                 ] +
@@ -1323,7 +1351,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                     .alias(f'{pl_operator.__name__}_duration_{col}_approvaldate_319D')
                     .cast(dtype_select[pl_operator.__name__])
                     for pl_operator, col in product(
-                        [pl.mean] + self.date_aggregator,
+                        [pl.mean, pl.min, pl.max],
                         date_col_diff
                     )
                 ] +

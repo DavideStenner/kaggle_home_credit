@@ -44,10 +44,10 @@ class PreprocessInit(BaseInit):
             config_dict['DEPTH_0'] + config_dict['DEPTH_1'] + config_dict['DEPTH_2']
         )
         self.numerical_aggregator: list[pl.Expr] = [
-            pl.min, pl.max, pl.mean, pl.std, pl.sum
+            pl.min, pl.max, pl.mean, pl.std, pl.sum, pl.count
         ]
         self.date_aggregator: list[pl.Expr] = [
-            pl.min, pl.max
+            pl.min, pl.max, pl.count
         ]
         self._initialize_empty_dataset()
         self._correct_list_date_col()
