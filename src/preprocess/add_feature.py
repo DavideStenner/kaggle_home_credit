@@ -53,7 +53,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             if self.hashed_missing_label in self.mapper_mask[dataset_name][col].keys()
         ]
         #numerical expression
-        numerical_expr_list: list[pl.Expr] = [
+        base_numerical_expr_list: list[pl.Expr] = [
             (
                 pl_operator(col_name)
                 .alias(f'{pl_operator.__name__}_{col_name}')
@@ -63,23 +63,28 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 numerical_columns_list
             )
         ]
-        numerical_expr_list: list[pl.Expr] = [
-            (
-                pl_expr.cast(pl.Float32)
-                if 
-                    (
-                        ('mean' == pl_expr.meta.output_name()[:4])|
-                        ('std' == pl_expr.meta.output_name()[:3])
-                    )
-                else (
-                    pl_expr.cast(mapper_column_cast[pl_expr.meta.output_name().split('_', 1)[-1]])
-                    if ('min' in pl_expr.meta.output_name()) or ('max' in pl_expr.meta.output_name())
-                    else
+        numerical_expr_list: list[pl.Expr] = []
+        
+        for pl_expr in base_numerical_expr_list:
+            name_expression: str = pl_expr.meta.output_name()
+            operator_applied: str = name_expression.split('_', 1)[0]
+            original_col_name: str = name_expression.split('_', 1)[-1]
+            
+            #mean, std -> float32
+            if (operator_applied in ['mean', 'std']):
+                numerical_expr_list.append(
+                    pl_expr.cast(pl.Float32)
+                )
+            #min, max -> inherit original cast
+            elif (operator_applied in ['min', 'max']):
+                numerical_expr_list.append(
+                    pl_expr.cast(mapper_column_cast[original_col_name])
+                )
+            else:
+                numerical_expr_list.append(
                     pl_expr
                 )
-            )
-            for pl_expr in numerical_expr_list
-        ]
+
         categorical_expr_list: list[pl.Expr] = (
             [
                 (
