@@ -40,8 +40,7 @@ class LgbmInference(ModelPredict, LgbmInit):
         
         for model in self.model_ensemble_list:
             prediction_ += model.predict(
-                test_data,
-                num_iteration = self.best_result['best_epoch']
+                test_data
             )/self.n_fold
             
         return prediction_
