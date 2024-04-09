@@ -259,23 +259,23 @@ class LgbmInit(ModelInit):
         ) as file:
             self.model_list = pickle.load(file)
 
-    def save_pickle_model_stability_list(self) -> None:
+    def save_custom_pickle_model_list(self, model_list: list[lgb.Booster], file_name: str) -> None:
         with open(
             os.path.join(
                 self.experiment_path,
-                'model_list_stability.pkl'
+                file_name
             ), 'wb'
         ) as file:
-            pickle.dump(self.model_list_stability, file)
+            pickle.dump(model_list, file)
     
-    def load_pickle_model_stability_list(self) -> None:
+    def load_custom_pickle_model_list(self, file_name: str) -> None:
         with open(
             os.path.join(
                 self.experiment_path,
-                'model_list_stability.pkl'
+                file_name
             ), 'rb'
         ) as file:
-            self.model_list_stability = pickle.load(file)
+            return pickle.load(file)
 
     def load_model_list(self) -> None:
         

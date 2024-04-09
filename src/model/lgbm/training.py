@@ -224,7 +224,7 @@ class LgbmTrainer(ModelTrain, LgbmInit):
             del test_matrix
             
             _ = gc.collect()
-        self.save_pickle_model_stability_list()
+        self.save_custom_pickle_model_list(model_list=self.model_list_stability, file_name='model_list_stability.pkl')
         
     def save_model(self)->None:
         self.save_pickle_model_list()
