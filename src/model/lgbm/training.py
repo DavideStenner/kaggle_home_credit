@@ -68,7 +68,7 @@ class LgbmTrainer(ModelTrain, LgbmInit):
             )
         )
 
-        excluded_feature = len(self.feature_stability_useless_list)
+        excluded_feature = len(self.exclude_feature_list)
         if excluded_feature==0:
             print('Using all feature')
         else:
@@ -79,7 +79,7 @@ class LgbmTrainer(ModelTrain, LgbmInit):
             if col not in (
                 self.useless_col_list + 
                 [self.fold_name, self.target_col_name] +
-                self.feature_stability_useless_list
+                self.exclude_feature_list
             )
         ]
 
@@ -206,7 +206,7 @@ class LgbmTrainer(ModelTrain, LgbmInit):
             if col not in (
                 self.useless_col_list + 
                 [self.fold_name, self.target_col_name] +
-                self.feature_stability_useless_list
+                self.exclude_feature_list
             )
         ]
         
