@@ -53,8 +53,8 @@ class LgbmPipeline(ModelPipeline, LgbmTrainer, LgbmExplainer, LgbmInference):
     
     def train_with_importance_selection(self) -> None:
         print('\n\nSelecting feature based feature importance insight and retraining model')
-        print('Saved model will be overwritten!')
+        print('Saved model and plot will be overwritten!')
         self.select_model_feature()
         self.run_train()
-        self.evaluate_score()
+        self.explain_model()
         
