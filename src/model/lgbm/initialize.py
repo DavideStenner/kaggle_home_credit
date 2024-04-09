@@ -74,6 +74,9 @@ class LgbmInit(ModelInit):
         self.feature_stability_path: str = os.path.join(
             self.experiment_path, 'feature_stability_importances.xlsx'
         )
+        self.feature_importance_path: str = os.path.join(
+            self.experiment_insight_feat_imp_path, 'feature_importances.xlsx'
+        )
         self.exclude_feature_list: list[str] = []
 
         self.get_categorical_columns(data_columns=data_columns)

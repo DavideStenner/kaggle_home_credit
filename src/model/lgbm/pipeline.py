@@ -51,8 +51,8 @@ class LgbmPipeline(ModelPipeline, LgbmTrainer, LgbmExplainer, LgbmInference):
         if self.evaluate_shap:
             self.get_shap_insight()
     
-    def train_with_stability_selection(self) -> None:
-        print('\n\nSelecting feature based on oof/shap insight and retraining model')
+    def train_with_importance_selection(self) -> None:
+        print('\n\nSelecting feature based feature importance insight and retraining model')
         print('Saved model will be overwritten!')
         self.select_model_feature()
         self.run_train()
