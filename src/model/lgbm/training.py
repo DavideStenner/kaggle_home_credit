@@ -188,9 +188,9 @@ class LgbmTrainer(ModelTrain, LgbmInit):
                 categorical_feature=self.categorical_col_list,
                 num_boost_round=self.best_result['best_epoch'],
             )
-            self.model_blending_list.append(model)
+            self.model_ensemble_list.append(model)
 
-        self.save_custom_pickle_model_list(model_list=self.model_blending_list, file_name='model_blending_list.pkl')
+        self.save_custom_pickle_model_list(model_list=self.model_ensemble_list, file_name='model_ensemble_list.pkl')
         
     def single_fold_train(self) -> None:
         self.load_best_result()

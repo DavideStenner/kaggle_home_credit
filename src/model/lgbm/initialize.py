@@ -80,7 +80,7 @@ class LgbmInit(ModelInit):
         self.exclude_feature_list: list[str] = []
         
         self.number_ensemble_model: int = 10
-        self.model_blending_list: list[lgb.Booster]
+        self.model_ensemble_list: list[lgb.Booster]
         
         self.get_categorical_columns(data_columns=data_columns)
     
