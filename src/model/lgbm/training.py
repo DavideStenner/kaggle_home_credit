@@ -161,9 +161,10 @@ class LgbmTrainer(ModelTrain, LgbmInit):
         self.load_used_feature()
         self.load_params()
         
+        #add more diversity
         self.params_lgb['extra_trees']=True
         
-        print(f'Beginning to train 10 different model')
+        print(f'Beginning to train {self.number_ensemble_model} different model for {self.best_result['best_epoch']} round')
         data = pl.scan_parquet(
             os.path.join(
                 self.config_dict['PATH_PARQUET_DATA'],
@@ -188,9 +189,14 @@ class LgbmTrainer(ModelTrain, LgbmInit):
                 categorical_feature=self.categorical_col_list,
                 num_boost_round=self.best_result['best_epoch'],
             )
-            self.model_ensemble_list.append(model)
 
-        self.save_custom_pickle_model_list(model_list=self.model_ensemble_list, file_name='model_ensemble_list.pkl')
+            model.save_model(
+                os.path.join(
+                    self.model_list_path,
+                    f'lgb_{iteration_}.txt'
+                ), importance_type='gain'
+            )
+            self.model_ensemble_list.append(model)
         
     def single_fold_train(self) -> None:
         self.load_best_result()
