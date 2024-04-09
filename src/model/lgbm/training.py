@@ -155,102 +155,42 @@ class LgbmTrainer(ModelTrain, LgbmInit):
             
             _ = gc.collect()
 
-    def time_series_fold_train(self) -> dict[str, Any]:
+    
+    def ensemble_train(self) -> None:
+        self.load_best_result()
+        self.load_used_feature()
+        self.load_params()
         
+        self.params_lgb['extra_trees']=True
+        
+        print(f'Beginning to train 10 different model')
         data = pl.scan_parquet(
             os.path.join(
                 self.config_dict['PATH_PARQUET_DATA'],
                 'data.parquet'
             )
         )
-                    
-        self.feature_list = [
-            col for col in data.columns
-            if col not in (
-                self.useless_col_list + 
-                [self.fold_name, self.target_col_name] +
-                self.exclude_feature_list
-            )
-        ]
-        
-        progress = {}
-
-        callbacks_list = [
-            lgb.record_evaluation(progress),
-            lgb.log_evaluation(
-                period=self.log_evaluation, 
-                show_stdv=False
-            )
-        ]
-        print('Collecting dataset')            
-        train_filtered = data.filter(
-            (pl.col('current_fold') == 't')
-        )
-        test_filtered = data.filter(
-            (pl.col('current_fold') == 'v')
-        )
-            
-        assert len(
-            set(
-                train_filtered.select('date_decision').unique().collect().to_series().to_list()
-            ).intersection(
-                test_filtered.select('date_decision').unique().collect().to_series().to_list()
-            )
-        ) == 0
-            
-        train_rows = train_filtered.select(pl.count()).collect().item()
-        test_rows = test_filtered.select(pl.count()).collect().item()
-            
-        print(f'{train_rows} train rows; {test_rows} test rows; {len(self.feature_list)} feature')
-            
-        assert self.target_col_name not in self.feature_list
             
         train_matrix = lgb.Dataset(
-            train_filtered.select(self.feature_list).collect().to_pandas().to_numpy('float32'),
-            train_filtered.select(self.target_col_name).collect().to_pandas().to_numpy('float32').reshape((-1))
+            data.select(self.feature_list).collect().to_pandas().to_numpy('float32'),
+            data.select(self.target_col_name).collect().to_pandas().to_numpy('float32').reshape((-1))
         )
         
-        test_matrix = lgb.Dataset(
-            test_filtered.select(self.feature_list).collect().to_pandas().to_numpy('float32'),
-            test_filtered.select(self.target_col_name).collect().to_pandas().to_numpy('float32').reshape((-1))
-        )
+        for iteration_ in range(self.number_ensemble_model):
+            print(f'Start training model {iteration_}')
+            for seed_key in ['seed', 'bagging_seed', 'feature_fraction_seed', 'extra_seed', 'data_random_seed']:
+                self.params_lgb[seed_key] = np.random.randint(0, 1_000_000)
+            
+            model = lgb.train(
+                params=self.params_lgb,
+                train_set=train_matrix, 
+                feature_name=self.feature_list,
+                categorical_feature=self.categorical_col_list,
+                num_boost_round=self.best_result['best_epoch'],
+            )
+            self.model_blending_list.append(model)
 
-        test_metric_df = test_filtered.select(
-            ["WEEK_NUM", "target"]
-        ).collect().to_pandas()
-        
-        metric_lgb_list = [
-            partial(function_, test_metric_df)
-            for function_ in
-            [
-                #add other metric for debug purpose
-                lgb_eval_gini_stability, lgb_slope_part_of_stability 
-            ]
-        ]
-        
-        print('Start training')
-        model = lgb.train(
-            params=self.params_lgb,
-            train_set=train_matrix, 
-            feature_name=self.feature_list,
-            categorical_feature=self.categorical_col_list,
-            num_boost_round=self.params_lgb['n_round'],
-            valid_sets=[test_matrix],
-            valid_names=['valid'],
-            callbacks=callbacks_list,
-            feval=metric_lgb_list
-        )
-
-        best_position = np.argmax(progress['valid'][self.metric_eval])
-        
-        best_gini_stability = progress['valid'][self.metric_eval][best_position]
-        best_gini_slope = progress['valid']['gini_slope'][best_position]
-
-        return {
-            'best_position': best_position,
-            'best_gini_stability': best_gini_stability,
-            'best_gini_slope': best_gini_slope
-        }
+        self.save_custom_pickle_model_list(model_list=self.model_blending_list, file_name='model_blending_list.pkl')
         
     def single_fold_train(self) -> None:
         self.load_best_result()
