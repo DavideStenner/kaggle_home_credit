@@ -1237,48 +1237,26 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 ]
             )
         )
-        pl_filter_list: list[list[pl.Expr], str] = [
-            [pl.col('num_group1') == 0, '0_group'],
-            [pl.col('num_group2') != 0, 'not_0_group'],
-            [True, 'all']
+
+        date_expression: list[pl.Expr] = [
+            #first not blank
+            (
+                pl.col('empls_employedfrom_796D')
+                .drop_nulls()
+                .max()
+                .alias('date_empls_employedfrom_796D')
+                .cast(pl.Date)
+            )
         ]
-        pl_list_expression: list[pl.Expr] = (
+
+        pl_group_2_expression: list[pl.Expr] = (
+            date_expression +
             [
                 #max num group1
                 (
-                    pl.col('num_group1').max()
-                    .alias('max_num_group1')
+                    pl.col('num_group2').max()
+                    .alias('max_num_group2')
                     .cast(pl.UInt16)
-                ),
-                #n_unique date
-                (
-                    pl.col('empls_employedfrom_796D')
-                    .filter(
-                        pl.col('num_group2') != 0
-                    )
-                    .n_unique()
-                    .alias('n_unique_not_0_group_empls_employedfrom_796D')
-                    .cast(pl.Date)
-                ),
-                #min date
-                (
-                    pl.col('empls_employedfrom_796D')
-                    .filter(
-                        pl.col('num_group2') != 0
-                    )
-                    .min()
-                    .alias('min_date_not_0_group_empls_employedfrom_796D')
-                    .cast(pl.Date)
-                ),
-                #max date
-                (
-                    pl.col('empls_employedfrom_796D')
-                    .filter(
-                        pl.col('num_group2') != 0
-                    )
-                    .max()
-                    .alias('max_date_not_0_group_empls_employedfrom_796D')
-                    .cast(pl.Date)
                 )
             ] +
             [
@@ -1304,82 +1282,146 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                     .cast(pl.UInt16)
                 )
                 for col, single_value in n_0_list
+            ] +
+            #total unique
+            [
+                (
+                    pl.col(col_name)
+                    .n_unique()
+                    .alias(f'n_unique_{col_name}')
+                    .cast(pl.UInt16)
+                )
+                for col_name in [
+                    'addres_district_368M', 'addres_zip_823M',
+                    'addres_role_871L', 'conts_role_79M',
+                    'relatedpersons_role_762T',
+                    'empls_economicalst_849M', 
+                ]
+            ] +
+            #how many not hashed unique
+            [
+                (
+                    pl.col(col_name)
+                    .filter(
+                        (
+                            pl.col(col_name) != 
+                            (self.mapper_mask['person_2'][col_name][self.hashed_missing_label])
+                        )
+                    )
+                    .n_unique()
+                    .alias(f'n_unique_not_hashed_{col_name}')
+                    .cast(pl.UInt16)
+                )
+                for col_name in [
+                    'addres_district_368M', 'addres_zip_823M',
+                    'conts_role_79M',
+                    'empls_economicalst_849M', 'empls_employer_name_740M'
+                ]
+            ] +
+            #how many hashed
+            [
+                (
+                    pl.col(col_name)
+                    .filter(
+                        (
+                            pl.col(col_name) == 
+                            (self.mapper_mask['person_2'][col_name][self.hashed_missing_label])
+                        )
+                    )
+                    .count()
+                    .alias(f'n_unique_hashed_{col_name}')
+                    .cast(pl.UInt16)
+                )
+                for col_name in [
+                    'addres_district_368M', 'addres_zip_823M',
+                    'conts_role_79M', 'empls_economicalst_849M',
+                    'empls_employer_name_740M'
+                ]
             ]
         )        
-        for pl_filter_, prefix_ in pl_filter_list:
-            pl_list_expression += (
-                #max num group2 per group of filter
-                [
-                    (
-                        pl.col('num_group2')
-                        .filter(pl_filter_)
-                        .count()
-                        .alias(f'max_row_{prefix_}_X')
-                        .cast(pl.UInt16)
-                    )
-                ] +
-                #total unique
-                [
-                    (
-                        pl.col(col_name)
-                        .filter(pl_filter_)
-                        .n_unique()
-                        .alias(f'n_unique_{prefix_}_{col_name}')
-                        .cast(pl.UInt16)
-                    )
-                    for col_name in [
-                        'addres_district_368M', 'addres_zip_823M',
-                        'addres_role_871L', 'conts_role_79M',
-                        'relatedpersons_role_762T',
-                        'empls_economicalst_849M', 'empls_employer_name_740M'
-                    ]
-                ] +
-                #how many not hashed unique
-                [
-                    (
-                        pl.col(col_name)
-                        .filter(
-                            pl_filter_ &
-                            (
-                                pl.col(col_name) != 
-                                (self.mapper_mask['person_2'][col_name][self.hashed_missing_label])
-                            )
-                        )
-                        .n_unique()
-                        .alias(f'n_unique_{prefix_}_not_hashed_{col_name}')
-                        .cast(pl.UInt16)
-                    )
-                    for col_name in [
-                        'addres_district_368M', 'addres_zip_823M',
-                        'conts_role_79M',
-                        'empls_economicalst_849M', 'empls_employer_name_740M'
-                    ]
-                ] +
-                #how many hashed
-                [
-                    (
-                        pl.col(col_name)
-                        .filter(
-                            pl_filter_ &
-                            (
-                                pl.col(col_name) == 
-                                (self.mapper_mask['person_2'][col_name][self.hashed_missing_label])
-                            )
-                        )
-                        .count()
-                        .alias(f'n_unique_{prefix_}_hashed_{col_name}')
-                        .cast(pl.UInt16)
-                    )
-                    for col_name in [
-                        'addres_district_368M', 'addres_zip_823M',
-                        'conts_role_79M', 'empls_economicalst_849M',
-                        'empls_employer_name_740M'
-                    ]
-                ]
-            )
-            
-        self.person_2 = self.person_2.group_by('case_id').agg(pl_list_expression)
+        
+        self.person_2 = self.person_2.group_by(
+            'case_id', 'num_group1'
+        ).agg(pl_group_2_expression)
+        
+        date_col_list = ['date_empls_employedfrom_796D']
+        
+        column_to_split = [
+            col for col in 
+            self.person_2.columns
+            if col not in ['case_id', 'num_group1']
+        ]
+        
+        col_group_zero = [
+            col 
+            for col in column_to_split 
+            if 
+                ('_n_0_' not in col) &
+                (col not in date_col_list)
+        ]
+        
+        col_group_not_zero = [
+            col 
+            for col in column_to_split 
+            if 
+                ('_0_n_' not in col) &
+                (col not in date_col_list)
+        ]
 
+        self.person_2 = self.person_2.group_by('case_id').agg(
+            [
+                #max num group1
+                (
+                    pl.col('num_group1').max()
+                    .alias('max_num_group1')
+                    .cast(pl.UInt16)
+                )
+            ] +
+            [
+                pl.max('date_empls_employedfrom_796D').alias(f'date_empls_employedfrom_796D'),
+            ] +
+            [
+                (
+                    getattr(
+                        pl.col(col_name)
+                        .filter(pl.col('num_group1')==0),
+                        pl_expression
+                    )()
+                    .alias(f'group_0_{pl_expression}_{col_name}')
+                )
+                for pl_expression, col_name in product(
+                    ['min', 'max', 'mean'],
+                    col_group_zero
+                )
+            ] +
+            [
+                getattr(
+                    pl.col(col_name)
+                    .filter(pl.col('num_group1')!=0),
+                    pl_expression
+                )()
+                .alias(f'group_not_0_{pl_expression}_{col_name}')
+                for pl_expression, col_name in product(
+                    ['min', 'max', 'mean'],
+                    col_group_not_zero
+                )
+            ]
+        ).with_columns(
+            [
+                pl.col(col)
+                .cast(pl.Float32)
+                for col in 
+                    [
+                        f'group_0_mean_{col_name}'
+                        for col_name in col_group_zero
+                    ]+ 
+                    [
+                        f'group_not_0_mean_{col_name}'
+                        for col_name in col_group_not_zero
+                    ]
+            ]
+        )
+    
     def create_applprev_1_feature(self) -> None:
         self.applprev_1 = self.applprev_1.drop('district_544M', 'profession_152M')
 
