@@ -184,11 +184,15 @@ class LgbmInit(ModelInit):
             if not os.path.isdir(dir_path):
                 os.makedirs(dir_path)
             
-    def load_model(self) -> None: 
+    def load_model(self, load_ensemble: bool=False) -> None: 
         self.load_used_feature()
         self.load_best_result()
         self.load_params()
-        self.load_model_list()
+        
+        if load_ensemble:
+            self.load_ensemble_model_list()
+        else:
+            self.load_model_list()
         
     def save_progress_list(self) -> None:
         with open(
