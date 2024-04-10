@@ -25,8 +25,11 @@ class LgbmPipeline(ModelPipeline, LgbmTrainer, LgbmExplainer, LgbmInference):
         self.evaluate_stability: bool = evaluate_stability
         self.evaluate_shap: bool = evaluate_shap
         
-    def activate_inference(self) -> None:
-        self.load_model()
+    def activate_inference(self, ensemble: bool =False) -> None:
+        if ensemble:
+            self.load_model_list()
+        else:
+            self.load_model()
         self.inference = True
         
     def run_train(self) -> None:
