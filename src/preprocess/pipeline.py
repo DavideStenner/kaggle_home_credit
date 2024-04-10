@@ -83,7 +83,7 @@ class PreprocessPipeline(BasePipeline, PreprocessImport, PreprocessAddFeature, P
         
         return data_columns
     
-    def preprocess_inference(self) -> None:
+    def preprocess_inference(self, subset_feature: list[str] = None) -> None:
         print('Creating feature')
         self.create_feature()
 
@@ -93,6 +93,10 @@ class PreprocessPipeline(BasePipeline, PreprocessImport, PreprocessAddFeature, P
         print('Adding additional feature')
         self.add_additional_feature()
         
+        if subset_feature is not None:
+            self.data = self.data.select(subset_feature)
+            print(f'Selected {len(subset_feature)} features')
+            
         print('Collecting test....')
         self.data = self.data.collect()
         _ = gc.collect()
@@ -128,9 +132,9 @@ class PreprocessPipeline(BasePipeline, PreprocessImport, PreprocessAddFeature, P
         
         self.import_all()
         
-    def __call__(self) -> None:
+    def __call__(self, subset_feature: list[str] = None) -> None:
         if self.inference:
-            self.preprocess_inference()
+            self.preprocess_inference(subset_feature=subset_feature)
 
         else:
             self.import_all()
