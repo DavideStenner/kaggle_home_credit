@@ -187,17 +187,17 @@ class LgbmTrainer(ModelTrain, LgbmInit):
                 'data.parquet'
             )
         )
-            
-        train_matrix = lgb.Dataset(
-            data.select(self.feature_list).collect().to_pandas().to_numpy('float32'),
-            data.select(self.target_col_name).collect().to_pandas().to_numpy('float32').reshape((-1))
-        )
         
         for iteration_ in range(self.number_ensemble_model):
-            print(f'Start training model {iteration_}')
+            print(f'\n\nStart training model {iteration_}')
             for seed_key in ['seed', 'bagging_seed', 'feature_fraction_seed', 'extra_seed', 'data_random_seed']:
                 self.params_lgb[seed_key] = np.random.randint(0, 1_000_000)
             
+            #construct dataset with new data_random_seed
+            train_matrix = lgb.Dataset(
+                data.select(self.feature_list).collect().to_pandas().to_numpy('float32'),
+                data.select(self.target_col_name).collect().to_pandas().to_numpy('float32').reshape((-1))
+            )
             train_tqdm = tqdm(total=self.best_result['best_epoch'])
             
             model = lgb.train(
