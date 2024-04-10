@@ -188,7 +188,7 @@ class LgbmTrainer(ModelTrain, LgbmInit):
         )
         
         for iteration_ in range(self.number_ensemble_model):
-            print(f'\n\nStart training model {iteration_}')
+            print(f'\nStart training model {iteration_}')
             for seed_key in ['seed', 'bagging_seed', 'feature_fraction_seed', 'extra_seed', 'data_random_seed']:
                 self.params_lgb[seed_key] = np.random.randint(0, 1_000_000)
             
@@ -207,7 +207,10 @@ class LgbmTrainer(ModelTrain, LgbmInit):
                 num_boost_round=self.best_result['best_epoch'],
                 callbacks=[progress_bar_callback]
             )
-
+            
+            del train_tqdm, train_matrix
+            _ = gc.collect()
+            
             model.save_model(
                 os.path.join(
                     self.model_list_path,
