@@ -59,5 +59,4 @@ class LgbmPipeline(ModelPipeline, LgbmTrainer, LgbmExplainer, LgbmInference):
         print('Saved model and plot will be overwritten!')
         self.select_model_feature()
         self.run_train()
-        self.explain_model()
-        
+        self.evaluate_score()
