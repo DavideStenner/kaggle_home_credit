@@ -217,7 +217,6 @@ class LgbmTrainer(ModelTrain, LgbmInit):
                     f'lgb_{iteration_}.txt'
                 ), importance_type='gain'
             )
-            self.model_ensemble_list.append(model)
         
     def single_fold_train(self) -> None:
         self.load_best_result()

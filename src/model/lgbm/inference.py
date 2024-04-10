@@ -38,9 +38,9 @@ class LgbmInference(ModelPredict, LgbmInit):
         
         prediction_ = np.zeros((test_data.shape[0]), dtype='float64')
         
-        for model in self.model_ensemble_list:
+        for model in self.model_list:
             prediction_ += model.predict(
                 test_data
-            )/self.n_fold
+            )/len(self.model_list)
             
         return prediction_
