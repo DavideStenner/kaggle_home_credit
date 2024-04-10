@@ -38,8 +38,6 @@ class LgbmTrainer(ModelTrain, LgbmInit):
             print('Using all feature')
         else:
             print(f'Excluded {excluded_feature} feature')
-
-        print(f'Using {len(self.categorical_col_list)} categorical features')
         
         drop_feature_list: list[str] = (
             self.useless_col_list + 
@@ -54,6 +52,7 @@ class LgbmTrainer(ModelTrain, LgbmInit):
             col for col in self.categorical_col_list
             if col not in drop_feature_list
         ]
+        print(f'Using {len(self.categorical_col_list)} categorical features')
 
         #save feature list locally for later
         self.save_used_feature()
