@@ -7,6 +7,7 @@ import lightgbm as lgb
 
 from functools import partial
 from typing import Any
+from tqdm import tqdm
 
 from src.base.model.training import ModelTrain
 from src.model.lgbm.initialize import LgbmInit
@@ -164,7 +165,12 @@ class LgbmTrainer(ModelTrain, LgbmInit):
         #add more diversity
         self.params_lgb['extra_trees']=True
         
-        print(f'Beginning to train {self.number_ensemble_model} different model for {self.best_result['best_epoch']} round')
+        def progress_bar_callback(env):
+            train_tqdm.update(n=1) 
+
+        print(f"Beginning to train {self.number_ensemble_model} different model for {self.best_result['best_epoch']} round")
+        print(f"{len(self.feature_list)} features")
+        
         data = pl.scan_parquet(
             os.path.join(
                 self.config_dict['PATH_PARQUET_DATA'],
@@ -182,12 +188,15 @@ class LgbmTrainer(ModelTrain, LgbmInit):
             for seed_key in ['seed', 'bagging_seed', 'feature_fraction_seed', 'extra_seed', 'data_random_seed']:
                 self.params_lgb[seed_key] = np.random.randint(0, 1_000_000)
             
+            train_tqdm = tqdm(total=self.best_result['best_epoch'])
+            
             model = lgb.train(
                 params=self.params_lgb,
                 train_set=train_matrix, 
                 feature_name=self.feature_list,
                 categorical_feature=self.categorical_col_list,
                 num_boost_round=self.best_result['best_epoch'],
+                callbacks=[progress_bar_callback]
             )
 
             model.save_model(
