@@ -33,23 +33,32 @@ class LgbmTrainer(ModelTrain, LgbmInit):
         )
 
         excluded_feature = len(self.exclude_feature_list)
+
         if excluded_feature==0:
             print('Using all feature')
         else:
             print(f'Excluded {excluded_feature} feature')
-            
+
+        print(f'Using {len(self.categorical_col_list)} categorical features')
+        
+        drop_feature_list: list[str] = (
+            self.useless_col_list + 
+            [self.fold_name, self.target_col_name] +
+            self.exclude_feature_list
+        )
         self.feature_list = [
             col for col in data.columns
-            if col not in (
-                self.useless_col_list + 
-                [self.fold_name, self.target_col_name] +
-                self.exclude_feature_list
-            )
+            if col not in drop_feature_list
+        ]
+        self.categorical_col_list = [
+            col for col in self.categorical_col_list
+            if col not in drop_feature_list
         ]
 
         #save feature list locally for later
         self.save_used_feature()
-            
+        self.save_used_categorical_feature()
+
     def access_fold(self, fold_: int) -> pl.LazyFrame:
         fold_data = pl.scan_parquet(
             os.path.join(
@@ -160,11 +169,12 @@ class LgbmTrainer(ModelTrain, LgbmInit):
     def ensemble_train(self) -> None:
         self.load_best_result()
         self.load_used_feature()
+        self.load_used_categorical_feature()
         self.load_params()
         
         #add more diversity
         self.params_lgb['extra_trees']=True
-        
+
         def progress_bar_callback(env):
             train_tqdm.update(n=1) 
 
