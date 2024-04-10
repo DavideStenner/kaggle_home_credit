@@ -6,7 +6,7 @@ import pandas as pd
 import polars as pl
 import lightgbm as lgb
 
-from itertools import chain
+from itertools import chain, product
 from typing import Any, Union, Dict, Tuple
 from src.base.model.initialize import ModelInit
 
@@ -98,28 +98,32 @@ class LgbmInit(ModelInit):
             mapper_dict.items()
         }
     
-    def __get_categorical_columns_list(self, mapper_mask: Dict[str, Union[str, dict, float]]) -> list[str]:
-        cat_list_col = [
-            (
-                [
-                    dataset_name + '_' + col
-                    for col in col_mapper.keys()
-                ] +
-                [
-                    dataset_name + '_' + 'mode_' + col
-                    for col in col_mapper.keys()
-                ] +
-                [
-                    dataset_name + '_' + 'not_hashed_missing_mode_' + col
-                    for col in col_mapper.keys()
-                ]
-            )
+    def __get_categorical_columns_list(self, mapper_mask: Dict[str, Union[str, dict, float]], data_columns: str) -> list[str]:
+        string_to_check: list[str] = [
+            '{dataset_name}_{col}',
+            '{dataset_name}_not_hashed_missing_mode_{col}', 
+            '{dataset_name}_mode_{col}', '{dataset_name}_num_group1_mode_mode_{col}'
+        ]
+        additional_categorical: list[str] = [
+            'group1_mode_not_hashed_missing_mode_cacccardblochreas_147M'
+        ]
+        cat_list_col: list[str] = [
+            [
+                pattern_.format(dataset_name=dataset_name, col=col) 
+                for pattern_, col in product(
+                    string_to_check,
+                    col_mapper.keys()
+                )
+                if pattern_.format(dataset_name=dataset_name, col=col) in data_columns
+            ] 
             for dataset_name, col_mapper in mapper_mask.items()
         ]
-        return list(chain(*cat_list_col))
+
+        return list(chain(*cat_list_col)) + additional_categorical
     
     def get_dataset_columns(self) -> None:
         self.load_used_feature()
+        self.load_used_categorical_feature()
         
         self.feature_dataset = pd.DataFrame(
             [
@@ -161,6 +165,7 @@ class LgbmInit(ModelInit):
         )
         
     def get_categorical_columns(self, data_columns: Tuple[str]) -> None:
+        #load all possible categorical feature
         with open(
             os.path.join(
                 self.config_dict['PATH_MAPPER_DATA'],
@@ -168,13 +173,14 @@ class LgbmInit(ModelInit):
             ), 'r'
         ) as file:
             cat_col_list = self.__get_categorical_columns_list(
-                json.load(file)
+                json.load(file), data_columns=data_columns
             )
 
-        self.categorical_col_list: set[str] = (
-            set(cat_col_list).intersection(set(data_columns))
+        self.categorical_col_list: list[str] = list(
+            set(cat_col_list)
+            .intersection(set(data_columns))
         )
-        
+
     def create_experiment_structure(self) -> None:
         for dir_path in [
             self.experiment_path, self.experiment_insight_path, 
@@ -186,6 +192,7 @@ class LgbmInit(ModelInit):
             
     def load_model(self, load_ensemble: bool=False) -> None: 
         self.load_used_feature()
+        self.load_used_categorical_feature()
         self.load_best_result()
         self.load_params()
         
@@ -324,7 +331,30 @@ class LgbmInit(ModelInit):
                 }, 
                 file
             )
+    
+    def load_used_categorical_feature(self) -> None:
+        with open(
+            os.path.join(
+                self.experiment_path,
+                'used_categorical_feature.txt'
+            ), 'r'
+        ) as file:
+            self.categorical_col_list = json.load(file)['categorical_feature']
             
+    def save_used_categorical_feature(self) -> None:
+        with open(
+            os.path.join(
+                self.experiment_path,
+                'used_categorical_feature.txt'
+            ), 'w'
+        ) as file:
+            json.dump(
+                {
+                    'categorical_feature': self.categorical_col_list
+                }, 
+                file
+            )
+
     def load_used_feature(self) -> None:
         with open(
             os.path.join(
