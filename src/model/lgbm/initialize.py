@@ -189,16 +189,13 @@ class LgbmInit(ModelInit):
             if not os.path.isdir(dir_path):
                 os.makedirs(dir_path)
             
-    def load_model(self, load_ensemble: bool=False) -> None: 
+    def load_model(self) -> None: 
         self.load_used_feature()
         self.load_used_categorical_feature()
         self.load_best_result()
         self.load_params()
         
-        if load_ensemble:
-            self.load_ensemble_model_list()
-        else:
-            self.load_model_list()
+        self.load_model_list()
         
     def save_progress_list(self) -> None:
         with open(
@@ -302,21 +299,7 @@ class LgbmInit(ModelInit):
             )
             for fold_ in range(self.n_fold)
         ]    
-    
-    def load_ensemble_model_list(self) -> None:
-        self.params_lgb['extra_trees'] = True
-        
-        self.model_list = [
-            lgb.Booster(
-                params=self.params_lgb,
-                model_file=os.path.join(
-                    self.model_list_path,
-                    f'lgb_{iteration_}.txt'
-                )
-            )
-            for iteration_ in range(self.number_ensemble_model)
-        ]
-        
+            
     def save_used_feature(self) -> None:
         with open(
             os.path.join(

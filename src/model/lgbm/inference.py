@@ -32,15 +32,3 @@ class LgbmInference(ModelPredict, LgbmInit):
         
         prediction_ = self.blend_model_predict(test_data=test_data)
         return prediction_
-    
-    def ensemble_model_predict(self, test_data: pl.DataFrame) -> np.ndarray:        
-        test_data = self.load_feature_data(test_data)
-        
-        prediction_ = np.zeros((test_data.shape[0]), dtype='float64')
-        
-        for model in self.model_list:
-            prediction_ += model.predict(
-                test_data
-            )/len(self.model_list)
-            
-        return prediction_

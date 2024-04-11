@@ -163,60 +163,6 @@ class LgbmTrainer(ModelTrain, LgbmInit):
             del train_matrix, test_matrix
             
             _ = gc.collect()
-
-    
-    def ensemble_train(self) -> None:
-        self.load_best_result()
-        self.load_used_feature()
-        self.load_used_categorical_feature()
-        self.load_params()
-        
-        #add more diversity
-        self.params_lgb['extra_trees']=True
-
-        def progress_bar_callback(env):
-            train_tqdm.update(n=1) 
-
-        print(f"Beginning to train {self.number_ensemble_model} different model for {self.best_result['best_epoch']} round")
-        print(f"{len(self.feature_list)} features")
-        
-        data = pl.scan_parquet(
-            os.path.join(
-                self.config_dict['PATH_PARQUET_DATA'],
-                'data.parquet'
-            )
-        )
-        
-        for iteration_ in range(self.number_ensemble_model):
-            print(f'\nStart training model {iteration_}')
-            for seed_key in ['seed', 'bagging_seed', 'feature_fraction_seed', 'extra_seed', 'data_random_seed']:
-                self.params_lgb[seed_key] = np.random.randint(0, 1_000_000)
-            
-            #construct dataset with new data_random_seed
-            train_matrix = lgb.Dataset(
-                data.select(self.feature_list).collect().to_pandas().to_numpy('float32'),
-                data.select(self.target_col_name).collect().to_pandas().to_numpy('float32').reshape((-1))
-            )
-            train_tqdm = tqdm(total=self.best_result['best_epoch'])
-            
-            model = lgb.train(
-                params=self.params_lgb,
-                train_set=train_matrix, 
-                feature_name=self.feature_list,
-                categorical_feature=self.categorical_col_list,
-                num_boost_round=self.best_result['best_epoch'],
-                callbacks=[progress_bar_callback]
-            )
-            
-            del train_tqdm, train_matrix
-            _ = gc.collect()
-            
-            model.save_model(
-                os.path.join(
-                    self.model_list_path,
-                    f'lgb_{iteration_}.txt'
-                ), importance_type='gain'
-            )
         
     def single_fold_train(self) -> None:
         self.load_best_result()
