@@ -245,25 +245,62 @@ class LgbmExplainer(LgbmInit):
             os.path.join(self.experiment_insight_feat_imp_path, 'dataset_importance_rank_plot.png')
         )
         plt.close(fig)
-    
+
     def get_stability_feature_importance(self) -> None:
+        self.load_best_result()
         self.get_dataset_columns()
         self.model_list_stability = self.load_custom_pickle_model_list(file_name='model_list_stability.pkl')
         
         feature_importances = pd.DataFrame()
         feature_importances['feature'] = self.feature_list
-
+                
+        data = pl.scan_parquet(
+            os.path.join(
+                self.config_dict['PATH_PARQUET_DATA'],
+                'data.parquet'
+            )
+        )
+                                    
         for fold_, model in enumerate(self.model_list_stability):
+            print(f'Stability fold {fold_}')
             feature_importances[f'fold_{fold_}'] = model.feature_importance(
                 importance_type='gain'
             )
             feature_importances[f'fold_{fold_}_rank'] = feature_importances[f'fold_{fold_}'].rank(ascending=False)
-        
+
+            test_feature = (
+                data.with_columns(
+                    (
+                        pl.col('fold_info').str.split(', ')
+                        .list.get(fold_).alias('current_fold')
+                    )
+                )
+                .filter(
+                    (pl.col('current_fold') == 'v')
+                )
+                .select(self.feature_list)
+                .collect().to_pandas()
+                .sample(25_000).to_numpy('float32')
+            )
+            
+            #calculate shap on sampled feature
+            feature_importances[f'mean_shap_fold_{fold_}'] = self.model_list_stability[fold_].predict(
+                data=test_feature,
+                num_iteration=self.best_result['best_epoch'],
+                pred_contrib=True
+            )[:, :-1].mean(axis=0)
+
         feature_importances['type_feature'] = feature_importances['feature'].apply(
             lambda x: 
                 x[-1] if x[-1] in self.config_dict['TYPE_FEATURE'] else 'other'
         )
-            
+        feature_importances['mean_stability_shap'] = feature_importances[
+            [f'mean_shap_fold_{fold_}' for fold_ in range(self.n_fold)]
+        ].mean(axis=1)
+        feature_importances['std_stability_shap'] = feature_importances[
+            [f'mean_shap_fold_{fold_}' for fold_ in range(self.n_fold)]
+        ].std(axis=1)
+        
         feature_importances['average'] = feature_importances[
             [f'fold_{fold_}' for fold_ in range(self.n_fold)]
         ].mean(axis=1)
