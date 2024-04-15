@@ -134,6 +134,7 @@ class LgbmTrainer(ModelTrain, LgbmInit):
                 [
                     #add other metric for debug purpose
                     lgb_eval_gini_stability,
+                    lgb_slope_part_of_stability
                 ]
             ]
             
