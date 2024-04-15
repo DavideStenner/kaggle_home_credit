@@ -6,6 +6,6 @@ if __name__=='__main__':
     
     home_credit_preprocessor = PreprocessPipeline(
         config_dict=config_dict, 
-        embarko_skip=6
+        embarko_skip=4
     )
     home_credit_preprocessor()
