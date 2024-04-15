@@ -278,7 +278,7 @@ class LgbmInit(ModelInit):
         ) as file:
             pickle.dump(model_list, file)
     
-    def load_custom_pickle_model_list(self, file_name: str) -> None:
+    def load_custom_pickle_model_list(self, file_name: str) -> list[lgb.Booster]:
         with open(
             os.path.join(
                 self.experiment_path,
