@@ -1,5 +1,5 @@
 import polars as pl
-from typing import Any, Union, Dict
+from typing import Any, Union, Dict, Callable
 
 from src.base.preprocess.initialize import BaseInit
 
@@ -43,10 +43,10 @@ class PreprocessInit(BaseInit):
         self.used_dataset: list[str] = (
             config_dict['DEPTH_0'] + config_dict['DEPTH_1'] + config_dict['DEPTH_2']
         )
-        self.numerical_aggregator: list[pl.Expr] = [
+        self.numerical_aggregator: list[Callable[..., pl.Expr]] = [
             pl.min, pl.max, pl.mean, pl.std
         ]
-        self.date_aggregator: list[pl.Expr] = [
+        self.date_aggregator: list[Callable[..., pl.Expr]] = [
             pl.min, pl.max
         ]
         self._initialize_empty_dataset()
