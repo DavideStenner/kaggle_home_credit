@@ -222,13 +222,13 @@ class LgbmExplainer(LgbmInit):
             plt.close(fig)
 
         #get information about top dataset on mean gai and rank gain
-        feature_importances_dataset = feature_importances_dataset.groupby(
+        feature_importances_dataset_mean = feature_importances_dataset.groupby(
             'dataset'
         )[['average', 'rank_average']].mean().reset_index()
         
         #top mean gain for each dataset
         fig = plt.figure(figsize=(12,8))
-        sns.barplot(data=feature_importances_dataset, x='average', y='dataset')
+        sns.barplot(data=feature_importances_dataset_mean, x='average', y='dataset')
         plt.title(f"Top dataset importance mean gain")
 
         fig.savefig(
@@ -238,11 +238,41 @@ class LgbmExplainer(LgbmInit):
 
         #top rank gain for each dataset
         fig = plt.figure(figsize=(12,8))
-        sns.barplot(data=feature_importances_dataset, x='rank_average', y='dataset')
+        sns.barplot(data=feature_importances_dataset_mean, x='rank_average', y='dataset')
         plt.title(f"Top dataset importance mean rank gain")
 
         fig.savefig(
             os.path.join(self.experiment_insight_feat_imp_path, 'dataset_importance_rank_plot.png')
+        )
+        plt.close(fig)
+
+        #get information about top dataset on sum fe
+        feature_importances_dataset_sum = feature_importances_dataset.groupby(
+            'dataset'
+        )[['average']].sum().reset_index()
+        #top mean gain for each dataset
+        
+        fig = plt.figure(figsize=(12,8))
+        sns.barplot(data=feature_importances_dataset_sum, x='average', y='dataset')
+        plt.title(f"Top dataset total contribution")
+
+        fig.savefig(
+            os.path.join(self.experiment_insight_feat_imp_path, 'dataset_total_importance_plot.png')
+        )
+        plt.close(fig)
+
+        #get information about top dataset on sum fe
+        feature_importances_dataset_sum = feature_importances_dataset.groupby(
+            'dataset'
+        ).size().reset_index().rename(columns={0: 'count'})
+        #top mean gain for each dataset
+
+        fig = plt.figure(figsize=(12,8))
+        sns.barplot(data=feature_importances_dataset_sum, x='count', y='dataset')
+        plt.title(f"Number of feature for dataset")
+
+        fig.savefig(
+            os.path.join(self.experiment_insight_feat_imp_path, 'dataset_number_feature.png')
         )
         plt.close(fig)
 
