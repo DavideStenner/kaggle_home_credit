@@ -18,7 +18,7 @@ if __name__=='__main__':
     
     home_credit_preprocessor = PreprocessPipeline(
         config_dict=config_dict, 
-        embarko_skip=6
+        embarko_skip=4
     )
     home_credit_preprocessor.begin_training()
     
@@ -30,6 +30,6 @@ if __name__=='__main__':
         evaluate_stability=False, evaluate_shap=False
     )
     trainer.train_explain()
-    
+    # trainer.all_flow()
     if args.xgb:
         raise NotImplementedError
