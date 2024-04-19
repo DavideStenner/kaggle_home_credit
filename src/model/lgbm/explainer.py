@@ -311,20 +311,33 @@ class LgbmExplainer(LgbmInit):
                 )
                 .select(self.feature_list)
                 .collect().to_pandas()
-                .sample(25_000).to_numpy('float32')
             )
+            if test_feature.shape[0] <= 25_000:
+                print(f'Target 1 rows: {test_feature.shape[0]}')
+            else:
+                test_feature = test_feature.sample(25_000)
+                
+            test_feature = test_feature.to_numpy('float32')
             
-            #calculate shap on sampled feature
-            feature_importances[f'mean_shap_fold_{fold_}'] = self.model_list_stability[fold_].predict(
+            #calculate shap on sampled feature. exclude last which is bias
+            shap_oof: np.ndarray = self.model_list_stability[fold_].predict(
                 data=test_feature,
                 num_iteration=self.best_result['best_epoch'],
                 pred_contrib=True
-            )[:, :-1].mean(axis=0)
+            )[:, :-1]
+            
+            feature_importances[f'mean_shap_fold_{fold_}'] = shap_oof.mean(axis=0)
+            feature_importances[f'imp_shap_fold_{fold_}'] = np.abs(shap_oof).mean(axis=0)
 
         feature_importances['type_feature'] = feature_importances['feature'].apply(
             lambda x: 
                 x[-1] if x[-1] in self.config_dict['TYPE_FEATURE'] else 'other'
         )
+        
+        feature_importances['mean_importance_shap'] = feature_importances[
+            [f'imp_shap_fold_{fold_}' for fold_ in range(self.n_fold)]
+        ].mean(axis=1)
+        
         feature_importances['mean_stability_shap'] = feature_importances[
             [f'mean_shap_fold_{fold_}' for fold_ in range(self.n_fold)]
         ].mean(axis=1)
@@ -332,6 +345,11 @@ class LgbmExplainer(LgbmInit):
             [f'mean_shap_fold_{fold_}' for fold_ in range(self.n_fold)]
         ].std(axis=1)
         
+        feature_importances['stability_ratio'] = (
+            feature_importances['std_stability_shap']/
+            feature_importances['mean_stability_shap']
+        )
+
         feature_importances['average'] = feature_importances[
             [f'fold_{fold_}' for fold_ in range(self.n_fold)]
         ].mean(axis=1)
