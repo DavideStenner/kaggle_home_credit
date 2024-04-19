@@ -306,7 +306,8 @@ class LgbmExplainer(LgbmInit):
                     )
                 )
                 .filter(
-                    (pl.col('current_fold') == 'v')
+                    (pl.col('current_fold') == 'v') &
+                    (pl.col('target') == 1)
                 )
                 .select(self.feature_list)
                 .collect().to_pandas()
