@@ -1569,7 +1569,18 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                     }
                 )
             )
-    
+    def drop_tax_reg_feature(self) -> None:
+        """Drop tax registry a, b, c feature"""
+        self.data = self.data.drop(
+            [
+                col
+                for col in self.data.columns
+                if
+                    ('tax_registry_a_1' in col) |
+                    ('tax_registry_b_1' in col) |
+                    ('tax_registry_c_1' in col)
+            ]
+        )
     def drop_useless_feature_manual(self) -> None:
         """Drop manually useless feature"""
         #drop useless null features
