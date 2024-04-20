@@ -1367,7 +1367,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         )
     
     def create_applprev_1_feature(self) -> None:
-        self.applprev_1 = self.applprev_1.drop('district_544M', 'profession_152M')
+        self.applprev_1 = self.applprev_1.drop('district_544M', 'profession_152M', 'postype_4733339M')
 
         #filter past
         self.applprev_1 = self.applprev_1.join(
