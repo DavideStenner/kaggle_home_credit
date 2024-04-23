@@ -762,7 +762,18 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                         closed_contract_expr
                         .std()
                         .alias(f'std_closed_contract_amount_416A')
+                    ),
+                    (
+                        closed_contract_expr
+                        .min()
+                        .alias(f'min_closed_contract_amount_416A')
+                    ),
+                    (
+                        closed_contract_expr
+                        .max()
+                        .alias(f'max_closed_contract_amount_416A')
                     )
+
                 ] + 
                 #total amount open contract
                 [
@@ -780,7 +791,18 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                         open_contract_expr
                         .std()
                         .alias(f'std_open_contract_amount_416A')
+                    ),
+                    (
+                        open_contract_expr
+                        .min()
+                        .alias(f'min_open_contract_amount_416A')
+                    ),
+                    (
+                        open_contract_expr
+                        .max()
+                        .alias(f'max_open_contract_amount_416A')
                     )
+
                 ] +
                 #number close empty contract
                 [
