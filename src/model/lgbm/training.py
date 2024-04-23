@@ -20,9 +20,13 @@ class LgbmTrainer(ModelTrain, LgbmInit):
     def select_model_feature(self) -> None:
         #select only feature which has stability over different folder
         feature_importance: pd.DataFrame = pd.read_excel(
-            self.feature_importance_path
+            self.feature_stability_path
         )
-        self.exclude_feature_list += feature_importance.loc[feature_importance['average']<100, 'feature'].tolist()
+        self.exclude_feature_list += feature_importance.loc[
+            (feature_importance['count_useless_on_fold']>0)|
+            (feature_importance['stability_ratio']>0.8), 
+            'feature'
+        ].tolist()
         
     def _init_train(self) -> None:
         data = pl.scan_parquet(
