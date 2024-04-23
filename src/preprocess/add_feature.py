@@ -169,7 +169,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         count_expr_list: list[pl.Expr] = (
             [
                 (
-                    pl.col(col).max()
+                    pl.col(col).n_unique()
                     .alias(f'max_{col}')
                     .cast(pl.UInt16)
                 )
