@@ -357,14 +357,10 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         )
         
     def create_credit_bureau_a_2_feature(self) -> None:
-        warnings.warn('Only numerical feature for credit_bureau_a_2', UserWarning)
-        categorical_features: list[str] = [
-            'collater_typofvalofguarant_298M', 'collater_typofvalofguarant_407M',
-            'collaterals_typeofguarante_359M', 'collaterals_typeofguarante_669M'
-        ]
         numerical_features: list[str] = [
             'collater_valueofguarantee_1124L', 'collater_valueofguarantee_876L',
             'pmts_dpd_1073P', 'pmts_dpd_303P',
+            'pmts_overdue_1140A', 'pmts_overdue_1152A'
         ]
         #aggregate and take first element
         self.credit_bureau_a_2 = self.credit_bureau_a_2.select(
@@ -375,33 +371,34 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             ]
         )
         
-        features_list = self.add_generic_feature(self.credit_bureau_a_2, 'credit_bureau_a_2')
-
-        self.credit_bureau_a_2 = self.credit_bureau_a_2.group_by(
-            ['case_id', 'num_group1']
-        ).agg(features_list)
-
         self.credit_bureau_a_2 = self.credit_bureau_a_2.group_by(
             'case_id'
         ).agg(
-            [           
-                pl.col('num_group1')
-                .max()
+            [
+                pl.col('num_group1').max()
                 .cast(pl.UInt32)
-                .alias('max_num_group1')
+                .alias('max_num_group2'),
+                pl.len()
+                .cast(pl.UInt32)
+                .alias('num_rowsX')
             ] +
             [
-                    pl_operation(col_name)
-                    .alias(f'{pl_operation.__name__}_over_group2_{col_name}')
-                    for pl_operation, col_name in product(
-                        self.numerical_aggregator,
-                        ['max_num_group2'] + 
-                        [
-                            col for col in self.credit_bureau_a_2.columns
-                            if any([feat in col for feat in numerical_features])
-                        ]
-                    )
-                        
+                (
+                    pl.col(num_col)
+                    .max()
+                    .cast(pl.Float32)
+                    .alias(f'max_{num_col}')
+                    for num_col in numerical_features
+                )
+            ] +
+            [
+                (
+                    pl.col(num_col)
+                    .min()
+                    .cast(pl.Float32)
+                    .alias(f'min_{num_col}')
+                    for num_col in numerical_features
+                )
             ]
         )
 
