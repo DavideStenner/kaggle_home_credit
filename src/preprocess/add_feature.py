@@ -1925,6 +1925,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         self.add_tax_registration_merge()
         self.drop_useless_feature_manual()
         self.drop_tax_reg_feature()
+        self.add_null_feature()
                 
     def merge_all(self) -> None:
         self.add_dataset_name_to_feature()
