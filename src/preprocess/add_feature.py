@@ -98,7 +98,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                         pl.col(col)!=
                         self.mapper_mask[dataset_name][col][self.hashed_missing_label]
                     )
-                    .drop_nulls().mode().first()
+                    .drop_nulls().mode().sort().first()
                     .alias(f'not_hashed_missing_mode_{col}')
                     .cast(mapper_column_cast[col])
                 )
@@ -185,6 +185,24 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         )
 
         return result_expr_list
+
+    def filter_and_select_first(
+        self, 
+        data: Union[pl.LazyFrame, pl.DataFrame],
+        filter_col: pl.Expr, col_list: Optional[list[str]], group_by: str = 'case_id'
+    ) -> Union[pl.LazyFrame, pl.DataFrame]:
+        
+        if col_list is None:
+            col_list = data.columns
+            
+        data = (
+            data
+            .filter(filter_col)
+            .select(col_list)
+            .group_by(group_by)
+            .agg(pl.all().first())
+        )
+        return data
 
     
     def filter_and_select_first_non_blank(
@@ -362,7 +380,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             'pmts_dpd_1073P', 'pmts_dpd_303P',
             'pmts_overdue_1140A', 'pmts_overdue_1152A'
         ]
-        #aggregate and take first element
+
         self.credit_bureau_a_2 = self.credit_bureau_a_2.select(
             ['case_id', 'num_group1'] +
             [
@@ -671,7 +689,8 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         )
         self.debitcard_1 = (
             self.debitcard_1
-            .group_by('case_id')
+            .sort(['case_id', 'num_group1'])
+            .group_by('case_id', maintain_order=True)
             .agg(
                 #first info
                 [
@@ -876,9 +895,8 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         )
 
     def create_static_0_feature(self) -> None:
-        self.static_0 = self.filter_and_select_first_non_blank(
-            data=self.static_0,
-            filter_col=pl.lit(True),
+        self.static_0 = self.filter_and_select_first(
+            data=self.static_0, filter_col=pl.lit(True),
             col_list=self.static_0.columns
         )
         
@@ -965,9 +983,8 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             ]
 
         #ensure no duplicates
-        self.static_cb_0 = self.filter_and_select_first_non_blank(
-            data=self.static_cb_0,
-            filter_col=pl.lit(True),
+        self.static_cb_0 = self.filter_and_select_first(
+            data=self.static_cb_0, filter_col=pl.lit(True),
             col_list=self.static_cb_0.columns
         )
         
@@ -1184,7 +1201,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             'role_1084L', 'role_993L',
             'safeguarantyflag_411L', 'type_25L', 'sex_738L'
         ]
-        person_1 = self.filter_and_select_first_non_blank(
+        person_1 = self.filter_and_select_first(
             data=self.person_1,
             filter_col=pl.col('num_group1')==0,
             col_list=select_col_group_1
@@ -1621,7 +1638,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 pl.col(f'not_hashed_missing_mode_cacccardblochreas_147M')
                 .drop_nulls()
                 .mode()
-                .first()
+                .sort().first()
                 .alias('group1_mode_not_hashed_missing_mode_cacccardblochreas_147M'),
                 
                 pl.col(f'not_hashed_missing_mode_cacccardblochreas_147M')
@@ -1642,7 +1659,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 )
             ] +
             [
-                pl.col(f'mode_{col}').mode().first()
+                pl.col(f'mode_{col}').mode().sort().first()
                 .alias(f'num_group1_mode_mode_{col}')
                 for col in categorical_columns_list
             ] +
@@ -1654,7 +1671,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         )
 
     def create_other_1_feature(self) -> None:
-        self.other_1 = self.filter_and_select_first_non_blank(
+        self.other_1 = self.filter_and_select_first(
             data=self.other_1,
             filter_col=pl.lit(True),
             col_list=[
