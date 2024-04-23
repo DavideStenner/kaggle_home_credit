@@ -404,16 +404,47 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
 
         
     def create_credit_bureau_b_1_feature(self) -> None:
-        #empty column
-        self.credit_bureau_b_1 = self.credit_bureau_b_1.drop(
-            'credlmt_1052A', 'residualamount_1093A', 'residualamount_127A'
-        )
-        list_generic_feature: list[pl.Expr] = self.add_generic_feature(
-            self.credit_bureau_b_1, 'credit_bureau_b_1'
+        
+        credit_bureau_b_1_closed = self.credit_bureau_b_1.filter(
+            pl.col('classificationofcontr_1114M') == 
+            self.mapper_mask['credit_bureau_b_1']['classificationofcontr_1114M'][self.hashed_missing_label]
+        ).select(
+            [
+                'case_id', 'num_group1', 
+                'contractst_516M', 'contracttype_653M',
+                'credor_3940957M', 'credquantity_984L',
+                'dpd_733P', 'installmentamount_644A',
+                'periodicityofpmts_997M',
+                'pmtmethod_731M', 'purposeofcred_722M',
+                'subjectrole_326M', 'subjectrole_43M',
+                'totalamount_881A'
+            ]    
         )
 
-        self.credit_bureau_b_1 = (
-            self.credit_bureau_b_1
+        credit_bureau_b_1_closed = (
+            credit_bureau_b_1_closed
+            .group_by('case_id')
+            .agg(
+                self.add_generic_feature(
+                    credit_bureau_b_1_closed, 'credit_bureau_b_1'
+                )
+            )
+        )
+        credit_bureau_b_1_closed = credit_bureau_b_1_closed.with_columns(
+            [
+                pl.col(col).alias('closed_' + col)
+                for col in credit_bureau_b_1_closed.columns
+                if col not in ['case_id', 'num_group1']
+            ]
+        )
+
+        credit_bureau_b_1_opened = self.credit_bureau_b_1.filter(
+                    pl.col('classificationofcontr_1114M') != 
+                    self.mapper_mask['credit_bureau_b_1']['classificationofcontr_1114M'][self.hashed_missing_label]
+        )
+
+        credit_bureau_b_1_opened = (
+            credit_bureau_b_1_opened
             .group_by('case_id')
             .agg(
                 [
@@ -433,8 +464,28 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                     .cast(pl.Float32)
                     .alias('mean_duration_contractmaturitydate_151D_lastupdate_260D')
                 ] +
-                list_generic_feature
+                self.add_generic_feature(
+                    credit_bureau_b_1_opened, 'credit_bureau_b_1'
+                )
             )
+        )
+        credit_bureau_b_1_opened = credit_bureau_b_1_opened.with_columns(
+            [
+                pl.col(col).alias('opened_' + col)
+                for col in credit_bureau_b_1_opened.columns
+                if col not in ['case_id', 'num_group1']
+            ]
+        )
+        
+        
+        self.credit_bureau_b_1 = self.credit_bureau_b_1.select(
+            pl.col('case_id').unique()
+        ).join(
+            other=credit_bureau_b_1_opened, 
+            on='case_id', how='left'
+        ).join(
+            other=credit_bureau_b_1_closed, 
+            on='case_id', how='left'
         )
 
     def create_credit_bureau_b_2_feature(self) -> None:
