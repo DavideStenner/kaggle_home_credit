@@ -364,7 +364,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         ]
         #aggregate and take first element
         self.credit_bureau_a_2 = self.credit_bureau_a_2.select(
-            ['case_id', 'num_group1', 'num_group2'] +
+            ['case_id', 'num_group1'] +
             [
                 pl.col(col).cast(pl.Float32).alias(col)
                 for col in numerical_features
@@ -377,7 +377,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             [
                 pl.col('num_group1').max()
                 .cast(pl.UInt32)
-                .alias('max_num_group2'),
+                .alias('max_num_group1'),
                 pl.len()
                 .cast(pl.UInt32)
                 .alias('num_rowsX')
@@ -388,8 +388,8 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                     .max()
                     .cast(pl.Float32)
                     .alias(f'max_{num_col}')
-                    for num_col in numerical_features
                 )
+                for num_col in numerical_features
             ] +
             [
                 (
@@ -397,8 +397,8 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                     .min()
                     .cast(pl.Float32)
                     .alias(f'min_{num_col}')
-                    for num_col in numerical_features
                 )
+                for num_col in numerical_features
             ]
         )
 
