@@ -107,7 +107,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             [
                 (
                     pl.col(col)
-                    .drop_nulls().mode().first()
+                    .drop_nulls().mode().sort().first()
                     .alias(f'mode_{col}')
                     .cast(mapper_column_cast[col])
                 )
