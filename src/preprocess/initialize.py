@@ -21,9 +21,6 @@ class PreprocessInit(BaseInit):
         self.hashed_missing_label: str = "a55475b1"
         #for this dates doesn't correct to blank when negative
         self.negative_allowed_dates_date_decision: list[str] = [
-            'static_cb_0_assignmentdate_238D',
-            'static_cb_0_assignmentdate_4527235D', 'static_cb_0_responsedate_1012D',
-            'static_cb_0_responsedate_4527233D', 'static_cb_0_responsedate_4917613D',
             'tax_registry_a_1_recorddate_4527225D'
         ]
         #calculate day diff and year diff to date_decision
@@ -33,8 +30,7 @@ class PreprocessInit(BaseInit):
             'static_0_firstdatedue_489D', 'static_0_lastactivateddate_801D',
             'static_0_lastapplicationdate_877D', 'static_0_lastapprdate_640D',
             'static_0_lastdelinqdate_224D', 'static_0_lastrejectdate_50D',
-            'static_0_maxdpdinstldate_3546855D', 'static_cb_0_assignmentdate_238D',
-            'static_cb_0_assignmentdate_4955616D', 'static_0_lastrepayingdate_696D',
+            'static_0_maxdpdinstldate_3546855D', 'static_0_lastrepayingdate_696D',
             'person_1_birth_259D', 'person_1_empl_employedfrom_271D',
         ]
         self.mapper_mask: Dict[str, Dict[str, int]] = None
