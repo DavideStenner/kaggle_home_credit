@@ -234,6 +234,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         )
     
     def create_credit_bureau_a_1_feature(self) -> None:
+        warnings.warn('Only considering generic feature credit_bureau_a_1', UserWarning)
         self.credit_bureau_a_1 = self.credit_bureau_a_1.with_columns(
             pl.date(
                 pl.col('dpdmaxdateyear_896T'),
@@ -255,125 +256,23 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 pl.col('overdueamountmaxdatemonth_365T'),
                 1
             ).cast(pl.Date).alias('overdueamountmaxdate_active_D')
+        ).drop(
+            'refreshdate_3813885D',
+            'dpdmaxdatemonth_442T', 'dpdmaxdatemonth_89T',
+            'dpdmaxdateyear_596T', 'dpdmaxdateyear_896T',
+            'overdueamountmaxdatemonth_284T', 'overdueamountmaxdatemonth_365T',
+            'overdueamountmaxdateyear_2T', 'overdueamountmaxdateyear_994T'
         )
-                
-        credit_bureau_a_1_open = self.credit_bureau_a_1.filter(
-            pl.col('financialinstitution_591M') != 
-            self.mapper_mask['credit_bureau_a_1']['financialinstitution_591M'][self.hashed_missing_label]
-        ).select(
-            [
-                'case_id', 'num_group1',
-                'annualeffectiverate_199L', 'annualeffectiverate_63L',
-                'classificationofcontr_13M', 'classificationofcontr_400M',
-                'contractst_545M', 'contractst_964M',
-                'contractsum_5085717L', 'credlmt_230A',
-                'credlmt_935A', 'dateofcredend_289D',
-                'dateofcredend_353D', 'dateofcredstart_181D',
-                'dateofcredstart_739D', 'dateofrealrepmt_138D',
-                'debtoutstand_525A', 'debtoverdue_47A',
-                'description_351M', 'dpdmax_139P',
-                'dpdmax_757P', 'financialinstitution_382M',
-                'financialinstitution_591M', 'instlamount_768A',
-                'instlamount_852A', 'interestrate_508L',
-                'lastupdate_1112D', 'lastupdate_388D',
-                'monthlyinstlamount_332A', 'monthlyinstlamount_674A',
-                'nominalrate_281L', 'nominalrate_498L',
-                'numberofcontrsvalue_258L', 'numberofcontrsvalue_358L',
-                'numberofinstls_229L', 'numberofinstls_320L',
-                'numberofoutstandinstls_520L', 'numberofoutstandinstls_59L',
-                'numberofoverdueinstlmax_1039L', 'numberofoverdueinstlmax_1151L',
-                'numberofoverdueinstlmaxdat_148D', 'numberofoverdueinstlmaxdat_641D',
-                'numberofoverdueinstls_725L', 'numberofoverdueinstls_834L',
-                'outstandingamount_354A', 'outstandingamount_362A',
-                'overdueamount_31A', 'overdueamount_659A',
-                'overdueamountmax2_14A', 'overdueamountmax2_398A',
-                'overdueamountmax2date_1002D', 'overdueamountmax2date_1142D',
-                'overdueamountmax_155A', 'overdueamountmax_35A',
-                'periodicityofpmts_1102L', 'periodicityofpmts_837L',
-                'prolongationcount_1120L', 'prolongationcount_599L',
-                'purposeofcred_426M', 'purposeofcred_874M',
-                'refreshdate_3813885D', 'residualamount_488A',
-                'residualamount_856A', 'subjectrole_182M',
-                'subjectrole_93M', 'totalamount_6A',
-                'totalamount_996A', 'totaldebtoverduevalue_178A',
-                'totaldebtoverduevalue_718A', 'totaloutstanddebtvalue_39A',
-                'totaloutstanddebtvalue_668A', 'dpdmaxdate_closed_D',
-                'dpdmaxdate_active_D', 'overdueamountmaxdate_closed_D',
-                'overdueamountmaxdate_active_D'
-            ]
+        
+        list_generic_feature: list[pl.Expr] = self.add_generic_feature(
+            self.credit_bureau_a_1, 'credit_bureau_a_1'
         )
-        credit_bureau_a_1_closed = self.credit_bureau_a_1.filter(
-            pl.col('financialinstitution_591M') == 
-            self.mapper_mask['credit_bureau_a_1']['financialinstitution_591M'][self.hashed_missing_label]
-        ).select(
-            [
-                'case_id', 'num_group1',
-                'annualeffectiverate_199L', 'classificationofcontr_400M',
-                'contractst_964M', 'credlmt_230A',
-                'dateofcredend_353D', 'dateofcredstart_181D',
-                'dateofrealrepmt_138D', 'debtoutstand_525A',
-                'debtoverdue_47A', 'description_351M',
-                'dpdmax_757P', 'financialinstitution_382M',
-                'instlamount_852A', 'interestrate_508L',
-                'lastupdate_388D', 'monthlyinstlamount_674A',
-                'nominalrate_498L', 'numberofcontrsvalue_358L',
-                'numberofinstls_229L', 'numberofoutstandinstls_520L',
-                'numberofoverdueinstlmax_1151L', 'numberofoverdueinstlmaxdat_148D',
-                'numberofoverdueinstls_834L', 'outstandingamount_354A',
-                'overdueamount_31A', 'overdueamountmax2_398A',
-                'overdueamountmax2date_1002D', 'overdueamountmax_35A',
-                'periodicityofpmts_1102L', 'prolongationcount_1120L',
-                'purposeofcred_874M', 'refreshdate_3813885D',
-                'residualamount_488A', 'subjectrole_93M',
-                'totalamount_6A', 'totaldebtoverduevalue_718A',
-                'totaloutstanddebtvalue_668A', 'dpdmaxdate_closed_D',
-                'overdueamountmaxdate_closed_D'
-            ]    
+        self.credit_bureau_a_1 = (
+            self.credit_bureau_a_1
+            .group_by('case_id')
+            .agg(list_generic_feature)
         )
 
-        credit_bureau_a_1_open = (
-            credit_bureau_a_1_open
-            .group_by('case_id')
-            .agg(
-                self.add_generic_feature(
-                    credit_bureau_a_1_open, 'credit_bureau_a_1'
-                )
-            )
-        )
-        credit_bureau_a_1_open = credit_bureau_a_1_open.with_columns(
-            [
-                pl.col(col).alias('opened_' + col)
-                for col in credit_bureau_a_1_open.columns
-                if col not in ['case_id', 'num_group1']
-            ]
-        )
-        credit_bureau_a_1_closed = (
-            credit_bureau_a_1_closed
-            .group_by('case_id')
-            .agg(
-                self.add_generic_feature(
-                    credit_bureau_a_1_closed, 'credit_bureau_a_1'
-                )
-            )
-        )
-        credit_bureau_a_1_closed = credit_bureau_a_1_closed.with_columns(
-            [
-                pl.col(col).alias('closed_' + col)
-                for col in credit_bureau_a_1_closed.columns
-                if col not in ['case_id', 'num_group1']
-            ]
-        )
-        
-        self.credit_bureau_a_1 = self.credit_bureau_a_1.select(
-            pl.col('case_id').unique()
-        ).join(
-            other=credit_bureau_a_1_closed, 
-            on='case_id', how='left'
-        ).join(
-            other=credit_bureau_a_1_open, 
-            on='case_id', how='left'
-        )
-        
     def create_credit_bureau_a_2_feature(self) -> None:
         numerical_features: list[str] = [
             'collater_valueofguarantee_1124L', 'collater_valueofguarantee_876L',
