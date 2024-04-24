@@ -321,6 +321,24 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
 
         
     def create_credit_bureau_b_1_feature(self) -> None:
+        self.credit_bureau_b_1 = (
+            self.credit_bureau_b_1
+            .with_columns(
+                pl.date(
+                    pl.col('dpdmaxdateyear_742T'),
+                    pl.col('dpdmaxdatemonth_804T'),
+                    1
+                ).cast(pl.Date).alias('dpdmaxdate_due_D'),
+                pl.date(
+                    pl.col('overdueamountmaxdateyear_432T'),
+                    pl.col('overdueamountmaxdatemonth_494T'),
+                    1
+                ).cast(pl.Date).alias('overdueamountmaxdate_D')
+            ).drop(
+                'dpdmaxdatemonth_804T', 'dpdmaxdateyear_742T',
+                'overdueamountmaxdatemonth_494T', 'overdueamountmaxdateyear_432T',
+            )
+        )
         
         credit_bureau_b_1_closed = self.credit_bureau_b_1.filter(
             pl.col('classificationofcontr_1114M') == 
