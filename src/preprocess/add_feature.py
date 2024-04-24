@@ -374,8 +374,8 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         )
 
         credit_bureau_b_1_opened = self.credit_bureau_b_1.filter(
-                    pl.col('classificationofcontr_1114M') != 
-                    self.mapper_mask['credit_bureau_b_1']['classificationofcontr_1114M'][self.hashed_missing_label]
+            pl.col('classificationofcontr_1114M') != 
+            self.mapper_mask['credit_bureau_b_1']['classificationofcontr_1114M'][self.hashed_missing_label]
         )
 
         credit_bureau_b_1_opened = (
