@@ -163,9 +163,11 @@ def track_memory_usage(processor: PreprocessPipeline) -> None:
     print('\n\nFE dataset\n\n')
     for dataset in ['base_data'] + processor.used_dataset:
         test_single_dataset_memory(processor=processor, dataset=dataset, streaming=False)
+        sys.stdout.flush()
 
     print('\n\nEntire Dataset\n\n')
     test_collect(processor=processor, streaming=False)          
+    sys.stdout.flush()
 
     # print('\n\nStarting on base dataset\n\n')
     # for dataset in processor.used_dataset:
