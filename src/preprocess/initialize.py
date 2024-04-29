@@ -40,13 +40,31 @@ class PreprocessInit(BaseInit):
             config_dict['DEPTH_0'] + config_dict['DEPTH_1'] + config_dict['DEPTH_2']
         )
         self.numerical_aggregator: list[Callable[..., pl.Expr]] = [
-            pl.min, pl.max, pl.mean, pl.std
+            pl.min, pl.max, pl.mean, pl.sum
         ]
         self.date_aggregator: list[Callable[..., pl.Expr]] = [
             pl.min, pl.max
         ]
         self._initialize_empty_dataset()
         self._correct_list_date_col()
+        self._initialize_filter_expression()
+        
+    def _initialize_filter_expression(self) -> None:
+        def pl_sum(col: str, pl_filter: pl.Expr) -> pl.Expr:
+            return pl.col(col).filter(pl_filter).sum()
+        
+        def pl_min(col: str, pl_filter: pl.Expr) -> pl.Expr:
+            return pl.col(col).filter(pl_filter).min()
+        
+        def pl_max(col: str, pl_filter: pl.Expr) -> pl.Expr:
+            return pl.col(col).filter(pl_filter).max()
+                
+        def pl_mean(col: str, pl_filter: pl.Expr) -> pl.Expr:
+            return pl.col(col).filter(pl_filter).mean()
+        
+        self.numerical_filter_aggregator: list[Callable[..., pl.Expr]] = [
+            pl_sum, pl_min, pl_max, pl_mean
+        ]
         
     def _correct_list_date_col(self):
         self.negative_allowed_dates_date_decision = [
