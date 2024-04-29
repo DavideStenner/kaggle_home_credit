@@ -652,7 +652,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                         .filter(pl.col(col_).is_not_null())
                         .last()
                         .cast(pl.Float32)
-                        .alias(f'last_{col_}')
+                        .alias(f'last_not_null_{col_}')
                     )
                     for col_ in col_to_retrieve_list
                 ] +
