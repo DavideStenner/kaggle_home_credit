@@ -1573,43 +1573,76 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             ['case_id', 'num_group1']
         ).agg(features_list)
         
-        self.applprev_2 = self.applprev_2.group_by(
-            'case_id'
-        ).agg(
+        operation_aggregation_list: list[pl.Expr] = (
+            [
+                pl.col(col_name).filter(pl.col('num_group1')==0).first()
+                for col_name in [f'first_{col}' for col in categorical_columns_list]
+            ] +
+            [
+                pl.col(col_name).filter(pl.col('num_group1')==pl.col('num_group1').max())
+                for col_name in [f'last_{col}' for col in categorical_columns_list]
+            ] +
             [
                 pl.col(f'not_hashed_missing_mode_cacccardblochreas_147M')
-                .drop_nulls()
-                .mode()
-                .sort().first()
-                .alias('group1_mode_not_hashed_missing_mode_cacccardblochreas_147M'),
-                
-                pl.col(f'not_hashed_missing_mode_cacccardblochreas_147M')
                 .n_unique()
-                .alias('group1_nunique_not_hashed_missing_mode_cacccardblochreas_147M'),
+                .alias('nunique_not_hashed_missing_mode_cacccardblochreas_147M'),
             
                 pl.col('num_group1')
                 .max()
                 .alias('max_num_group1')
-            ] +
-            [
-                pl_operator(col_name)
-                .alias(f'{pl_operator.__name__}_{col_name}')
-                for pl_operator, col_name in product(
-                    self.numerical_aggregator,
-                    ['max_num_group2'] +
-                    [f'n_unique_{col}' for col in categorical_columns_list]
+            ]
+        )
+        
+        operation_aggregation_list += (
+            list(
+                chain(
+                    *[
+                        (
+                            [
+                                pl.col(f'not_hashed_missing_mode_cacccardblochreas_147M')
+                                .filter(filter_pl)
+                                .drop_nulls()
+                                .mode()
+                                .sort().first()
+                                .alias(f'{name_pl}_mode_not_hashed_missing_mode_cacccardblochreas_147M'),
+                            ] +
+                            [
+                                pl_operator(col_name, filter_pl)
+                                .alias(f'{pl_operator.__name__}_{name_pl}_{col_name}')
+                                for pl_operator, col_name in product(
+                                    self.numerical_filter_aggregator,
+                                    ['max_num_group2'] +
+                                    [f'n_unique_{col}' for col in categorical_columns_list]
+                                )
+                            ] +
+                            [
+                                pl.col(f'mode_{col}')
+                                .filter(filter_pl)
+                                .mode().sort().first()
+                                .alias(f'num_{name_pl}_mode_mode_{col}')
+                                for col in categorical_columns_list
+                            ] +
+                            [
+                                pl.col(f'mode_{col}')
+                                .filter(filter_pl)
+                                .n_unique()
+                                .alias(f'num_{name_pl}_n_unique_mode_{col}')
+                                for col in categorical_columns_list
+                            ]
+                        )
+                        for name_pl, filter_pl in [
+                            ['group1', pl.col('num_group1')==0],
+                            ['all', pl.lit(True)]
+                        ]
+
+                    ]
                 )
-            ] +
-            [
-                pl.col(f'mode_{col}').mode().sort().first()
-                .alias(f'num_group1_mode_mode_{col}')
-                for col in categorical_columns_list
-            ] +
-            [
-                pl.col(f'mode_{col}').n_unique()
-                .alias(f'num_group1_n_unique_mode_{col}')
-                for col in categorical_columns_list
-            ] 
+            )
+        )
+        self.applprev_2 = self.applprev_2.group_by(
+            'case_id'
+        ).agg(
+            operation_aggregation_list     
         )
 
     def create_other_1_feature(self) -> None:
