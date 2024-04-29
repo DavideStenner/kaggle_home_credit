@@ -177,11 +177,61 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 if col in data.columns
             ]
         )
+        
+        if 'num_group2' not in data.columns:
+            first_expression_list: list[pl.Expr] = [
+                (
+                    pl.col(col)
+                    .filter(pl.col('num_group1')==0)
+                    .first()
+                    .alias(f'first_{col}')
+                )
+                for col in categorical_columns_list + numerical_columns_list + date_columns_list
+            ]
+
+            last_expression_list: list[pl.Expr] = [
+                (
+                    pl.col(col)
+                    .filter(pl.col('num_group1')==pl.col('num_group1').max())
+                    .last()
+                    .alias(f'last_{col}')
+                )
+                for col in categorical_columns_list + numerical_columns_list+ date_columns_list
+            ]
+        else:
+            first_expression_list: list[pl.Expr] = [
+                (
+                    pl.col(col)
+                    .filter(
+                        (pl.col('num_group1')==0) &
+                        (pl.col('num_group2')==0)
+                    )
+                    .first()
+                    .alias(f'first_{col}')
+                )
+                for col in categorical_columns_list + numerical_columns_list + date_columns_list
+            ]
+
+            last_expression_list: list[pl.Expr] = [
+                (
+                    pl.col(col)
+                    .filter(
+                        (pl.col('num_group1')==pl.col('num_group1').max()) &
+                        (pl.col('num_group2')==pl.col('num_group2').max())
+                    )
+                    .last()
+                    .alias(f'last_{col}')
+                )
+                for col in categorical_columns_list + numerical_columns_list + date_columns_list
+            ]
+            
         result_expr_list: list[pl.Expr] = (
             numerical_expr_list +
             categorical_expr_list +
             date_expr_list +
-            count_expr_list
+            count_expr_list +
+            first_expression_list
+            # last_expression_list
         )
 
         return result_expr_list
