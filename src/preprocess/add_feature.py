@@ -423,8 +423,138 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
     def create_credit_bureau_b_2_feature(self) -> None:
         
         product_operator_numerical_col = product(
-            self.numerical_aggregator, 
+            self.numerical_filter_aggregator, 
             ['pmts_dpdvalue_108P', 'pmts_pmtsoverdue_635A']
+        )
+        aggregation_level_group_list: list[pl.Expr] = (
+            list(
+                chain(
+                    *[
+                        [
+                            #num pmt
+                            pl.col('num_group2').filter(filter_pl).max().alias(f'{name_pl}_num_pmt_X').cast(pl.UInt32),
+                            #range date
+                            (
+                                (
+                                    pl.col('pmts_date_1107D').filter(filter_pl).max() - 
+                                    pl.col('pmts_date_1107D').filter(filter_pl).min()
+                                ).dt.total_days()
+                                .cast(pl.UInt32)
+                                .alias(f'{name_pl}_range_pmts_date_1107D')
+                            )
+                        ] +
+                        #date operator
+                        [
+                            (
+                                pl.col('pmts_date_1107D').filter(filter_pl).max()
+                                .alias(f'{name_pl}_max_pmts_date_1107D')
+                            ),
+                            (
+                                pl.col('pmts_date_1107D').filter(filter_pl).min()
+                                .alias(f'{name_pl}_min_pmts_date_1107D')
+                            )
+                        ] +
+                        # stat on all numerical
+                        [
+                            (
+                                pl_operator(col_name, filter_pl)
+                                .alias(f'{name_pl}_{pl_operator.__name__}_{col_name}')
+                                .cast(pl.Float32)
+                            )
+                            for pl_operator, col_name in product_operator_numerical_col
+                        ] +
+                        # #stats on all numerical != 0
+                        [
+                            (
+                                pl_operator(col_name, filter_pl).filter(pl.col(col_name)!=0)
+                                .alias(f'{name_pl}_{pl_operator.__name__}_no_0_{col_name}')
+                                .cast(pl.Float32)
+                            )
+                            for pl_operator, col_name in product_operator_numerical_col    
+                        ] +
+                        [
+                            #count on 0 and not
+                            pl.col('pmts_dpdvalue_108P')
+                            .filter(
+                                (pl.col('pmts_dpdvalue_108P')==0)&
+                                filter_pl
+                            )
+                            .count()
+                            .alias(f'{name_pl}_equal_0_pmts_dpdvalue_108P').cast(pl.UInt32),
+                            
+                            pl.col('pmts_dpdvalue_108P')
+                            .filter(
+                                (pl.col('pmts_dpdvalue_108P')!=0)&
+                                filter_pl
+                            )
+                            .count()
+                            .alias(f'{name_pl}_unequal_0_pmts_dpdvalue_108P').cast(pl.UInt32),
+                            
+                            pl.col('pmts_pmtsoverdue_635A')
+                            .filter(
+                                (pl.col('pmts_pmtsoverdue_635A')==0)&
+                                filter_pl
+                            )
+                            .count()
+                            .alias(f'{name_pl}_equal_0_pmts_pmtsoverdue_635A').cast(pl.UInt32),
+                            
+                            pl.col('pmts_pmtsoverdue_635A')
+                            .filter(
+                                (pl.col('pmts_pmtsoverdue_635A')!=0) &
+                                filter_pl
+                            )
+                            .count()
+                            .alias(f'{name_pl}_unequal_0_pmts_pmtsoverdue_635A').cast(pl.UInt32),
+                        ] +
+                        #from 0 to not 0 count and statistic on these breaking point
+                        [
+                            (
+                                pl.col(col)
+                                .filter(
+                                    filter_pl &
+                                    (pl.col(col)!=0) &
+                                    (pl.col(col).shift()==0)
+                                )
+                                .count()
+                                .cast(pl.UInt32)
+                                .alias(f'{name_pl}_count_change_0_not_0_{col}')
+                            )
+                            for col in ['pmts_dpdvalue_108P', 'pmts_pmtsoverdue_635A']
+                        ] +
+                        [
+                            (
+                                pl_operator(col_name, filter_pl)
+                                .filter(
+                                    (pl.col(col_name)!=0) &
+                                    (pl.col(col_name).shift()==0)
+                                )
+                                .cast(pl.Float32)
+                                .alias(f'{name_pl}_{pl_operator.__name__}_change_0_not_0_{col_name}')
+                            )
+                            for pl_operator, col_name in product_operator_numerical_col 
+                        ] +
+                        #from not 0 to 0 count on these breaking point
+                        [
+                            (
+                                pl.col(col)
+                                .filter(
+                                    filter_pl &
+                                    (pl.col(col)==0) &
+                                    (pl.col(col).shift()!=0)
+                                )
+                                .count()
+                                .cast(pl.UInt32)
+                                .alias(f'{name_pl}_count_change_not_0_to_0_{col}')
+                            )
+                            for col in ['pmts_dpdvalue_108P', 'pmts_pmtsoverdue_635A']
+                        ]
+                        for name_pl, filter_pl in [
+                            ['group1', pl.col('num_group1')==0],
+                            ['all', pl.lit(True)]
+                        ]
+                    ]
+                )
+            )
         )
         #get feature for each contract
         self.credit_bureau_b_2 = (
@@ -433,94 +563,9 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                     'case_id', 'num_group1', 'num_group2'
                 ]
             ).group_by(by=['case_id', 'num_group1'], maintain_order=True).agg(
-                [
-                    #num pmt
-                    pl.col('num_group2').max().alias('num_pmt_X').cast(pl.UInt32),
-                    #range date
-                    (
-                        (
-                            pl.max('pmts_date_1107D') - pl.min('pmts_date_1107D')
-                        ).dt.total_days()
-                        .cast(pl.UInt32)
-                        .alias(f'range_pmts_date_1107D')
-                    )
-                ] +
-                #date operator
-                [
-                    (
-                        pl_operator('pmts_date_1107D')
-                        .alias(f'{pl_operator.__name__}_pmts_date_1107D')
-                    )
-                    for pl_operator in self.date_aggregator
-                ] +
-                #stat on all numerical
-                [
-                    (
-                        pl_operator(col_name)
-                        .alias(f'{pl_operator.__name__}_{col_name}')
-                        .cast(pl.Float32)
-                    )
-                    for pl_operator, col_name in product_operator_numerical_col
-                ] +
-                #stats on all numerical != 0
-                [
-                    (
-                        pl_operator(col_name).filter(pl.col(col_name)!=0)
-                        .alias(f'{pl_operator.__name__}_no_0_{col_name}')
-                        .cast(pl.Float32)
-                    )
-                    for pl_operator, col_name in product_operator_numerical_col    
-                ] +
-                [
-                    #count on 0 and not '
-                    pl.col('pmts_dpdvalue_108P').filter(pl.col('pmts_dpdvalue_108P')==0).count().alias('equal_0_pmts_dpdvalue_108P').cast(pl.UInt32),
-                    pl.col('pmts_dpdvalue_108P').filter(pl.col('pmts_dpdvalue_108P')!=0).count().alias('unequal_0_pmts_dpdvalue_108P').cast(pl.UInt32),
-                    pl.col('pmts_pmtsoverdue_635A').filter(pl.col('pmts_pmtsoverdue_635A')==0).count().alias('equal_0_pmts_pmtsoverdue_635A').cast(pl.UInt32),
-                    pl.col('pmts_pmtsoverdue_635A').filter(pl.col('pmts_pmtsoverdue_635A')!=0).count().alias('unequal_0_pmts_pmtsoverdue_635A').cast(pl.UInt32),
-                ] +
-                #from 0 to not 0 count and statistic on these breaking point
-                [
-                    (
-                        pl.col(col)
-                        .filter(
-                            (pl.col(col)!=0) &
-                            (pl.col(col).shift()==0)
-                        )
-                        .count()
-                        .cast(pl.UInt32)
-                        .alias(f'count_change_0_not_0_{col}')
-                    )
-                    for col in ['pmts_dpdvalue_108P', 'pmts_pmtsoverdue_635A']
-                ] +
-                [
-                    (
-                        pl_operator(col_name)
-                        .filter(
-                            (pl.col(col_name)!=0) &
-                            (pl.col(col_name).shift()==0)
-                        )
-                        .cast(pl.Float32)
-                        .alias(f'{pl_operator.__name__}_change_0_not_0_{col_name}')
-                    )
-                    for pl_operator, col_name in product_operator_numerical_col 
-                ] +
-                #from not 0 to 0 count on these breaking point
-                [
-                    (
-                        pl.col(col)
-                        .filter(
-                            (pl.col(col)==0) &
-                            (pl.col(col).shift()!=0)
-                        )
-                        .count()
-                        .cast(pl.UInt32)
-                        .alias(f'count_change_not_0_to_0_{col}')
-                    )
-                    for col in ['pmts_dpdvalue_108P', 'pmts_pmtsoverdue_635A']
-                ]
+                aggregation_level_group_list
             )
         )
-        
         #aggregate contract for each case id
         self.credit_bureau_b_2 = (
             self.credit_bureau_b_2
@@ -535,30 +580,9 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                     for pl_operation, col_name in product(
                         self.numerical_aggregator,
                         [
-                            'num_pmt_X',
-                            'range_pmts_date_1107D',
-                            'equal_0_pmts_dpdvalue_108P', 'unequal_0_pmts_dpdvalue_108P',
-                            'equal_0_pmts_pmtsoverdue_635A', 'unequal_0_pmts_pmtsoverdue_635A'
-                        ] +
-                        [
-                            f'{pl_operator.__name__}_{col_name}'
-                            for pl_operator, col_name in product_operator_numerical_col
-                        ] +
-                        [
-                            f'{pl_operator.__name__}_no_0_{col_name}'
-                            for pl_operator, col_name in product_operator_numerical_col
-                        ] +
-                        [
-                            f'{pl_operator.__name__}_change_0_not_0_{col_name}'
-                            for pl_operator, col_name in product_operator_numerical_col
-                        ] +
-                        [
-                            f'count_change_0_not_0_{col_name}'
-                            for col_name in ['pmts_dpdvalue_108P', 'pmts_pmtsoverdue_635A']
-                        ] +
-                        [
-                            f'count_change_not_0_to_0_{col_name}'
-                            for col_name in ['pmts_dpdvalue_108P', 'pmts_pmtsoverdue_635A']
+                            col 
+                            for col in self.credit_bureau_b_2.columns 
+                            if (col not in self.special_column_list) & (col[-1]!='D')
                         ]
                     )
                 ] +
@@ -568,7 +592,11 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                     .cast(pl.Date)
                     for pl_operation, col_name in product(
                         self.date_aggregator + [pl.mean],
-                        ['min_pmts_date_1107D', 'max_pmts_date_1107D']
+                        [
+                            col 
+                            for col in self.credit_bureau_b_2.columns 
+                            if (col not in self.special_column_list) & (col[-1]=='D')
+                        ]
                     )
                 ]
             )
