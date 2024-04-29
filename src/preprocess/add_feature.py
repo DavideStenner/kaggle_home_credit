@@ -1578,10 +1578,10 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 pl.col(col_name).filter(pl.col('num_group1')==0).first()
                 for col_name in [f'first_{col}' for col in categorical_columns_list]
             ] +
-            [
-                pl.col(col_name).filter(pl.col('num_group1')==pl.col('num_group1').max())
-                for col_name in [f'last_{col}' for col in categorical_columns_list]
-            ] +
+            # [
+            #     pl.col(col_name).filter(pl.col('num_group1')==pl.col('num_group1').max())
+            #     for col_name in [f'last_{col}' for col in categorical_columns_list]
+            # ] +
             [
                 pl.col(f'not_hashed_missing_mode_cacccardblochreas_147M')
                 .n_unique()
