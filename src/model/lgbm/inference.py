@@ -1,14 +1,8 @@
-import os
-
 import numpy as np
 import polars as pl
-import seaborn as sns
-import matplotlib.pyplot as plt
-from sklearn.metrics import roc_auc_score, log_loss
 
 from src.base.model.inference import ModelPredict
 from src.model.lgbm.initialize import LgbmInit
-from src.model.metric.official_metric import gini_stability
 
 class LgbmInference(ModelPredict, LgbmInit):     
     def load_feature_data(self, data: pl.DataFrame) -> np.ndarray:

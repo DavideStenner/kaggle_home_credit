@@ -81,9 +81,7 @@ class LgbmInit(ModelInit):
             self.experiment_insight_feat_imp_path, 'feature_importances.xlsx'
         )
         self.exclude_feature_list: list[str] = []
-        
-        self.number_ensemble_model: int = 10
-        
+                
         self.get_categorical_columns(data_columns=data_columns)
     
     def __convert_feature_name_with_dataset(self, mapper_dict: Dict[str, Union[str, dict, float]]):
