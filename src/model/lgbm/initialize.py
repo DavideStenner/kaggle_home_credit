@@ -99,10 +99,19 @@ class LgbmInit(ModelInit):
         string_to_check: list[str] = [
             '{dataset_name}_{col}',
             '{dataset_name}_not_hashed_missing_mode_{col}', 
-            '{dataset_name}_mode_{col}', '{dataset_name}_num_group1_mode_mode_{col}'
+            '{dataset_name}_mode_{col}', 
+            '{dataset_name}_first_{col}',
+            '{dataset_name}_num_group1_mode_mode_{col}'
         ]
         additional_categorical: list[str] = [
-            'group1_mode_not_hashed_missing_mode_cacccardblochreas_147M'
+            'applprev_2_group1_mode_not_hashed_missing_mode_cacccardblochreas_147M',
+            'applprev_2_num_group1_mode_mode_cacccardblochreas_147M',
+            'applprev_2_num_group1_mode_mode_conts_type_509L',
+            'applprev_2_num_group1_mode_mode_credacc_cards_status_52L',
+            'applprev_2_all_mode_not_hashed_missing_mode_cacccardblochreas_147M',
+            'applprev_2_num_all_mode_mode_cacccardblochreas_147M',
+            'applprev_2_num_all_mode_mode_conts_type_509L',
+            'applprev_2_num_all_mode_mode_credacc_cards_status_52L'
         ]
         cat_list_col: list[str] = [
             [
