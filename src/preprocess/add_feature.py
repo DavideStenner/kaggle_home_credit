@@ -1585,7 +1585,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             [
                 pl.col(f'not_hashed_missing_mode_cacccardblochreas_147M')
                 .n_unique()
-                .alias('nunique_not_hashed_missing_mode_cacccardblochreas_147M'),
+                .alias('n_unique_not_hashed_missing_mode_cacccardblochreas_147M'),
             
                 pl.col('num_group1')
                 .max()
