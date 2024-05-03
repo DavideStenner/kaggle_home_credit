@@ -10,7 +10,8 @@ if __name__=='__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--model', default='lgb', type=str)
-
+    parser.add_argument('--all_model', action='store_true', type=bool)
+    
     args = parser.parse_args()
 
     config_dict = import_config()
@@ -22,7 +23,7 @@ if __name__=='__main__':
     )
     home_credit_preprocessor.begin_training()
     
-    if args.model == 'lgb':
+    if (args.model == 'lgb') | (args.all_model):
         from src.model.lgbm.pipeline import LgbmPipeline
         trainer = LgbmPipeline(
             experiment_name=experiment_name + "_lgb",
@@ -33,7 +34,7 @@ if __name__=='__main__':
         )
         trainer.train_explain()
     
-    elif args.model == 'ctb':
+    if (args.model == 'ctb') | (args.all_model):
         from src.model.ctb.pipeline import CTBPipeline
 
         trainer = CTBPipeline(
@@ -45,7 +46,7 @@ if __name__=='__main__':
         )
         trainer.train_explain()
 
-    elif args.model == 'xgb':
+    if (args.model == 'xgb') | (args.all_model):
         raise NotImplementedError
     
     else:
