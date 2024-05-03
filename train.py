@@ -10,7 +10,7 @@ if __name__=='__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--model', default='lgb', type=str)
-    parser.add_argument('--all_model', action='store_true', type=bool)
+    parser.add_argument('--all_model', action='store_true')
     
     args = parser.parse_args()
 
