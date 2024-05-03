@@ -275,10 +275,14 @@ class XgbExplainer(XgbInit):
         
         #add information about basic aggregation to see which is the best
         aggregation_list: list[str] = [
-            'min', 'max', 'mean', 'std', 'sum', 'not_hashed_missing_mode',
-            'mode', 'first'
+            'min', 'max', 'mean', 'std', 'sum', 
+            'not_hashed_missing_mode', 'mode', 'first', 'n_unique',
+            'count_not_missing_not_hashednull', 'count_not_missing',
+            'range'
         ]
         pattern_columns_to_retrieve = '{dataset}_{operation}_{feature}'
+
+        result_aggregation_imp_count: list[Tuple[str, float]] = []
         result_aggregation_imp_mean: list[Tuple[str, float]] = []
         result_aggregation_imp_sum: list[Tuple[str, float]] = []
 
@@ -305,10 +309,12 @@ class XgbExplainer(XgbInit):
             if temp_feature.shape[0] > 0:
                 result_aggregation_imp_sum.append([operation, temp_feature['average'].sum()])
                 result_aggregation_imp_mean.append([operation, temp_feature['average'].mean()])
-
+                result_aggregation_imp_count.append([operation, temp_feature['average'].count()])
+                
         for list_importance, name_plot in [
             [result_aggregation_imp_sum, 'sum'],
-            [result_aggregation_imp_mean, 'mean']
+            [result_aggregation_imp_mean, 'mean'],
+            [result_aggregation_imp_count, 'count']
         ]:
             result_aggregation_importance = pd.DataFrame(
                 list_importance, columns=['operation', 'importance']
@@ -321,7 +327,7 @@ class XgbExplainer(XgbInit):
             fig.savefig(
                 os.path.join(
                     self.experiment_insight_feat_imp_path, 
-                    f'importance_{name_plot}_operation_plot.png'
+                    f'importance_operation_{name_plot}_plot.png'
                 )
             )
             plt.close(fig)
