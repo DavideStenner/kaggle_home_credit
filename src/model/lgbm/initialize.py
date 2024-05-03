@@ -83,7 +83,8 @@ class LgbmInit(ModelInit):
         self.exclude_feature_list: list[str] = []
                 
         self.get_categorical_columns(data_columns=data_columns)
-    
+        self.get_original_dataset_columns()
+        
     def __convert_feature_name_with_dataset(self, mapper_dict: Dict[str, Union[str, dict, float]]):
         return {
             dataset_name: {
@@ -149,9 +150,8 @@ class LgbmInit(ModelInit):
                 'mapper_dtype.json'
             ), 'r'
         ) as file:
-            mapper_dtype = self.__convert_feature_name_with_dataset(
-                json.load(file)
-            )
+            mapper_dtype = json.load(file)
+            
         self.original_feature_dataset = pd.DataFrame(
             list(
                 chain(

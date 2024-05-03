@@ -221,6 +221,60 @@ class LgbmExplainer(LgbmInit):
             )
             plt.close(fig)
 
+        #add information about basic aggregation to see which is the best
+        aggregation_list: list[str] = [
+            'min', 'max', 'mean', 'std', 'sum', 'not_hashed_missing_mode',
+            'mode', 'first'
+        ]
+        pattern_columns_to_retrieve = '{dataset}_{operation}_{feature}'
+        result_aggregation_imp_mean: list[Tuple[str, float]] = []
+        result_aggregation_imp_sum: list[Tuple[str, float]] = []
+
+        for operation in aggregation_list:
+
+            aggregation_list_columns: list[str] = [ 
+                pattern_columns_to_retrieve.format(
+                    dataset=row['dataset'], 
+                    operation=operation,
+                    feature=row['feature']
+                )
+                for _, row in self.original_feature_dataset.iterrows()
+                if pattern_columns_to_retrieve.format(
+                    dataset=row['dataset'], 
+                    operation=operation,
+                    feature=row['feature']
+                ) in self.feature_list
+            ]
+
+            temp_feature = feature_importances_dataset.loc[
+                feature_importances_dataset['feature'].isin(aggregation_list_columns)
+            ]
+            
+            if temp_feature.shape[0] > 0:
+                result_aggregation_imp_sum.append([operation, temp_feature['average'].sum()])
+                result_aggregation_imp_mean.append([operation, temp_feature['average'].mean()])
+
+        for list_importance, name_plot in [
+            [result_aggregation_imp_sum, 'sum'],
+            [result_aggregation_imp_mean, 'mean']
+        ]:
+            result_aggregation_importance = pd.DataFrame(
+                list_importance, columns=['operation', 'importance']
+            )
+            
+            fig = plt.figure(figsize=(18,8))
+            sns.barplot(data=result_aggregation_importance, x='importance', y='operation')
+            plt.title(f"Top operation ({name_plot}) over {self.n_fold}")
+
+            fig.savefig(
+                os.path.join(
+                    self.experiment_insight_feat_imp_path, 
+                    f'importance_{name_plot}_operation_plot.png'
+                )
+            )
+            plt.close(fig)
+        
+        
         #get information about top dataset on mean gai and rank gain
         feature_importances_dataset_mean = feature_importances_dataset.groupby(
             'dataset'
