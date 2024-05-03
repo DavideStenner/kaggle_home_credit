@@ -174,7 +174,7 @@ class TestPipeline(unittest.TestCase):
         except Exception as e:
             self.fail(e)
 
-    def test_pipeline_on_test_data(self):
+    def test_lgb_pipeline_on_test_data(self):
         try:
             config = import_config()
             _, experiment_name = import_params(model='lgb')
@@ -194,5 +194,34 @@ class TestPipeline(unittest.TestCase):
             )
             trainer.activate_inference()
             pipeline_data.test_all()
+            
+            _ = trainer.predict(pipeline_data.data)
+
+        except Exception as e:
+            self.fail(e)
+
+    def test_ctb_pipeline_on_test_data(self):
+        try:
+            config = import_config()
+            _, experiment_name = import_params(model='ctb')
+            
+            pipeline_data = PreprocessPipeline(
+                config_dict=config, 
+                embarko_skip=6
+            )
+            pipeline_data.begin_inference()
+
+            trainer = CTBPipeline(
+                experiment_name=experiment_name + "_ctb",
+                params_ctb={},
+                config_dict=config,
+                metric_eval='CTBGiniStability', log_evaluation=1, 
+                data_columns=pipeline_data.feature_list
+            )
+            trainer.activate_inference()
+            pipeline_data.test_all()
+            
+            _ = trainer.predict(pipeline_data.data)
+
         except Exception as e:
             self.fail(e)
