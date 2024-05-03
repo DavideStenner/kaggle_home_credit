@@ -299,9 +299,10 @@ class CTBInit(ModelInit):
         self.model_list = [
             cb.CatBoost(
                 params=self.params_ctb,
-                model_file=os.path.join(
+            ).load_model(
+                fname=os.path.join(
                     self.experiment_path,
-                    f'lgb_{fold_}.txt'
+                    f'ctb_{fold_}.cbm'
                 )
             )
             for fold_ in range(self.n_fold)

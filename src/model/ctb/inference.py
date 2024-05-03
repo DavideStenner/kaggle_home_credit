@@ -1,12 +1,15 @@
 import numpy as np
+import pandas as pd
 import polars as pl
 
 from src.base.model.inference import ModelPredict
 from src.model.ctb.initialize import CTBInit
 
 class CTBInference(ModelPredict, CTBInit):     
-    def load_feature_data(self, data: pl.DataFrame) -> np.ndarray:
-        return data.select(self.feature_list).to_pandas().to_numpy(dtype='float32')
+    def load_feature_data(self, data: pl.DataFrame) -> pd.DataFrame:
+        feature_data = data.select(self.feature_list).to_pandas()
+        feature_data[self.categorical_col_list] = feature_data[self.categorical_col_list].astype(str)
+        return feature_data
         
     def blend_model_predict(self, test_data: pl.DataFrame) -> np.ndarray:        
         test_data = self.load_feature_data(test_data)
@@ -15,9 +18,9 @@ class CTBInference(ModelPredict, CTBInit):
         
         for model in self.model_list:
             prediction_ += model.predict(
-                test_data,
-                num_iteration = self.best_result['best_epoch']
-            )/self.n_fold
+                test_data, prediction_type='Probability',
+                ntree_end = self.best_result['best_epoch']
+            )[:, 1]/self.n_fold
             
         return prediction_
     

@@ -128,20 +128,11 @@ class CTBTrainer(ModelTrain, CTBInit):
             test_metric_df = test_filtered.select(
                 ["WEEK_NUM", "target"]
             ).collect().to_pandas()
-
-            # metric_ctb_list = [
-            #     ctb_class(test_data=test_metric_df, train_data=train_metric_df)
-            #     for ctb_class in
-            #     [
-            #         #add other metric for debug purpose
-            #         CTBGiniStability, CTBGiniSlope
-            #     ]
-            # ]
             
             print('Start training')
             model = cb.CatBoostClassifier(
                 **self.params_ctb,
-                allow_writing_files=False,
+                allow_writing_files=False, use_best_model=False,
                 eval_metric=CTBGiniStability(test_data=test_metric_df, train_data=train_metric_df),
             )
             model.fit(
