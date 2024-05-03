@@ -40,7 +40,7 @@ if __name__=='__main__':
             experiment_name=experiment_name + "_ctb",
             params_ctb=params_model,
             config_dict=config_dict, data_columns=home_credit_preprocessor.feature_list,
-            metric_eval='CTBGiniStability', log_evaluation=25, 
+            metric_eval='CTBGiniStability', log_evaluation=1, 
             evaluate_stability=False, evaluate_shap=False
         )
         trainer.train_explain()
