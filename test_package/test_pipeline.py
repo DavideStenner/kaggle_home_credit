@@ -4,6 +4,7 @@ import warnings
 from typing import Dict, Any
 from src.utils.import_utils import import_config, import_params
 from src.model.lgbm.pipeline import LgbmPipeline
+from src.model.ctb.pipeline import CTBPipeline
 from src.preprocess.pipeline import PreprocessPipeline
 
 class TestPipeline(unittest.TestCase):
@@ -39,7 +40,7 @@ class TestPipeline(unittest.TestCase):
         except Exception as e:
             self.fail(e)
     
-    def test_preprocess_activate_inference(self):
+    def test_lgb_preprocess_activate_inference(self):
         try:
             config = import_config()
             pipeline_data: PreprocessPipeline = PreprocessPipeline(
@@ -54,6 +55,28 @@ class TestPipeline(unittest.TestCase):
                 config_dict=config, 
                 data_columns=pipeline_data.feature_list,
                 metric_eval='gini_stability', log_evaluation=50 
+            )
+
+
+            trainer.activate_inference()
+        except Exception as e:
+            self.fail(e)
+
+    def test_ctb_preprocess_activate_inference(self):
+        try:
+            config = import_config()
+            pipeline_data: PreprocessPipeline = PreprocessPipeline(
+                config_dict=config, 
+                embarko_skip=6
+            )
+            pipeline_data.begin_inference()
+            
+            trainer: CTBPipeline = CTBPipeline(
+                experiment_name=self.experiment_name + "_ctb",
+                params_ctb={},
+                config_dict=config, 
+                data_columns=pipeline_data.feature_list,
+                metric_eval='CTBGiniStability', log_evaluation=1 
             )
 
 
