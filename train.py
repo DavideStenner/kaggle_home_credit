@@ -56,6 +56,3 @@ if __name__=='__main__':
             evaluate_stability=False, evaluate_shap=False
         )
         trainer.train_explain()
-    
-    else:
-        raise NotImplementedError
