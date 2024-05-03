@@ -144,6 +144,28 @@ def lgb_residual_part_of_stability(
 
         return 'gini_residual', eval_result, False
 
+
+#XGBOOST
+def xgb_eval_gini_stability(
+        base: pd.DataFrame, 
+        y_pred: np.ndarray, eval_data: xgb.DMatrix,
+    ) -> Tuple[str, float]:
+        base['score'] = y_pred
+
+        eval_result = gini_stability(base=base)
+
+        return 'gini_stability', eval_result
+
+def xgb_slope_part_of_stability(
+        base: pd.DataFrame, 
+        y_pred: np.ndarray, eval_data: xgb.DMatrix,
+    ) -> Tuple[str, float]:
+        base['score'] = y_pred
+
+        eval_result = slope_part_of_stability(base=base)
+
+        return 'gini_slope', eval_result
+
 #CATBOOST
 class CTBGiniStability():
     def __init__(self, test_data: pd.DataFrame, train_data: pd.DataFrame) -> None:
