@@ -221,6 +221,56 @@ class LgbmExplainer(LgbmInit):
             )
             plt.close(fig)
 
+        #add information about basic feature to see the best one with mean and average aggregation
+        #showing only top 50 over each dataset
+        for dataset_name in feature_importances_dataset['dataset'].unique():
+            list_base_mean_feature: list[Tuple[str, float]] = []
+            list_base_sum_feature: list[Tuple[str, float]] = []
+
+            feature_of_dataset_list = [
+                row['feature']
+                for _, row in self.original_feature_dataset.iterrows()
+                if row['dataset'] == dataset_name
+            ]
+            #over each feature find list of transformation and calculate average and sum importance
+            for feature in feature_of_dataset_list:
+                transformation_of_feature_list = [
+                    col for col in self.feature_list
+                    if 
+                        (dataset_name in col) &
+                        (feature in col)
+                ]
+
+
+                temp_feature = feature_importances_dataset.loc[
+                    feature_importances_dataset['feature'].isin(transformation_of_feature_list)
+                ]
+            
+                if temp_feature.shape[0] > 0:
+                    list_base_mean_feature.append([dataset_name, feature, temp_feature['average'].mean()])
+                    list_base_sum_feature.append([dataset_name, feature, temp_feature['average'].sum()])
+            
+            for list_importance, name_plot in [
+                [list_base_mean_feature, 'mean'],
+                [list_base_sum_feature, 'sum']
+            ]:
+                if len(list_importance) > 0:
+                    temp_dataset_feature = pd.DataFrame(
+                        list_importance, columns=['dataset', 'feature', 'importance']
+                    ).sort_values(by='importance', ascending=False)
+                    
+                    fig = plt.figure(figsize=(18,8))
+                    sns.barplot(data=temp_dataset_feature.head(50), x='importance', y='feature')
+                    plt.title(f"50 TOP base feature importance over {self.n_fold} average for {dataset_name}")
+
+                    fig.savefig(
+                        os.path.join(
+                            self.experiment_insight_feat_imp_base_path, 
+                            f'importance_plot_{name_plot}_{dataset_name}.png'
+                        )
+                    )
+                    plt.close(fig)
+        
         #add information about basic aggregation to see which is the best
         aggregation_list: list[str] = [
             'min', 'max', 'mean', 'std', 'sum', 'not_hashed_missing_mode',

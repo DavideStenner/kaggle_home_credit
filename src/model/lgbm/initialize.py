@@ -32,7 +32,9 @@ class LgbmInit(ModelInit):
         self.experiment_insight_feat_imp_path: str = os.path.join(
             self.experiment_insight_path, 'feature_importance'
         )
-
+        self.experiment_insight_feat_imp_base_path: str = os.path.join(
+            self.experiment_insight_feat_imp_path, 'base'
+        )
         self.experiment_insight_train_path: str = os.path.join(
             self.experiment_insight_path, 'training'
         )
@@ -191,7 +193,9 @@ class LgbmInit(ModelInit):
         for dir_path in [
             self.experiment_path, self.experiment_insight_path, 
             self.experiment_shap_path, self.experiment_insight_train_path,
-            self.experiment_insight_feat_imp_path, self.model_list_path
+            self.experiment_insight_feat_imp_path, 
+            self.experiment_insight_feat_imp_base_path,
+            self.model_list_path
         ]:
             if not os.path.isdir(dir_path):
                 os.makedirs(dir_path)
