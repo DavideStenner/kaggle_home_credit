@@ -45,7 +45,7 @@ if __name__=='__main__':
         )
         trainer.train_explain()
 
-    elif args.model == 'xtb':
+    elif args.model == 'xgb':
         raise NotImplementedError
     
     else:
