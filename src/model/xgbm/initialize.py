@@ -298,7 +298,7 @@ class XgbInit(ModelInit):
         
         self.model_list = [
             xgb.Booster(
-                params=self.params_ctb,
+                params=self.params_xgb,
                 model_file=os.path.join(
                     self.experiment_path,
                     f'xgb_{fold_}.json'
