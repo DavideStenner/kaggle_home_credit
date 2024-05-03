@@ -22,7 +22,7 @@ class LgbmExplainer(LgbmInit):
         if isinstance(variable_to_plot, str):
             variable_to_plot = [variable_to_plot]
                         
-        fig = plt.figure(figsize=(12,8))
+        fig = plt.figure(figsize=(18,8))
         sns.lineplot(
             data=progress_df[['time'] + variable_to_plot].melt(
                 id_vars='time',
@@ -144,7 +144,7 @@ class LgbmExplainer(LgbmInit):
         )
 
         #plain feature
-        fig = plt.figure(figsize=(12,8))
+        fig = plt.figure(figsize=(18,8))
         sns.barplot(data=feature_importances.head(50), x='average', y='feature')
         plt.title(f"50 TOP feature importance over {self.n_fold} average")
 
@@ -165,7 +165,7 @@ class LgbmExplainer(LgbmInit):
         )
 
         #feature type
-        fig = plt.figure(figsize=(12,8))
+        fig = plt.figure(figsize=(18,8))
         sns.barplot(
             data=feature_importances, 
             x='average', y='type_feature'
@@ -178,7 +178,7 @@ class LgbmExplainer(LgbmInit):
         plt.close(fig)
         
         #feature type by dataset
-        fig = plt.figure(figsize=(12,8))
+        fig = plt.figure(figsize=(18,8))
         sns.barplot(
             data=feature_importances_dataset, 
             x='average', y='type_feature', hue='dataset'
@@ -191,7 +191,7 @@ class LgbmExplainer(LgbmInit):
         plt.close(fig)
 
         #plain feature top dataset
-        fig = plt.figure(figsize=(12,8))
+        fig = plt.figure(figsize=(18,8))
         plot_ = sns.barplot(
             data=feature_importances_dataset.head(50), 
             x='rank_average', y='average', hue='dataset', 
@@ -206,7 +206,7 @@ class LgbmExplainer(LgbmInit):
 
         #for each dataset print top feature
         for dataset_name in feature_importances_dataset['dataset'].unique():
-            fig = plt.figure(figsize=(12,8))
+            fig = plt.figure(figsize=(18,8))
             temp_dataset_feature = feature_importances_dataset.loc[
                 feature_importances_dataset['dataset'] == dataset_name
             ]
@@ -227,7 +227,7 @@ class LgbmExplainer(LgbmInit):
         )[['average', 'rank_average']].mean().reset_index()
         
         #top mean gain for each dataset
-        fig = plt.figure(figsize=(12,8))
+        fig = plt.figure(figsize=(18,8))
         sns.barplot(data=feature_importances_dataset_mean, x='average', y='dataset')
         plt.title(f"Top dataset importance mean gain")
 
@@ -237,7 +237,7 @@ class LgbmExplainer(LgbmInit):
         plt.close(fig)
 
         #top rank gain for each dataset
-        fig = plt.figure(figsize=(12,8))
+        fig = plt.figure(figsize=(18,8))
         sns.barplot(data=feature_importances_dataset_mean, x='rank_average', y='dataset')
         plt.title(f"Top dataset importance mean rank gain")
 
@@ -252,7 +252,7 @@ class LgbmExplainer(LgbmInit):
         )[['average']].sum().reset_index()
         #top mean gain for each dataset
         
-        fig = plt.figure(figsize=(12,8))
+        fig = plt.figure(figsize=(18,8))
         sns.barplot(data=feature_importances_dataset_sum, x='average', y='dataset')
         plt.title(f"Top dataset total contribution")
 
@@ -267,7 +267,7 @@ class LgbmExplainer(LgbmInit):
         ).size().reset_index().rename(columns={0: 'count'})
         #top mean gain for each dataset
 
-        fig = plt.figure(figsize=(12,8))
+        fig = plt.figure(figsize=(18,8))
         sns.barplot(data=feature_importances_dataset_sum, x='count', y='dataset')
         plt.title(f"Number of feature for dataset")
 
@@ -400,7 +400,7 @@ class LgbmExplainer(LgbmInit):
             on='feature'
         )
         #stability over class feature and dataset
-        fig = plt.figure(figsize=(12,8))
+        fig = plt.figure(figsize=(18,8))
         sns.barplot(
             data=feature_importances_dataset, 
             x='rank_average', y='type_feature', hue='dataset'
@@ -419,7 +419,7 @@ class LgbmExplainer(LgbmInit):
         )
         
         #score plot
-        fig = plt.figure(figsize=(12,8))
+        fig = plt.figure(figsize=(18,8))
         sns.lineplot(
             data=oof_prediction.filter(
                 pl.len().over('date_decision')>30
@@ -443,7 +443,7 @@ class LgbmExplainer(LgbmInit):
             )
         ).reset_index().rename(columns={0: 'auc'})
 
-        fig = plt.figure(figsize=(12,8))
+        fig = plt.figure(figsize=(18,8))
         sns.lineplot(
             data=gini_in_time, 
             x="WEEK_NUM", y="auc", hue='fold'
@@ -466,7 +466,7 @@ class LgbmExplainer(LgbmInit):
             )
         ).reset_index().rename(columns={0: 'log_loss'})
 
-        fig = plt.figure(figsize=(12,8))
+        fig = plt.figure(figsize=(18,8))
         sns.lineplot(
             data=logloss_in_time, 
             x="WEEK_NUM", y="log_loss", hue='fold'
@@ -486,7 +486,7 @@ class LgbmExplainer(LgbmInit):
             .mean()
         ).reset_index().rename(columns={0: 'target'})
 
-        fig = plt.figure(figsize=(12,8))
+        fig = plt.figure(figsize=(18,8))
         sns.lineplot(
             data=target_in_time, 
             x="date_decision", y="target", hue='fold'
@@ -506,7 +506,7 @@ class LgbmExplainer(LgbmInit):
             .std()
         ).reset_index().rename(columns={0: 'target'})
 
-        fig = plt.figure(figsize=(12,8))
+        fig = plt.figure(figsize=(18,8))
         sns.lineplot(
             data=target_in_time, 
             x="date_decision", y="target", hue='fold'
