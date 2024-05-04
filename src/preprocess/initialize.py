@@ -40,15 +40,27 @@ class PreprocessInit(BaseInit):
             config_dict['DEPTH_0'] + config_dict['DEPTH_1'] + config_dict['DEPTH_2']
         )
         self.numerical_aggregator: list[Callable[..., pl.Expr]] = [
-            pl.min, pl.max, pl.mean, pl.sum
-        ]
-        self.date_aggregator: list[Callable[..., pl.Expr]] = [
-            pl.min, pl.max
+            pl.min, pl.max, pl.mean, pl.sum, pl.std
         ]
         self._initialize_empty_dataset()
         self._correct_list_date_col()
         self._initialize_filter_expression()
+        self._initialize_date_expression()
         
+    def _initialize_date_expression(self) -> None:
+        def date_mean(col) -> pl.Expr:
+            return pl.col(col).mean()
+        
+        def date_min(col) -> pl.Expr:
+            return pl.col(col).min()
+
+        def date_max(col) -> pl.Expr:
+            return pl.col(col).max()
+        
+        self.date_aggregator: list[Callable[..., pl.Expr]] = [
+            date_min, date_max, date_mean
+        ]
+
     def _initialize_filter_expression(self) -> None:
         def pl_sum(col: str, pl_filter: pl.Expr) -> pl.Expr:
             return pl.col(col).filter(pl_filter).sum()

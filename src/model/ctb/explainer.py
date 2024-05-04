@@ -272,9 +272,9 @@ class CTBExplainer(CTBInit):
         #add information about basic aggregation to see which is the best
         aggregation_list: list[str] = [
             'min', 'max', 'mean', 'std', 'sum', 
-            'not_hashed_missing_mode', 'mode', 'first', 'n_unique',
+            'not_hashed_missing_mode', 'mode', 'first', 'last', 'n_unique',
             'count_not_missing_not_hashednull', 'count_not_missing',
-            'range'
+            'range', 'date_mean', 'date_min', 'date_max'
         ]
         pattern_columns_to_retrieve = '{dataset}_{operation}_{feature}'
 
