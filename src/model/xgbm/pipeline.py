@@ -41,5 +41,5 @@ class XgbPipeline(ModelPipeline, XgbTrainer, XgbExplainer, XgbInference):
         
     def train_explain(self) -> None:
         self.create_experiment_structure()
-        # self.run_train()
+        self.run_train()
         self.explain_model()
