@@ -7,18 +7,30 @@ from src.model.xgbm.initialize import XgbInit
 
 class XgbInference(ModelPredict, XgbInit):     
     def load_feature_data(self, data: pl.DataFrame) -> xgb.DMatrix:
-        feature_data = data.select(self.feature_list).to_pandas().to_numpy(dtype='float32'),
-        return xgb.DMatrix(data=feature_data, feature_names=self.feature_list)
+        feature_data = data.select(self.feature_list).to_pandas().to_numpy('float32')
+        feature_types_list: list[str] = [
+            (
+                'c' if col in self.categorical_col_list
+                else 'q'
+            )
+            for col in self.feature_list
+        ]
+        dmatrix: xgb.DMatrix = xgb.DMatrix(
+            data=feature_data, 
+            feature_names=self.feature_list, 
+            enable_categorical=True, 
+            feature_types=feature_types_list
+        )
+        return dmatrix
         
-    def blend_model_predict(self, test_data: pl.DataFrame) -> np.ndarray:        
-        test_data = self.load_feature_data(test_data)
-        
+    def blend_model_predict(self, test_data: pl.DataFrame) -> np.ndarray:             
         prediction_ = np.zeros((test_data.shape[0]), dtype='float64')
+        test_data = self.load_feature_data(test_data)
         
         for model in self.model_list:
             prediction_ += model.predict(
                 test_data,
-                num_iteration = self.best_result['best_epoch']
+                iteration_range = (0, self.best_result['best_epoch'])
             )/self.n_fold
             
         return prediction_
