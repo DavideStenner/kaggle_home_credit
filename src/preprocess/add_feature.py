@@ -131,7 +131,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                     pl.max(col_name) - pl.min(col_name)
                 ).dt.total_days()
                 .cast(pl.UInt32)
-                .alias(f'range_{col_name}')
+                .alias(f'date_range_{col_name}')
             )
             for col_name in date_columns_list
         ]
