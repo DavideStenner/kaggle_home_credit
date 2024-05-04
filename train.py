@@ -34,6 +34,17 @@ if __name__=='__main__':
         )
         trainer.train_explain()
     
+    if (args.model == 'xgb') | (args.all_model):
+        from src.model.xgbm.pipeline import XgbPipeline
+        trainer = XgbPipeline(
+            experiment_name=experiment_name + "_xgb",
+            params_xgb=params_model,
+            config_dict=config_dict, data_columns=home_credit_preprocessor.feature_list,
+            metric_eval='gini_stability', log_evaluation=50, 
+            evaluate_stability=False, evaluate_shap=False
+        )
+        trainer.train_explain()
+
     if (args.model == 'ctb') | (args.all_model):
         from src.model.ctb.pipeline import CTBPipeline
 
@@ -42,17 +53,6 @@ if __name__=='__main__':
             params_ctb=params_model,
             config_dict=config_dict, data_columns=home_credit_preprocessor.feature_list,
             metric_eval='CTBGiniStability', log_evaluation=1, 
-            evaluate_stability=False, evaluate_shap=False
-        )
-        trainer.train_explain()
-
-    if (args.model == 'xgb') | (args.all_model):
-        from src.model.xgbm.pipeline import XgbPipeline
-        trainer = XgbPipeline(
-            experiment_name=experiment_name + "_xgb",
-            params_xgb=params_model,
-            config_dict=config_dict, data_columns=home_credit_preprocessor.feature_list,
-            metric_eval='gini_stability', log_evaluation=50, 
             evaluate_stability=False, evaluate_shap=False
         )
         trainer.train_explain()
