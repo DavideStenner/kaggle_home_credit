@@ -5,6 +5,7 @@ from typing import Dict, Any
 from src.utils.import_utils import import_config, import_params
 from src.model.lgbm.pipeline import LgbmPipeline
 from src.model.ctb.pipeline import CTBPipeline
+from src.model.xgbm.pipeline import XgbPipeline
 from src.preprocess.pipeline import PreprocessPipeline
 
 class TestPipeline(unittest.TestCase):
@@ -77,6 +78,28 @@ class TestPipeline(unittest.TestCase):
                 config_dict=config, 
                 data_columns=pipeline_data.feature_list,
                 metric_eval='CTBGiniStability', log_evaluation=1 
+            )
+
+
+            trainer.activate_inference()
+        except Exception as e:
+            self.fail(e)
+
+    def test_ctb_preprocess_activate_inference(self):
+        try:
+            config = import_config()
+            pipeline_data: PreprocessPipeline = PreprocessPipeline(
+                config_dict=config, 
+                embarko_skip=6
+            )
+            pipeline_data.begin_inference()
+            
+            trainer: XgbPipeline = XgbPipeline(
+                experiment_name=self.experiment_name + "_xgb",
+                params_xgb={},
+                config_dict=config, 
+                data_columns=pipeline_data.feature_list,
+                metric_eval='gini_stability', log_evaluation=50
             )
 
 
@@ -216,6 +239,32 @@ class TestPipeline(unittest.TestCase):
                 params_ctb={},
                 config_dict=config,
                 metric_eval='CTBGiniStability', log_evaluation=1, 
+                data_columns=pipeline_data.feature_list
+            )
+            trainer.activate_inference()
+            pipeline_data.test_all()
+            
+            _ = trainer.predict(pipeline_data.data)
+
+        except Exception as e:
+            self.fail(e)
+
+    def test_xgb_pipeline_on_test_data(self):
+        try:
+            config = import_config()
+            _, experiment_name = import_params(model='xgb')
+            
+            pipeline_data = PreprocessPipeline(
+                config_dict=config, 
+                embarko_skip=6
+            )
+            pipeline_data.begin_inference()
+
+            trainer = XgbPipeline(
+                experiment_name=experiment_name + "_xgb",
+                params_xgb={},
+                config_dict=config,
+                metric_eval='gini_stability', log_evaluation=50, 
                 data_columns=pipeline_data.feature_list
             )
             trainer.activate_inference()
