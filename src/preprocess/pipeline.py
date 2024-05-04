@@ -20,7 +20,7 @@ class PreprocessPipeline(BasePipeline, PreprocessImport, PreprocessAddFeature, P
         )
 
     def save_data(self) -> None:
-        print('saving processed dataset')
+        print(f'saving processed dataset with {len(self.data.columns)} columns')
         self.data.write_parquet(
             os.path.join(
                 self.config_dict['PATH_PARQUET_DATA'],
