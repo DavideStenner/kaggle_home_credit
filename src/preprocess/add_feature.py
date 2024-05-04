@@ -119,6 +119,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             (
                 pl_operator(col_name)
                 .alias(f'{pl_operator.__name__}_{col_name}')
+                .cast(pl.Date)
             )
             for pl_operator, col_name in product(
                 self.date_aggregator,
@@ -154,6 +155,12 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                     .filter(pl.col('num_group1')==0)
                     .first()
                     .alias(f'first_{col}')
+                    .cast(
+                        (
+                            pl.Date if col[-1] == 'D'
+                            else mapper_column_cast[col]
+                        )
+                    )
                 )
                 for col in categorical_columns_list + numerical_columns_list + date_columns_list
             ]
@@ -164,6 +171,12 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                     .filter(pl.col('num_group1')==pl.col('num_group1').filter(pl.col(col).is_not_null()).max())
                     .last()
                     .alias(f'last_{col}')
+                    .cast(
+                        (
+                            pl.Date if col[-1] == 'D'
+                            else mapper_column_cast[col]
+                        )
+                    )
                 )
                 for col in categorical_columns_list + numerical_columns_list+ date_columns_list
             ]
@@ -177,6 +190,12 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                     )
                     .first()
                     .alias(f'first_{col}')
+                    .cast(
+                        (
+                            pl.Date if col[-1] == 'D'
+                            else mapper_column_cast[col]
+                        )
+                    )
                 )
                 for col in categorical_columns_list + numerical_columns_list + date_columns_list
             ]
@@ -190,6 +209,12 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                     )
                     .last()
                     .alias(f'last_{col}')
+                    .cast(
+                        (
+                            pl.Date if col[-1] == 'D'
+                            else mapper_column_cast[col]
+                        )
+                    )
                 )
                 for col in categorical_columns_list + numerical_columns_list + date_columns_list
             ]
