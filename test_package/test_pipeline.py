@@ -12,9 +12,7 @@ class TestPipeline(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         warnings.filterwarnings("ignore", category=UserWarning)
-       
-        _, experiment_name = import_params(model='lgb')
-        self.experiment_name: str = experiment_name
+        warnings.filterwarnings("ignore", category=DeprecationWarning)
     
     def test_preprocess_on_train(self):
         try:
@@ -44,6 +42,8 @@ class TestPipeline(unittest.TestCase):
     def test_lgb_preprocess_activate_inference(self):
         try:
             config = import_config()
+            _, experiment_name = import_params(model='lgb')
+
             pipeline_data: PreprocessPipeline = PreprocessPipeline(
                 config_dict=config, 
                 embarko_skip=6
@@ -51,7 +51,7 @@ class TestPipeline(unittest.TestCase):
             pipeline_data.begin_inference()
             
             trainer: LgbmPipeline = LgbmPipeline(
-                experiment_name=self.experiment_name + "_lgb",
+                experiment_name=experiment_name + "_lgb",
                 params_lgb={},
                 config_dict=config, 
                 data_columns=pipeline_data.feature_list,
@@ -66,6 +66,8 @@ class TestPipeline(unittest.TestCase):
     def test_ctb_preprocess_activate_inference(self):
         try:
             config = import_config()
+            _, experiment_name = import_params(model='ctb')
+
             pipeline_data: PreprocessPipeline = PreprocessPipeline(
                 config_dict=config, 
                 embarko_skip=6
@@ -73,7 +75,7 @@ class TestPipeline(unittest.TestCase):
             pipeline_data.begin_inference()
             
             trainer: CTBPipeline = CTBPipeline(
-                experiment_name=self.experiment_name + "_ctb",
+                experiment_name=experiment_name + "_ctb",
                 params_ctb={},
                 config_dict=config, 
                 data_columns=pipeline_data.feature_list,
@@ -85,9 +87,11 @@ class TestPipeline(unittest.TestCase):
         except Exception as e:
             self.fail(e)
 
-    def test_ctb_preprocess_activate_inference(self):
+    def test_xgb_preprocess_activate_inference(self):
         try:
             config = import_config()
+            _, experiment_name = import_params(model='xgb')
+            
             pipeline_data: PreprocessPipeline = PreprocessPipeline(
                 config_dict=config, 
                 embarko_skip=6
@@ -95,7 +99,7 @@ class TestPipeline(unittest.TestCase):
             pipeline_data.begin_inference()
             
             trainer: XgbPipeline = XgbPipeline(
-                experiment_name=self.experiment_name + "_xgb",
+                experiment_name=experiment_name + "_xgb",
                 params_xgb={},
                 config_dict=config, 
                 data_columns=pipeline_data.feature_list,
