@@ -98,23 +98,17 @@ class XgbTrainer(ModelTrain, XgbInit):
             print(f'{train_rows} train rows; {test_rows} test rows; {len(self.feature_list)} feature')
             
             assert self.target_col_name not in self.feature_list
-            feature_types_list: list[str] = [
-                (
-                    'c' if col in self.categorical_col_list
-                    else 'q'
-                )
-                for col in self.feature_list
-            ]
+
             train_matrix = xgb.DMatrix(
                 train_filtered.select(self.feature_list).collect().to_pandas().to_numpy('float32'),
                 train_filtered.select(self.target_col_name).collect().to_pandas().to_numpy('float32').reshape((-1)),
-                feature_names=self.feature_list, enable_categorical=True, feature_types=feature_types_list
+                feature_names=self.feature_list, enable_categorical=True, feature_types=self.feature_types_list
             )
             
             test_matrix = xgb.DMatrix(
                 test_filtered.select(self.feature_list).collect().to_pandas().to_numpy('float32'),
                 test_filtered.select(self.target_col_name).collect().to_pandas().to_numpy('float32').reshape((-1)),
-                feature_names=self.feature_list, enable_categorical=True, feature_types=feature_types_list
+                feature_names=self.feature_list, enable_categorical=True, feature_types=self.feature_types_list
             )
 
             test_metric_df = test_filtered.select(

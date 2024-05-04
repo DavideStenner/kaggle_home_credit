@@ -87,7 +87,8 @@ class XgbInit(ModelInit):
                 
         self.get_categorical_columns(data_columns=data_columns)
         self.get_original_dataset_columns()
-
+        self.get_model_info()
+        
     def __convert_feature_name_with_dataset(self, mapper_dict: Dict[str, Union[str, dict, float]]):
         return {
             dataset_name: {
@@ -132,6 +133,15 @@ class XgbInit(ModelInit):
 
         return list(chain(*cat_list_col)) + additional_categorical
     
+    def get_model_info(self) -> None:
+        self.feature_types_list: list[str] = [
+            (
+                'c' if col in self.categorical_col_list
+                else 'q'
+            )
+            for col in self.feature_list
+        ]
+        
     def get_dataset_columns(self) -> None:
         self.load_used_feature()
         self.load_used_categorical_feature()
