@@ -223,6 +223,11 @@ class LgbmExplainer(LgbmInit):
 
         #add information about basic feature to see the best one with mean and average aggregation
         #showing only top 50 over each dataset
+        result_to_excel: dict[str, dict[str, pd.DataFrame]] = {
+            'mean': {},
+            'sum': {}
+        }
+        
         for dataset_name in feature_importances_dataset['dataset'].unique():
             list_base_mean_feature: list[Tuple[str, float]] = []
             list_base_sum_feature: list[Tuple[str, float]] = []
@@ -258,6 +263,9 @@ class LgbmExplainer(LgbmInit):
                     temp_dataset_feature = pd.DataFrame(
                         list_importance, columns=['dataset', 'feature', 'importance']
                     ).sort_values(by='importance', ascending=False)
+
+                    #save result in excel also
+                    result_to_excel[name_plot][dataset_name] = temp_dataset_feature.copy()
                     
                     fig = plt.figure(figsize=(18,8))
                     sns.barplot(data=temp_dataset_feature.head(50), x='importance', y='feature')
@@ -271,12 +279,23 @@ class LgbmExplainer(LgbmInit):
                     )
                     plt.close(fig)
         
+        for operation in result_to_excel.keys():
+            with pd.ExcelWriter(
+                os.path.join(
+                    self.experiment_insight_feat_imp_base_path, 
+                    f'importance_{operation}.xlsx'
+                ), engine='xlsxwriter'
+            ) as writer:
+                for dataset_name, dataset_df in result_to_excel[operation].items():
+                    dataset_df.to_excel(writer, sheet_name=dataset_name)
+
         #add information about basic aggregation to see which is the best
         aggregation_list: list[str] = [
-            'min', 'max', 'mean', 'std', 'sum', 
+            'min', 'max', 'mean', 'std', 'sum', 'numerical_range',
+            'filtered_mean', 'filtered_min', 'filtered_max',
             'not_hashed_missing_mode', 'mode', 'first', 'last', 'n_unique',
             'count_not_missing_not_hashednull', 'count_not_missing',
-            'range', 'date_mean', 'date_min', 'date_max'
+            'date_range', 'date_mean', 'date_min', 'date_max'
         ]
         pattern_columns_to_retrieve = '{dataset}_{operation}_{feature}'
 
