@@ -20,7 +20,7 @@ class PreprocessPipeline(BasePipeline, PreprocessImport, PreprocessAddFeature, P
         )
 
     def save_data(self) -> None:
-        print(f'saving processed dataset with {len(self.data.columns)} columns')
+        print('saving processed dataset')
         self.data.write_parquet(
             os.path.join(
                 self.config_dict['PATH_PARQUET_DATA'],
@@ -111,7 +111,7 @@ class PreprocessPipeline(BasePipeline, PreprocessImport, PreprocessAddFeature, P
         print('Adding additional feature')
         self.add_additional_feature()
         
-        print('Collecting....')
+        print(f'Collecting dataset with {len(self.data.columns)} columns')
         self.data = self.data.collect()
         _ = gc.collect()
         
