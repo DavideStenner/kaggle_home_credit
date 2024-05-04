@@ -105,6 +105,7 @@ class XgbInit(ModelInit):
             '{dataset_name}_not_hashed_missing_mode_{col}', 
             '{dataset_name}_mode_{col}', 
             '{dataset_name}_first_{col}',
+            '{dataset_name}_last_{col}',
             '{dataset_name}_num_group1_mode_mode_{col}'
         ]
         additional_categorical: list[str] = [
