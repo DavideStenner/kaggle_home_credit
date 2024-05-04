@@ -112,37 +112,6 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                     .cast(mapper_column_cast[col])
                 )
                 for col in categorical_columns_list
-            ] +
-            [
-                (
-                    pl.col(col).n_unique()
-                    .alias(f'n_unique_{col}')
-                    .cast(mapper_column_cast[col])
-                )
-                for col in categorical_columns_list
-            ] +
-            [
-                (
-                    pl.col(col)
-                    if col not in categorical_columns_with_hashed_null
-                    else 
-                        pl.col(col)
-                    .filter(
-                        pl.col(col)!=
-                        self.mapper_mask[dataset_name][col][self.hashed_missing_label]
-                    )
-                )
-                .count()
-                .alias(f'count_not_missing_not_hashednull_{col}')
-                .cast(pl.UInt16)
-                for col in categorical_columns_list
-            ] +
-            [
-                pl.col(col)
-                .count()
-                .alias(f'count_not_missing_{col}')
-                .cast(pl.UInt16)
-                for col in categorical_columns_list
             ]
         )
 
@@ -1583,10 +1552,6 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 for col_name in [f'last_{col}' for col in categorical_columns_list]
             ] +
             [
-                pl.col(f'not_hashed_missing_mode_cacccardblochreas_147M')
-                .n_unique()
-                .alias('n_unique_not_hashed_missing_mode_cacccardblochreas_147M'),
-            
                 pl.col('num_group1')
                 .max()
                 .alias('max_num_group1')
@@ -1611,8 +1576,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                                 .alias(f'{pl_operator.__name__}_{name_pl}_{col_name}')
                                 for pl_operator, col_name in product(
                                     self.numerical_filter_aggregator,
-                                    ['max_num_group2'] +
-                                    [f'n_unique_{col}' for col in categorical_columns_list]
+                                    ['max_num_group2']
                                 )
                             ] +
                             [
@@ -1620,13 +1584,6 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                                 .filter(filter_pl)
                                 .mode().sort().first()
                                 .alias(f'num_{name_pl}_mode_mode_{col}')
-                                for col in categorical_columns_list
-                            ] +
-                            [
-                                pl.col(f'mode_{col}')
-                                .filter(filter_pl)
-                                .n_unique()
-                                .alias(f'num_{name_pl}_n_unique_mode_{col}')
                                 for col in categorical_columns_list
                             ]
                         )
