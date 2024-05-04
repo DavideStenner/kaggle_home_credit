@@ -204,8 +204,11 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 (
                     pl.col(col)
                     .filter(
-                        (pl.col('num_group1')==pl.col('num_group1').filter(pl.col(col).is_not_null()).max()) &
-                        (pl.col('num_group2')==pl.col('num_group2').filter(pl.col(col).is_not_null()).max())
+                        #bug fix -> find just last not empty without bug on entire dataset with empty values (test_missing_dataset_pipeline)
+                        (
+                            (pl.col('num_group1').cast(pl.Utf8) + pl.col('num_group2').cast(pl.Utf8)).cast(pl.Int64) ==
+                            ((pl.col('num_group1').cast(pl.Utf8) + pl.col('num_group2').cast(pl.Utf8)).cast(pl.Int64)).filter(pl.col(col).is_not_null()).max()
+                        )
                     )
                     .last()
                     .alias(f'last_{col}')
