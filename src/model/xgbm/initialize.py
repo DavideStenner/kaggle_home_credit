@@ -87,7 +87,6 @@ class XgbInit(ModelInit):
                 
         self.get_categorical_columns(data_columns=data_columns)
         self.get_original_dataset_columns()
-        self.get_model_info()
         
     def __convert_feature_name_with_dataset(self, mapper_dict: Dict[str, Union[str, dict, float]]):
         return {
@@ -219,6 +218,7 @@ class XgbInit(ModelInit):
         self.load_params()
         
         self.load_model_list()
+        self.get_model_info()
         
     def save_progress_list(self) -> None:
         with open(

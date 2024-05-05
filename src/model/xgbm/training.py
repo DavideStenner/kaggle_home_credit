@@ -44,6 +44,7 @@ class XgbTrainer(ModelTrain, XgbInit):
             col for col in self.categorical_col_list
             if col not in drop_feature_list
         ]
+        self.get_model_info()
         print(f'Using {len(self.categorical_col_list)} categorical features')
 
         #save feature list locally for later
