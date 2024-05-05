@@ -14,8 +14,7 @@ if __name__=='__main__':
     
     args = parser.parse_args()
 
-    config_dict = import_config()
-    params_model, experiment_name = import_params(model=args.model)
+    config_dict = import_config()    
     
     home_credit_preprocessor = PreprocessPipeline(
         config_dict=config_dict, 
@@ -25,6 +24,9 @@ if __name__=='__main__':
     
     if (args.model == 'lgb') | (args.all_model):
         from src.model.lgbm.pipeline import LgbmPipeline
+
+        params_model, experiment_name = import_params(model='lgb')
+
         trainer = LgbmPipeline(
             experiment_name=experiment_name + "_lgb",
             params_lgb=params_model,
@@ -36,6 +38,9 @@ if __name__=='__main__':
     
     if (args.model == 'xgb') | (args.all_model):
         from src.model.xgbm.pipeline import XgbPipeline
+
+        params_model, experiment_name = import_params(model='xgb')
+
         trainer = XgbPipeline(
             experiment_name=experiment_name + "_xgb",
             params_xgb=params_model,
@@ -47,6 +52,8 @@ if __name__=='__main__':
 
     if (args.model == 'ctb') | (args.all_model):
         from src.model.ctb.pipeline import CTBPipeline
+
+        params_model, experiment_name = import_params(model='ctb')
 
         trainer = CTBPipeline(
             experiment_name=experiment_name + "_ctb",
