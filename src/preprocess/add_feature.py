@@ -409,10 +409,10 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         )
 
     def create_credit_bureau_b_2_feature(self) -> None:
-        
+        numeric_columns: list[str] = ['pmts_dpdvalue_108P', 'pmts_pmtsoverdue_635A']
         product_operator_numerical_col = product(
             self.numerical_filter_aggregator, 
-            ['pmts_dpdvalue_108P', 'pmts_pmtsoverdue_635A']
+            numeric_columns
         )
         aggregation_level_group_list: list[pl.Expr] = (
             list(
@@ -544,6 +544,23 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 )
             )
         )
+        aggregation_level_group_list += (
+            [
+                pl.col(col_name).first()
+                .alias(f'first_{col_name}')
+                for col_name in numeric_columns
+            ] +
+            [
+                pl.col(col_name)
+                .filter(
+                    (pl.col(col_name).is_not_null()) &
+                    (pl.col(col_name) != 0)
+                )
+                .last()
+                .alias(f'last_{col_name}')
+                for col_name in numeric_columns
+            ] 
+        )
         #get feature for each contract
         self.credit_bureau_b_2 = (
             self.credit_bureau_b_2.sort(
@@ -561,6 +578,22 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             .agg(
                 [
                     pl.col('num_group1').max().alias('num_contract_X').cast(pl.UInt32),
+                ] +
+                [
+                    pl.col(col_name).filter(pl.col('num_group1')==0).first()
+                    for col_name in [f'first_{col}' for col in numeric_columns]
+                ] +
+                [
+                    pl.col(col_name)
+                    .filter(
+                        pl.col('num_group1')==
+                        pl.col('num_group1').filter(
+                            (pl.col(col_name).is_not_null()) &
+                            (pl.col(col_name) != 0)
+                        ).max()
+                    )
+                    .last()
+                    for col_name in [f'last_{col}' for col in numeric_columns]
                 ] +
                 [
                     pl_operation(col_name)

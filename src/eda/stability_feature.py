@@ -14,6 +14,7 @@ def line_plot(data: pl.DataFrame, col: str, dtype_col: str) -> plt.figure:
     suffix: str = '  ' + dtype_col
     
     if data.select(pl.col(col).is_null().mean()).item() == 1.:
+        print(col, ' is empty')
         data = data.with_columns(
             pl.lit(0).alias(col)
         )
