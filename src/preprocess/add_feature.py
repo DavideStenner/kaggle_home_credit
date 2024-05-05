@@ -184,10 +184,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             first_expression_list: list[pl.Expr] = [
                 (
                     pl.col(col)
-                    .filter(
-                        (pl.col('num_group1')==0) &
-                        (pl.col('num_group2')==0)
-                    )
+                    .filter(pl.col('num_group2')==0)
                     .first()
                     .alias(f'first_{col}')
                     .cast(
@@ -203,13 +200,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             last_expression_list: list[pl.Expr] = [
                 (
                     pl.col(col)
-                    .filter(
-                        #bug fix -> find just last not empty without bug on entire dataset with empty values (test_missing_dataset_pipeline)
-                        (
-                            (pl.col('num_group1').cast(pl.Utf8) + pl.col('num_group2').cast(pl.Utf8)).cast(pl.Int64) ==
-                            ((pl.col('num_group1').cast(pl.Utf8) + pl.col('num_group2').cast(pl.Utf8)).cast(pl.Int64)).filter(pl.col(col).is_not_null()).max()
-                        )
-                    )
+                    .filter(pl.col('num_group2')==pl.col('num_group2').filter(pl.col(col).is_not_null()).max())
                     .last()
                     .alias(f'last_{col}')
                     .cast(
@@ -1572,11 +1563,14 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         
         operation_aggregation_list: list[pl.Expr] = (
             [
-                pl.col(col_name).filter(pl.col('num_group1')==0).first()
+                pl.col(col_name).filter(pl.col('num_group1')==0)
+                .first()
                 for col_name in [f'first_{col}' for col in categorical_columns_list]
             ] +
             [
-                pl.col(col_name).filter(pl.col('num_group1')==pl.col('num_group1').max())
+                pl.col(col_name)
+                .filter(pl.col('num_group1')==pl.col('num_group1').filter(pl.col(col_name).is_not_null()).max())
+                .last()
                 for col_name in [f'last_{col}' for col in categorical_columns_list]
             ] +
             [
