@@ -966,37 +966,29 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         self.static_cb_0 = self.static_cb_0.with_columns(
             list_operator
         ).with_columns(
-            #correct responsedate_4527233D_diff_assignmentdate_4527235D
-            [
-                pl.when(
-                    (pl.col('responsedate_4527233D_diff_assignmentdate_4527235D')==0) &
-                    (
-                        (pl.col('responsedate_1012D_diff_assignmentdate_238D')!=0) |
-                        (pl.col('responsedate_4917613D_diff_assignmentdate_4955616D')!=0)
-                    )
-                ).then(
-                    None
-                ).otherwise(
-                    pl.col(col)
-                ).alias(col)
-                for col in ['responsedate_4527233D', 'assignmentdate_4527235D']
-            ]
-        ).with_columns(
-            (
-                pl.col('responsedate_4527233D') -
-                pl.col('assignmentdate_4527235D')
-            ).dt.total_days().cast(pl.Int32)
-            .alias(f'responsedate_4527233D_diff_assignmentdate_4527235D')
-        ).with_columns(
             #coalesce multiple inffo
             pl.coalesce(
                 pl.col(
                     [
                         'responsedate_1012D_diff_assignmentdate_238D',
-                        'responsedate_4527233D_diff_assignmentdate_4527235D',
                         'responsedate_4917613D_diff_assignmentdate_4955616D',
+                        'responsedate_4527233D_diff_assignmentdate_4527235D',
                     ]
-                ).alias('coalesce_responsedate_assignmentdate').cast(pl.Int32)
+                ).alias('coalesce_responsedate_assignmentdateX').cast(pl.Int32)
+            ),
+            pl.coalesce(
+                pl.col(
+                    [
+                        'responsedate_1012D', 'responsedate_4917613D', 'responsedate_4527233D'
+                    ]
+                ).alias('coalesce_responsedate_D').cast(pl.Int32)
+            ),
+            pl.coalesce(
+                pl.col(
+                    [
+                        'assignmentdate_238D', 'assignmentdate_4955616D', 'assignmentdate_4527235D'
+                    ]
+                ).alias('coalesce_assignmentdate_D').cast(pl.Int32)
             ),
             (
                 pl.sum_horizontal(
@@ -1027,6 +1019,11 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 'forweek_601L', 'forquarter_462L', 'foryear_618L', 
                 'formonth_118L',
                 'forweek_1077L', 'formonth_206L', 'forquarter_1017L', 
+                'responsedate_1012D', 'responsedate_4527233D', 'responsedate_4917613D',
+                'assignmentdate_238D', 'assignmentdate_4527235D', 'assignmentdate_4955616D',
+                'pmtaverage_3A', 'pmtaverage_4527227A', 'pmtaverage_4955615A',
+                'pmtcount_4527229L', 'pmtcount_4955617L', 'pmtcount_693L', 'pmtscount_423L',
+                'contractssum_5085716L', 'pmtssum_45A', 'requesttype_4525192L',
             ]
         )
 
@@ -1815,15 +1812,22 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
     def drop_useless_feature_manual(self) -> None:
         """Drop manually useless feature"""
         #drop useless null features
+        useless_feature = [
+            col for col in [
+                'other_1_count_null_A', 'other_1_all_count_null_X',
+                'tax_registry_a_1_count_null_D', 'tax_registry_b_1_count_null_D', 'tax_registry_c_1_count_null_D',
+                'applprev_1_min_isbidproduct_390L', 'static_cb_0_count_null_M',
+                'static_0_count_null_M', 'person_1_count_null_A',
+                'person_1_count_null_T', 'person_1_count_null_M',
+                'credit_bureau_a_1_std_debtoverdue_47A', 'credit_bureau_a_1_std_debtoutstand_525A',
+                'credit_bureau_b_2_count_null_A', 'credit_bureau_b_2_count_null_P',
+                'credit_bureau_b_2_count_null_D', 'credit_bureau_b_2_all_count_null_X',
+                'applprev_2_filtered_std_group1_max_num_group2'
+            ]
+            if col in self.data.columns
+        ]
         self.data = self.data.drop(
-            'other_1_count_null_A', 'other_1_all_count_null_X',
-            'tax_registry_a_1_count_null_D', 'tax_registry_b_1_count_null_D', 'tax_registry_c_1_count_null_D',
-            'applprev_1_min_isbidproduct_390L', 'static_cb_0_count_null_M',
-            'static_0_count_null_M', 'person_1_count_null_A',
-            'person_1_count_null_T', 'person_1_count_null_M',
-            'credit_bureau_a_1_std_debtoverdue_47A', 'credit_bureau_a_1_std_debtoutstand_525A',
-            'credit_bureau_b_2_count_null_A', 'credit_bureau_b_2_count_null_P',
-            'credit_bureau_b_2_count_null_D', 'credit_bureau_b_2_all_count_null_X'
+            
         )
 
     def add_null_feature(self) -> None:
