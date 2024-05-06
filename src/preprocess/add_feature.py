@@ -217,9 +217,9 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             numerical_expr_list +
             categorical_expr_list +
             date_expr_list +
-            count_expr_list +
-            first_expression_list +
-            last_expression_list
+            count_expr_list# +
+            # first_expression_list +
+            # last_expression_list
         )
 
         return result_expr_list
@@ -544,23 +544,23 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 )
             )
         )
-        aggregation_level_group_list += (
-            [
-                pl.col(col_name).first()
-                .alias(f'first_{col_name}')
-                for col_name in numeric_columns
-            ] +
-            [
-                pl.col(col_name)
-                .filter(
-                    (pl.col(col_name).is_not_null()) &
-                    (pl.col(col_name) != 0)
-                )
-                .last()
-                .alias(f'last_{col_name}')
-                for col_name in numeric_columns
-            ] 
-        )
+        # aggregation_level_group_list += (
+        #     [
+        #         pl.col(col_name).first()
+        #         .alias(f'first_{col_name}')
+        #         for col_name in numeric_columns
+        #     ] +
+        #     [
+        #         pl.col(col_name)
+        #         .filter(
+        #             (pl.col(col_name).is_not_null()) &
+        #             (pl.col(col_name) != 0)
+        #         )
+        #         .last()
+        #         .alias(f'last_{col_name}')
+        #         for col_name in numeric_columns
+        #     ] 
+        # )
         #get feature for each contract
         self.credit_bureau_b_2 = (
             self.credit_bureau_b_2.sort(
@@ -1595,17 +1595,17 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         ).agg(features_list)
         
         operation_aggregation_list: list[pl.Expr] = (
-            [
-                pl.col(col_name).filter(pl.col('num_group1')==0)
-                .first()
-                for col_name in [f'first_{col}' for col in categorical_columns_list]
-            ] +
-            [
-                pl.col(col_name)
-                .filter(pl.col('num_group1')==pl.col('num_group1').filter(pl.col(col_name).is_not_null()).max())
-                .last()
-                for col_name in [f'last_{col}' for col in categorical_columns_list]
-            ] +
+            # [
+            #     pl.col(col_name).filter(pl.col('num_group1')==0)
+            #     .first()
+            #     for col_name in [f'first_{col}' for col in categorical_columns_list]
+            # ] +
+            # [
+            #     pl.col(col_name)
+            #     .filter(pl.col('num_group1')==pl.col('num_group1').filter(pl.col(col_name).is_not_null()).max())
+            #     .last()
+            #     for col_name in [f'last_{col}' for col in categorical_columns_list]
+            # ] +
             [
                 pl.col('num_group1')
                 .max()
