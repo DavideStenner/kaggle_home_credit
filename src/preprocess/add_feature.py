@@ -272,7 +272,6 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         )
     
     def create_credit_bureau_a_1_feature(self) -> None:
-        warnings.warn('Only considering generic feature credit_bureau_a_1', UserWarning)
         self.credit_bureau_a_1 = self.credit_bureau_a_1.with_columns(
             pl.date(
                 pl.col('dpdmaxdateyear_896T'),
