@@ -1954,8 +1954,55 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         )
 
     def filter_useless_columns(self, dataset: str) -> None:
+        self.filter_empty_columns(dataset=dataset)
+        self.filter_sparse_categorical(dataset=dataset)
+        self.filter_only_hashed_categorical(dataset=dataset)
+        
+    def filter_only_hashed_categorical(self, dataset: str) -> None:
+        data: pl.LazyFrame = getattr(self, dataset)
+        categorical_list_col: list[str] = [
+            col for col in self.mapper_mask[dataset].keys()
+            if col in data.columns
+        ]
+        for col in categorical_list_col:
+            if col not in self.special_column_list:
+                if 'hashed_pct' in self.mapper_statistic[dataset][col].keys():
+                    hashed_pct = self.mapper_statistic[dataset][col]['hashed_pct']
+                    if (hashed_pct > 0.8):
+                        data = data.drop(col)
+        
+        setattr(
+            self, dataset, data
         )
 
+    def filter_sparse_categorical(self, dataset: str) -> None:
+        data: pl.LazyFrame = getattr(self, dataset)
+        categorical_list_col: list[str] = [
+            col for col in self.mapper_mask[dataset].keys()
+            if col in data.columns
+        ]
+        for col in categorical_list_col:
+            if col not in self.special_column_list:
+                n_unique = self.mapper_statistic[dataset][col]['n_unique']
+                if (n_unique == 1) | (n_unique > 200):
+                    data = data.drop(col)
+        
+        setattr(
+            self, dataset, data
+        )
+
+    def filter_empty_columns(self, dataset: str) -> None:
+        data: pl.LazyFrame = getattr(self, dataset)
+        for col in data.columns:
+            if col not in self.special_column_list:
+                pct_null = self.mapper_statistic[dataset][col]['pct_null']
+                if pct_null > 0.7:
+                    data = data.drop(col)
+        
+        setattr(
+            self, dataset, data
+        )
+        
     def add_additional_feature(self) -> None:
         self.add_difference_to_date_decision()
         self.add_tax_registration_merge()
