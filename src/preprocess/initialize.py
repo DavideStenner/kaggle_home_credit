@@ -40,7 +40,7 @@ class PreprocessInit(BaseInit):
             config_dict['DEPTH_0'] + config_dict['DEPTH_1'] + config_dict['DEPTH_2']
         )
         self.numerical_aggregator: list[Callable[..., pl.Expr]] = [
-            pl.max, pl.mean
+            pl.min, pl.max, pl.mean, pl.std, pl.sum
         ]
         self._initialize_empty_dataset()
         self._correct_list_date_col()
@@ -48,9 +48,6 @@ class PreprocessInit(BaseInit):
         self._initialize_date_expression()
         
     def _initialize_date_expression(self) -> None:
-        def date_mean(col) -> pl.Expr:
-            return pl.col(col).mean()
-        
         def date_min(col) -> pl.Expr:
             return pl.col(col).min()
 
@@ -58,7 +55,7 @@ class PreprocessInit(BaseInit):
             return pl.col(col).max()
         
         self.date_aggregator: list[Callable[..., pl.Expr]] = [
-            date_min, date_max, date_mean
+            date_min, date_max
         ]
 
     def _initialize_filter_expression(self) -> None:
@@ -70,9 +67,15 @@ class PreprocessInit(BaseInit):
                 
         def filtered_mean(col: str, pl_filter: pl.Expr) -> pl.Expr:
             return pl.col(col).filter(pl_filter).mean()
+
+        def filtered_std(col: str, pl_filter: pl.Expr) -> pl.Expr:
+            return pl.col(col).filter(pl_filter).std()
+
+        def filtered_sum(col: str, pl_filter: pl.Expr) -> pl.Expr:
+            return pl.col(col).filter(pl_filter).sum()
         
         self.numerical_filter_aggregator: list[Callable[..., pl.Expr]] = [
-            filtered_max, filtered_mean
+            filtered_min, filtered_max, filtered_mean, filtered_std, filtered_sum
         ]
         
     def _correct_list_date_col(self):
