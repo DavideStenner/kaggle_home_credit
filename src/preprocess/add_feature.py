@@ -1731,10 +1731,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             ).alias('amtdepositnetX').cast(pl.Float32),
         )
 
-    def create_base_data_feature(self) -> None:
-        pass
-
-    def creat_null_feature(self, dataset_name: str) -> None:
+    def create_null_feature(self, dataset_name: str) -> None:
         current_dataset: Union[pl.LazyFrame, pl.DataFrame] = getattr(
             self, dataset_name
         )
@@ -1763,13 +1760,13 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         )
 
     def create_feature(self) -> None:        
-        for dataset in ['base_data'] + self.used_dataset:
+        for dataset in self.used_dataset:
             current_dataset_fe_pipeline: callable = getattr(
                 self, f'create_{dataset}_feature'
             )
             current_dataset_fe_pipeline()
             if dataset != 'base_data':
-                self.creat_null_feature(dataset_name=dataset)
+                self.create_null_feature(dataset_name=dataset)
             
         if not self.inference:
             self.add_fold_column()
