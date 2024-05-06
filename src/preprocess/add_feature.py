@@ -578,22 +578,22 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 [
                     pl.col('num_group1').max().alias('num_contract_X').cast(pl.UInt32),
                 ] +
-                [
-                    pl.col(col_name).filter(pl.col('num_group1')==0).first()
-                    for col_name in [f'first_{col}' for col in numeric_columns]
-                ] +
-                [
-                    pl.col(col_name)
-                    .filter(
-                        pl.col('num_group1')==
-                        pl.col('num_group1').filter(
-                            (pl.col(col_name).is_not_null()) &
-                            (pl.col(col_name) != 0)
-                        ).max()
-                    )
-                    .last()
-                    for col_name in [f'last_{col}' for col in numeric_columns]
-                ] +
+                # [
+                #     pl.col(col_name).filter(pl.col('num_group1')==0).first()
+                #     for col_name in [f'first_{col}' for col in numeric_columns]
+                # ] +
+                # [
+                #     pl.col(col_name)
+                #     .filter(
+                #         pl.col('num_group1')==
+                #         pl.col('num_group1').filter(
+                #             (pl.col(col_name).is_not_null()) &
+                #             (pl.col(col_name) != 0)
+                #         ).max()
+                #     )
+                #     .last()
+                #     for col_name in [f'last_{col}' for col in numeric_columns]
+                # ] +
                 [
                     pl_operation(col_name)
                     .alias(f'{pl_operation.__name__}_over_group2_{col_name}')
