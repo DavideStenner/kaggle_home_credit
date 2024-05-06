@@ -153,26 +153,61 @@ def get_mapper_numerical(
 
     return mapper_column
 
-
 def get_mapper_statistic(
-        data: Union[pl.LazyFrame, pl.DataFrame] 
+        data: Union[pl.LazyFrame, pl.DataFrame],
+        mapper_mask_col: Mapping[str, int], missing_info_hashed: str = 'a55475b1'
     ) -> Mapping[str, int]:
 
-    mapper_statistic = {}
+    mapper_statistic: Mapping[str, Mapping[str, float]] = {}
+    categorical_column_list: list[str] = mapper_mask_col.keys()
+    
     lazy_mode = isinstance(data, pl.LazyFrame)
 
     for col in data.columns:
         
         null_values = (
             (
-                data.select(col).null_count().collect().item()/
-                data.select(pl.count()).collect().item()
+                data.select(pl.col(col).is_null().mean()).collect().item()
             )
             if lazy_mode
-            else data.select(col).null_count().item()/data.shape[0]
+            else data.select(pl.col(col).is_null().mean()).item()
         )
+        mapper_statistic[col] = {
+            'pct_null': null_values
+        }
+
+        if col in categorical_column_list:
+            n_unique_values = (
+                (
+                    data.select(pl.col(col).n_unique()).collect().item()
+                )
+                if lazy_mode
+                else data.select(pl.col(col).n_unique()).item()
+            )
+            mapper_statistic[col].update(
+                {
+                    'n_unique': n_unique_values,
+                }
+            )
+            if missing_info_hashed in mapper_mask_col[col].keys():
+                hashed_values = (
+                    (
+                        data.select(
+                            (pl.col(col) == mapper_mask_col[col][missing_info_hashed]).mean()
+                        )
+                        .collect().item()
+                    )
+                    if lazy_mode
+                    else data.select(
+                        (pl.col(col) == mapper_mask_col[col][missing_info_hashed]).mean()
+                    ).item()
+                )
+                mapper_statistic[col].update(
+                    {
+                        'hashed_pct': hashed_values,
+                    }
+                )
         
-        mapper_statistic[col] = null_values    
     return mapper_statistic
 
 def get_mapping_info(
@@ -240,8 +275,8 @@ def get_mapping_info(
         )
         mapper_col_all_file[file_name] = mapper_column
         mapper_mask_all_file[file_name] = mapper_mask_col
-        mapper_statistic_all_file[file_name] = get_mapper_statistic(data=data)
-        
+        mapper_statistic_all_file[file_name] = get_mapper_statistic(data=data, mapper_mask_col=mapper_mask_col)
+
     with open(
         os.path.join(
             config['PATH_MAPPER_DATA'], 'mapper_dtype.json'
