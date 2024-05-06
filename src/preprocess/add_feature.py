@@ -944,13 +944,82 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 for col_1, col_2 in consecutive_pairs(list_col)
             ]
 
+        list_operator += [
+            (
+                pl.col(col_1) -
+                pl.col(col_2)
+            ).dt.total_days().cast(pl.Int32).alias(f'{col_1}_diff_{col_2}')
+            for col_1, col_2 in [
+                ['responsedate_1012D', 'assignmentdate_238D'],
+                #always 0
+                ['responsedate_4527233D', 'assignmentdate_4527235D'],
+                ['responsedate_4917613D', 'assignmentdate_4955616D']
+            ]
+        ]
+
         #ensure no duplicates
         self.static_cb_0 = self.filter_and_select_first(
             data=self.static_cb_0, filter_col=pl.lit(True),
             col_list=self.static_cb_0.columns
         )
         
-        self.static_cb_0 = self.static_cb_0.drop(
+        self.static_cb_0 = self.static_cb_0.with_columns(
+            list_operator
+        ).with_columns(
+            #correct responsedate_4527233D_diff_assignmentdate_4527235D
+            [
+                pl.when(
+                    (pl.col('responsedate_4527233D_diff_assignmentdate_4527235D')==0) &
+                    (
+                        (pl.col('responsedate_1012D_diff_assignmentdate_238D')!=0) |
+                        (pl.col('responsedate_4917613D_diff_assignmentdate_4955616D')!=0)
+                    )
+                ).then(
+                    None
+                ).otherwise(
+                    pl.col(col)
+                ).alias(col)
+                for col in ['responsedate_4527233D', 'assignmentdate_4527235D']
+            ]
+        ).with_columns(
+            (
+                pl.col('responsedate_4527233D') -
+                pl.col('assignmentdate_4527235D')
+            ).dt.total_days().cast(pl.Int32)
+            .alias(f'responsedate_4527233D_diff_assignmentdate_4527235D')
+        ).with_columns(
+            #coalesce multiple inffo
+            pl.coalesce(
+                pl.col(
+                    [
+                        'responsedate_1012D_diff_assignmentdate_238D',
+                        'responsedate_4527233D_diff_assignmentdate_4527235D',
+                        'responsedate_4917613D_diff_assignmentdate_4955616D',
+                    ]
+                ).alias('coalesce_responsedate_assignmentdate').cast(pl.Int32)
+            ),
+            (
+                pl.sum_horizontal(
+                    [
+                        'pmtaverage_3A', 'pmtaverage_4527227A', 
+                        'pmtaverage_4955615A'
+                    ]
+                )/3
+            ).alias('mean_pmtaverageX').cast(pl.Float32),
+            (
+                pl.sum_horizontal(
+                    [
+                        'pmtcount_4527229L', 'pmtcount_4955617L', 
+                        'pmtcount_693L', 'pmtscount_423L',
+                    ]
+                )/4
+            ).alias('mean_pmtcountX').cast(pl.UInt16),
+            (
+                pl.sum_horizontal(
+                    ['contractssum_5085716L', 'pmtssum_45A']
+                )/2
+            ).alias('mean_pmtssum').cast(pl.Float32)
+        ).drop(
             [
                 'birthdate_574D', 'dateofbirth_337D', 'dateofbirth_342D',
                 'for3years_128L',
@@ -958,19 +1027,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 'forweek_601L', 'forquarter_462L', 'foryear_618L', 
                 'formonth_118L',
                 'forweek_1077L', 'formonth_206L', 'forquarter_1017L', 
-                'responsedate_1012D_diff_assignmentdate_238D',
-                'responsedate_4527233D_diff_assignmentdate_4527235D',
-                'responsedate_4917613D_diff_assignmentdate_4955616D',
-                'responsedate_1012D', 'responsedate_4527233D', 'responsedate_4917613D',
-                'assignmentdate_238D', 'assignmentdate_4527235D', 'assignmentdate_4955616D',
-                'pmtaverage_3A', 'pmtaverage_4527227A', 'pmtaverage_4955615A',
-                'pmtcount_4527229L', 'pmtcount_4955617L', 'pmtcount_693L', 'pmtscount_423L',
-                'contractssum_5085716L', 'pmtssum_45A', 'requesttype_4525192L',
             ]
-        )
-
-        self.static_cb_0 = self.static_cb_0.with_columns(
-            list_operator
         )
 
     def create_tax_registry_a_1_feature(self) -> None:
