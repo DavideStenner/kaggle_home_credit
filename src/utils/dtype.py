@@ -1,5 +1,6 @@
 import os
 import json
+import logging
 import warnings
 
 import polars as pl
@@ -37,6 +38,7 @@ TYPE_MAPPING_REVERSE = {
 
 def get_mapper_categorical(
         data: Union[pl.LazyFrame, pl.DataFrame], 
+        logger: logging.Logger,
         check_cat_length: int = 200,
         message_error: str = 'Categories {col} has over {num_different_cat_values} different values.'
     ) -> Mapping[str, int]:
@@ -69,7 +71,7 @@ def get_mapper_categorical(
         }
         num_different_cat_values = len(mapper_mask_col[col].values())
         if  (num_different_cat_values < 2) | (num_different_cat_values > check_cat_length):
-            print(
+            logger.info(
                 message_error.format(
                     col=col, 
                     num_different_cat_values=num_different_cat_values
@@ -175,6 +177,7 @@ def get_mapper_statistic(
 
 def get_mapping_info(
         config: Dict[str, str],
+        logger: logging.Logger,
         file_name_list: list[str]=[
             'static_0', 'static_cb_0',
             'applprev_1', 'other_1', 'tax_registry_a_1',
@@ -189,14 +192,14 @@ def get_mapping_info(
     mapper_statistic_all_file = {}
     
     for file_name in file_name_list:
-        print(f'\nStarting {file_name}\n')
+        logger.info(f'\nStarting {file_name}\n')
         data = read_multiple_parquet(
             f'*/*_{file_name}*.parquet',
             root_dir=config['PATH_ORIGINAL_DATA'], 
             scan=False
         )
         size_begin = data.estimated_size('mb')
-        mapper_mask_col = get_mapper_categorical(data, check_cat_length=255)
+        mapper_mask_col = get_mapper_categorical(data, logger=logger, check_cat_length=255)
 
         #replace categorical before downcasting
         data = data.with_columns(
@@ -230,7 +233,7 @@ def get_mapping_info(
         size_end = data.estimated_size('mb')
         
         percent = 100 * (size_begin - size_end) / size_begin
-        print(
+        logger.info(
             'Mem. usage decreased from {:5.2f} Mb to {:5.2f} Mb ({:.1f}% reduction)'.format(
                 size_begin, size_end, percent
             )
