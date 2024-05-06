@@ -1826,9 +1826,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             ]
             if col in self.data.columns
         ]
-        self.data = self.data.drop(
-            
-        )
+        self.data = self.data.drop(useless_feature)
 
     def add_null_feature(self) -> None:
         """Add null count feature"""
@@ -1932,7 +1930,6 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             for col in dates_to_transform
             if col not in self.negative_allowed_dates_date_decision
         ]
-        assert all([col in dates_to_transform for col in self.calc_also_year_dates_date_decision])
         
         #calculate day diff respect to date_decision
         self.data = self.data.with_columns(
@@ -1945,21 +1942,6 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                     .cast(pl.Int32).alias(col)
                 )
                 for col in dates_to_transform
-            ] + [
-                (
-                    (
-                        (
-                            pl.col('date_decision') - pl.col(col)
-                        )
-                        .dt.total_days()//365
-                    )
-                    .cast(pl.Int32).alias(
-                        change_name_with_type(
-                            col, '_year_diff_'
-                        )
-                    )
-                )
-                for col in self.calc_also_year_dates_date_decision
             ]
         ).with_columns(
             #put blank wrong dates
@@ -1970,18 +1952,11 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                     .otherwise(pl.col(col))
                     .cast(pl.UInt32).alias(col)
                 )
-                for col in (
-                    not_allowed_negative_dates + 
-                    #add also year calculation
-                    [
-                        change_name_with_type(
-                            col, '_year_diff_'
-                        )
-                        for col in not_allowed_negative_dates
-                        if col in self.calc_also_year_dates_date_decision
-                    ]
-                )
+                for col in not_allowed_negative_dates
             ]
+        )
+
+    def filter_useless_columns(self, dataset: str) -> None:
         )
 
     def add_additional_feature(self) -> None:

@@ -23,16 +23,6 @@ class PreprocessInit(BaseInit):
         self.negative_allowed_dates_date_decision: list[str] = [
             'tax_registry_a_1_recorddate_4527225D'
         ]
-        #calculate day diff and year diff to date_decision
-        self.calc_also_year_dates_date_decision: list[str] = [
-            'static_0_datefirstoffer_1144D', 'static_0_datelastinstal40dpd_247D',
-            'static_0_dtlastpmtallstes_4499206D', 'static_0_firstclxcampaign_1125D',
-            'static_0_firstdatedue_489D', 'static_0_lastactivateddate_801D',
-            'static_0_lastapplicationdate_877D', 'static_0_lastapprdate_640D',
-            'static_0_lastdelinqdate_224D', 'static_0_lastrejectdate_50D',
-            'static_0_maxdpdinstldate_3546855D', 'static_0_lastrepayingdate_696D',
-            'person_1_birth_259D', 'person_1_empl_employedfrom_271D',
-        ]
         self.mapper_mask: Dict[str, Dict[str, int]] = None
         self.mapper_dtype: Dict[str, Dict[str, str]] = None
         self.mapper_statistic: Dict[str, Dict[str, float]] = None
@@ -81,10 +71,6 @@ class PreprocessInit(BaseInit):
     def _correct_list_date_col(self):
         self.negative_allowed_dates_date_decision = [
             col for col in self.negative_allowed_dates_date_decision
-            if any([dataset in col for dataset in self.used_dataset])
-        ]
-        self.calc_also_year_dates_date_decision = [
-            col for col in self.calc_also_year_dates_date_decision
             if any([dataset in col for dataset in self.used_dataset])
         ]
 
