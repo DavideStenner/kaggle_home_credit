@@ -217,9 +217,9 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             numerical_expr_list +
             categorical_expr_list +
             date_expr_list +
-            count_expr_list# +
-            # first_expression_list +
-            # last_expression_list
+            count_expr_list +
+            first_expression_list +
+            last_expression_list
         )
 
         return result_expr_list
@@ -285,6 +285,8 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             ).cast(pl.Date).alias('overdueamountmaxdate_closed_D'),
         ).drop(
             'refreshdate_3813885D',
+            'dpdmaxdatemonth_442T', 'dpdmaxdateyear_896T',
+            'overdueamountmaxdatemonth_284T', 'overdueamountmaxdateyear_994T'
             'dpdmaxdatemonth_442T', 'dpdmaxdateyear_896T',
             'overdueamountmaxdatemonth_284T',
             'overdueamountmaxdateyear_994T'
@@ -532,23 +534,23 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 )
             )
         )
-        # aggregation_level_group_list += (
-        #     [
-        #         pl.col(col_name).first()
-        #         .alias(f'first_{col_name}')
-        #         for col_name in numeric_columns
-        #     ] +
-        #     [
-        #         pl.col(col_name)
-        #         .filter(
-        #             (pl.col(col_name).is_not_null()) &
-        #             (pl.col(col_name) != 0)
-        #         )
-        #         .last()
-        #         .alias(f'last_{col_name}')
-        #         for col_name in numeric_columns
-        #     ] 
-        # )
+        aggregation_level_group_list += (
+            [
+                pl.col(col_name).first()
+                .alias(f'first_{col_name}')
+                for col_name in numeric_columns
+            ] +
+            [
+                pl.col(col_name)
+                .filter(
+                    (pl.col(col_name).is_not_null()) &
+                    (pl.col(col_name) != 0)
+                )
+                .last()
+                .alias(f'last_{col_name}')
+                for col_name in numeric_columns
+            ] 
+        )
         #get feature for each contract
         self.credit_bureau_b_2 = (
             self.credit_bureau_b_2.sort(
@@ -567,22 +569,22 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 [
                     pl.col('num_group1').max().alias('num_contract_X').cast(pl.UInt32),
                 ] +
-                # [
-                #     pl.col(col_name).filter(pl.col('num_group1')==0).first()
-                #     for col_name in [f'first_{col}' for col in numeric_columns]
-                # ] +
-                # [
-                #     pl.col(col_name)
-                #     .filter(
-                #         pl.col('num_group1')==
-                #         pl.col('num_group1').filter(
-                #             (pl.col(col_name).is_not_null()) &
-                #             (pl.col(col_name) != 0)
-                #         ).max()
-                #     )
-                #     .last()
-                #     for col_name in [f'last_{col}' for col in numeric_columns]
-                # ] +
+                [
+                    pl.col(col_name).filter(pl.col('num_group1')==0).first()
+                    for col_name in [f'first_{col}' for col in numeric_columns]
+                ] +
+                [
+                    pl.col(col_name)
+                    .filter(
+                        pl.col('num_group1')==
+                        pl.col('num_group1').filter(
+                            (pl.col(col_name).is_not_null()) &
+                            (pl.col(col_name) != 0)
+                        ).max()
+                    )
+                    .last()
+                    for col_name in [f'last_{col}' for col in numeric_columns]
+                ] +
                 [
                     pl_operation(col_name)
                     .alias(f'{pl_operation.__name__}_over_group2_{col_name}')
@@ -915,6 +917,9 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 'forweek_601L', 'forquarter_462L', 'foryear_618L', 
                 'formonth_118L',
                 'forweek_1077L', 'formonth_206L', 'forquarter_1017L', 
+                'pmtaverage_4955615A',
+                'pmtscount_423L',
+                'requesttype_4525192L',
             ]
         )
 
@@ -1277,17 +1282,17 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         ).agg(features_list)
         
         operation_aggregation_list: list[pl.Expr] = (
-            # [
-            #     pl.col(col_name).filter(pl.col('num_group1')==0)
-            #     .first()
-            #     for col_name in [f'first_{col}' for col in categorical_columns_list]
-            # ] +
-            # [
-            #     pl.col(col_name)
-            #     .filter(pl.col('num_group1')==pl.col('num_group1').filter(pl.col(col_name).is_not_null()).max())
-            #     .last()
-            #     for col_name in [f'last_{col}' for col in categorical_columns_list]
-            # ] +
+            [
+                pl.col(col_name).filter(pl.col('num_group1')==0)
+                .first()
+                for col_name in [f'first_{col}' for col in categorical_columns_list]
+            ] +
+            [
+                pl.col(col_name)
+                .filter(pl.col('num_group1')==pl.col('num_group1').filter(pl.col(col_name).is_not_null()).max())
+                .last()
+                for col_name in [f'last_{col}' for col in categorical_columns_list]
+            ] +
             [
                 pl.col('num_group1')
                 .max()
@@ -1565,7 +1570,8 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
     def filter_useless_columns(self, dataset: str) -> None:
         self.filter_empty_columns(dataset=dataset)
         self.filter_sparse_categorical(dataset=dataset)
-        self.filter_only_hashed_categorical(dataset=dataset)
+        if dataset != 'person_1':
+            self.filter_only_hashed_categorical(dataset=dataset)
         
     def filter_only_hashed_categorical(self, dataset: str) -> None:
         data: pl.LazyFrame = getattr(self, dataset)
@@ -1577,7 +1583,8 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             if col not in self.special_column_list:
                 if 'hashed_pct' in self.mapper_statistic[dataset][col].keys():
                     hashed_pct = self.mapper_statistic[dataset][col]['hashed_pct']
-                    if (hashed_pct > 0.8):
+                    pct_null = self.mapper_statistic[dataset][col]['pct_null']
+                    if ((hashed_pct + pct_null) > 0.5):
                         data = data.drop(col)
         
         setattr(

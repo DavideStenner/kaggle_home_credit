@@ -44,8 +44,11 @@ class PreprocessInit(BaseInit):
         def date_max(col) -> pl.Expr:
             return pl.col(col).max()
         
+        def date_mean(col) -> pl.Expr:
+            return pl.col(col).mean()
+        
         self.date_aggregator: list[Callable[..., pl.Expr]] = [
-            date_min, date_max
+            date_min, date_max, date_mean
         ]
 
     def _initialize_filter_expression(self) -> None:
@@ -64,6 +67,9 @@ class PreprocessInit(BaseInit):
         def filtered_sum(col: str, pl_filter: pl.Expr) -> pl.Expr:
             return pl.col(col).filter(pl_filter).sum()
         
+        def filtered_median(col: str, pl_filter: pl.Expr) -> pl.Expr:
+            return pl.col(col).filter(pl_filter).median()
+                
         self.numerical_filter_aggregator: list[Callable[..., pl.Expr]] = [
             filtered_min, filtered_max, filtered_mean, filtered_std, filtered_sum
         ]
