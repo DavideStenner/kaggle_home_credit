@@ -162,7 +162,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                         )
                     )
                 )
-                for col in categorical_columns_list + numerical_columns_list + date_columns_list
+                for col in categorical_columns_list + numerical_columns_list
             ]
 
             last_expression_list: list[pl.Expr] = [
@@ -178,7 +178,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                         )
                     )
                 )
-                for col in categorical_columns_list + numerical_columns_list+ date_columns_list
+                for col in categorical_columns_list + numerical_columns_list
             ]
         else:
             first_expression_list: list[pl.Expr] = [
@@ -194,7 +194,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                         )
                     )
                 )
-                for col in categorical_columns_list + numerical_columns_list + date_columns_list
+                for col in categorical_columns_list + numerical_columns_list
             ]
 
             last_expression_list: list[pl.Expr] = [
@@ -210,7 +210,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                         )
                     )
                 )
-                for col in categorical_columns_list + numerical_columns_list + date_columns_list
+                for col in categorical_columns_list + numerical_columns_list
             ]
             
         result_expr_list: list[pl.Expr] = (
