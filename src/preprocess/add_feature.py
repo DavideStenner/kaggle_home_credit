@@ -279,17 +279,26 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 1
             ).cast(pl.Date).alias('dpdmaxdate_closed_D'),
             pl.date(
+                pl.col('dpdmaxdateyear_596T'),
+                pl.col('dpdmaxdatemonth_89T'),
+                1
+            ).cast(pl.Date).alias('dpdmaxdate_active_D'),
+            pl.date(
                 pl.col('overdueamountmaxdateyear_994T'),
                 pl.col('overdueamountmaxdatemonth_284T'),
                 1
             ).cast(pl.Date).alias('overdueamountmaxdate_closed_D'),
+            pl.date(
+                pl.col('overdueamountmaxdateyear_2T'),
+                pl.col('overdueamountmaxdatemonth_365T'),
+                1
+            ).cast(pl.Date).alias('overdueamountmaxdate_active_D')
         ).drop(
             'refreshdate_3813885D',
-            'dpdmaxdatemonth_442T', 'dpdmaxdateyear_896T',
-            'overdueamountmaxdatemonth_284T', 'overdueamountmaxdateyear_994T'
-            'dpdmaxdatemonth_442T', 'dpdmaxdateyear_896T',
-            'overdueamountmaxdatemonth_284T',
-            'overdueamountmaxdateyear_994T'
+            'dpdmaxdatemonth_442T', 'dpdmaxdatemonth_89T',
+            'dpdmaxdateyear_596T', 'dpdmaxdateyear_896T',
+            'overdueamountmaxdatemonth_284T', 'overdueamountmaxdatemonth_365T',
+            'overdueamountmaxdateyear_2T', 'overdueamountmaxdateyear_994T'
         )
         
         list_generic_feature: list[pl.Expr] = self.add_generic_feature(
@@ -632,6 +641,11 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         
     def create_debitcard_1_feature(self) -> None:
         
+        col_to_retrieve_list: list[str] = [
+            'last180dayaveragebalance_704A', 
+            'last180dayturnover_1134A', 'last30dayturnover_651A'
+        ]
+
         list_generic_feature: list[pl.Expr] = self.add_generic_feature(
             self.debitcard_1, 'debitcard_1'
         )
@@ -640,6 +654,28 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             .sort(['case_id', 'num_group1'])
             .group_by('case_id', maintain_order=True)
             .agg(
+                #first info
+                [
+                    (
+                        pl.col(col_)
+                        .filter(pl.col(col_).is_not_null())
+                        .first()
+                        .cast(pl.Float32)
+                        .alias(f'first_not_null_{col_}')
+                    )
+                    for col_ in col_to_retrieve_list
+                ] +
+                #last info
+                [
+                    (
+                        pl.col(col_)
+                        .filter(pl.col(col_).is_not_null())
+                        .last()
+                        .cast(pl.Float32)
+                        .alias(f'last_not_null_{col_}')
+                    )
+                    for col_ in col_to_retrieve_list
+                ] +
                 list_generic_feature
             )
         )
@@ -881,10 +917,17 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 'days30_165L', 'days90_310L', 
                 'days120_123L', 'days180_256L', 'days360_512L'
             ],
+            'credit_history': [
+                'fortoday_1092L', 'forweek_528L', 'formonth_535L', 'forquarter_634L', 
+                'foryear_850L', 'for3years_504L'
+            ],
             'number_results': [
                 'firstquarter_103L', 'secondquarter_766L', 'thirdquarter_1082L',
                 'fourthquarter_440L'
             ],
+            'number_cancelations': [
+                'foryear_818L', 'for3years_584L'
+            ]
         }
         list_operator = []
         for name_feature, list_col in list_utils_col.items():
@@ -901,6 +944,19 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 for col_1, col_2 in consecutive_pairs(list_col)
             ]
 
+        list_operator += [
+            (
+                pl.col(col_1) -
+                pl.col(col_2)
+            ).dt.total_days().cast(pl.Int32).alias(f'{col_1}_diff_{col_2}')
+            for col_1, col_2 in [
+                ['responsedate_1012D', 'assignmentdate_238D'],
+                #always 0
+                ['responsedate_4527233D', 'assignmentdate_4527235D'],
+                ['responsedate_4917613D', 'assignmentdate_4955616D']
+            ]
+        ]
+
         #ensure no duplicates
         self.static_cb_0 = self.filter_and_select_first(
             data=self.static_cb_0, filter_col=pl.lit(True),
@@ -909,6 +965,52 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         
         self.static_cb_0 = self.static_cb_0.with_columns(
             list_operator
+        ).with_columns(
+            #coalesce multiple inffo
+            pl.coalesce(
+                pl.col(
+                    [
+                        'responsedate_1012D_diff_assignmentdate_238D',
+                        'responsedate_4917613D_diff_assignmentdate_4955616D',
+                        'responsedate_4527233D_diff_assignmentdate_4527235D',
+                    ]
+                ).alias('coalesce_responsedate_assignmentdateX').cast(pl.Int32)
+            ),
+            pl.coalesce(
+                pl.col(
+                    [
+                        'responsedate_1012D', 'responsedate_4917613D', 'responsedate_4527233D'
+                    ]
+                ).alias('coalesce_responsedate_D').cast(pl.Int32)
+            ),
+            pl.coalesce(
+                pl.col(
+                    [
+                        'assignmentdate_238D', 'assignmentdate_4955616D', 'assignmentdate_4527235D'
+                    ]
+                ).alias('coalesce_assignmentdate_D').cast(pl.Int32)
+            ),
+            (
+                pl.sum_horizontal(
+                    [
+                        'pmtaverage_3A', 'pmtaverage_4527227A', 
+                        'pmtaverage_4955615A'
+                    ]
+                )/3
+            ).alias('mean_pmtaverageX').cast(pl.Float32),
+            (
+                pl.sum_horizontal(
+                    [
+                        'pmtcount_4527229L', 'pmtcount_4955617L', 
+                        'pmtcount_693L', 'pmtscount_423L',
+                    ]
+                )/4
+            ).alias('mean_pmtcountX').cast(pl.UInt16),
+            (
+                pl.sum_horizontal(
+                    ['contractssum_5085716L', 'pmtssum_45A']
+                )/2
+            ).alias('mean_pmtssum').cast(pl.Float32)
         ).drop(
             [
                 'birthdate_574D', 'dateofbirth_337D', 'dateofbirth_342D',
@@ -917,9 +1019,11 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 'forweek_601L', 'forquarter_462L', 'foryear_618L', 
                 'formonth_118L',
                 'forweek_1077L', 'formonth_206L', 'forquarter_1017L', 
-                'pmtaverage_4955615A',
-                'pmtscount_423L',
-                'requesttype_4525192L',
+                'responsedate_1012D', 'responsedate_4527233D', 'responsedate_4917613D',
+                'assignmentdate_238D', 'assignmentdate_4527235D', 'assignmentdate_4955616D',
+                'pmtaverage_3A', 'pmtaverage_4527227A', 'pmtaverage_4955615A',
+                'pmtcount_4527229L', 'pmtcount_4955617L', 'pmtcount_693L', 'pmtscount_423L',
+                'contractssum_5085716L', 'pmtssum_45A', 'requesttype_4525192L',
             ]
         )
 
@@ -961,6 +1065,10 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 (
                     pl.col('num_group1').max()
                     .cast(pl.UInt16).alias('num_deductionX')
+                ),
+                (
+                    pl.col('name_4527232M').n_unique()
+                    .cast(pl.UInt16).alias('number_workerX')
                 ),
                 (
                     pl.col('recorddate_4527225D').first()
@@ -1007,6 +1115,10 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 (
                     pl.col('num_group1').max()
                     .cast(pl.UInt16).alias('num_deductionX')
+                ),
+                (
+                    pl.col('name_4917606M').n_unique()
+                    .cast(pl.UInt16).alias('number_workerX')
                 ),
                 (
                     pl.col('deductiondate_4917603D').min()
@@ -1068,6 +1180,10 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                     .cast(pl.UInt16).alias('num_deductionX')
                 ),
                 (
+                    pl.col('employername_160M').n_unique()
+                    .cast(pl.UInt16).alias('number_workerX')
+                ),
+                (
                     pl.col('processingdate_168D').min()
                     .cast(pl.Date)
                     .alias('min_processingdate_168D')
@@ -1093,15 +1209,25 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             'birth_259D', 
             'contaddr_matchlist_1032L', 'contaddr_smempladdr_334L', 
             'education_927M',
-            'incometype_1044T', 'language1_981M',
+            'empl_employedfrom_271D',
+            'empl_industry_691L', 'familystate_447L',
+            'housetype_905L', 
+            'incometype_1044T', 'isreference_387L', 'language1_981M',
             'mainoccupationinc_384A',
-            'role_1084L',
+            'role_1084L', 'role_993L',
             'safeguarantyflag_411L', 'type_25L', 'sex_738L'
         ]
         person_1 = self.filter_and_select_first(
             data=self.person_1,
             filter_col=pl.col('num_group1')==0,
             col_list=select_col_group_1
+        ).with_columns(
+            (
+                pl.col('empl_employedfrom_271D') - 
+                pl.col('birth_259D')
+            ).dt.total_days()
+            .alias('empl_employedfrom_271D_diff_birth_259D')
+            .cast(pl.Int32)
         )
 
         dict_agg_info: Dict[str, list[str]] = {
@@ -1109,11 +1235,31 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 "a55475b1", "P33_146_175",
                 "P97_36_170",
             ],
+            'gender_992L': ['M', 'F'],
+            'housingtype_772L': [
+                'OWNED', 'PARENTAL'
+            ],
+            'maritalst_703L': [
+                'MARRIED', 
+                'SINGLE'
+            ],
             'persontype_1072L': [
                 1, 4, 5
             ],
             'persontype_792L': [4, 5],
+            'relationshiptoclient_415T': [
+                'SPOUSE', 'OTHER_RELATIVE', 
+                'COLLEAGUE', 'GRAND_PARENT',
+                'NEIGHBOR', 'OTHER', 'PARENT',
+                'SIBLING', 'CHILD', 'FRIEND'
+            ],
+            'relationshiptoclient_642T': [
+                'SIBLING', 'SPOUSE', 'OTHER', 'COLLEAGUE', 
+                'PARENT', 'FRIEND', 'NEIGHBOR', 'GRAND_PARENT', 
+                'CHILD', 'OTHER_RELATIVE'
+            ],
             'role_1084L': ['CL', 'EM', 'PE'],
+            'role_993L': ['FULL'],
             'type_25L': [
                 'HOME_PHONE', 'PRIMARY_MOBILE', 
                 'SECONDARY_MOBILE', 'ALTERNATIVE_PHONE', 
@@ -1127,6 +1273,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             ).group_by('case_id').agg(
                 [
                     pl.len().alias('number_rowsX').cast(pl.UInt16),
+                    pl.col('childnum_185L').max().cast(pl.Int16),
                 ] +
                 [
                     (
@@ -1164,9 +1311,10 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                         .cast(pl.UInt16)
                     )
                     for column_name in [
-                        'persontype_1072L', 
-                        'persontype_792L', 
-                        'role_1084L',
+                        'gender_992L', 'housingtype_772L', 
+                        'maritalst_703L', 'persontype_1072L', 
+                        'persontype_792L', 'relationshiptoclient_415T', 
+                        'relationshiptoclient_642T', 'role_1084L', 'role_993L', 
                         'type_25L'
                     ]
                 ]
@@ -1182,9 +1330,10 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                     .cast(pl.UInt16)
                 )
                 for col in [
-                    'persontype_1072L', 
-                    'persontype_792L',  
-                    'role_1084L',
+                    'gender_992L', 'housingtype_772L', 
+                    'maritalst_703L', 'persontype_1072L', 
+                    'persontype_792L', 'relationshiptoclient_415T', 
+                    'relationshiptoclient_642T', 'role_1084L', 'role_993L', 
                     'type_25L'
                 ]
             ]
@@ -1199,11 +1348,227 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         
         
     def create_person_2_feature(self) -> None:
-        features_list = self.add_generic_feature(self.person_2, 'person_2')
+        zero_n_list = {
+            'addres_role_871L': ['CONTACT', 'PERMANENT'],
+            'conts_role_79M': ['P38_92_157', 'a55475b1']
+        }
+        n_0_list = {
+            'addres_role_871L': ['TEMPORARY', 'REGISTERED', 'CONTACT', 'PERMANENT'],
+            'conts_role_79M': [
+                'P125_14_176',
+                'P177_137_98', 'P115_147_77',
+                'a55475b1', 'P125_105_50', 
+                'P38_92_157', 'P7_147_157',
+            ],
+            'relatedpersons_role_762T': [
+                    'OTHER', 'CHILD', 'SIBLING',
+                    'PARENT', 'OTHER_RELATIVE',
+                    'COLLEAGUE', 'SPOUSE',
+                    'FRIEND'
+            ]
+        }
+        #for num group1 == 0
+        zero_n_list = list(
+            chain(
+                *[
+                    list(product([key], value))
+                    for key, value in zero_n_list.items()
+                ]
+            )
+        )
+        #for num group1 != 0
+        n_0_list = list(
+            chain(
+                *[
+                    list(product([key], value))
+                    for key, value in n_0_list.items()
+                ]
+            )
+        )
+
+        date_expression: list[pl.Expr] = [
+            #first not blank
+            (
+                pl.col('empls_employedfrom_796D')
+                .drop_nulls()
+                .max()
+                .alias('date_empls_employedfrom_796D')
+                .cast(pl.Date)
+            )
+        ]
+
+        pl_group_2_expression: list[pl.Expr] = (
+            date_expression +
+            [
+                #max num group1
+                (
+                    pl.col('num_group2').max()
+                    .alias('max_num_group2')
+                    .cast(pl.UInt16)
+                )
+            ] +
+            [
+                (
+                    pl.col(col).filter(
+                        (pl.col(col)==self.mapper_mask['person_2'][col][single_value])&
+                        (pl.col('num_group1')==0)
+                    )
+                    .count()
+                    .alias(f'{col[:-1]}_{single_value}_0_n_' + col[-1])
+                    .cast(pl.UInt16)
+                )
+                for col, single_value in zero_n_list
+            ] +
+            [
+                (
+                    pl.col(col).filter(
+                        (pl.col(col)==self.mapper_mask['person_2'][col][single_value])&
+                        (pl.col('num_group1')!=0)
+                    )
+                    .count()
+                    .alias(f'{col[:-1]}_{single_value}_n_0_' + col[-1])
+                    .cast(pl.UInt16)
+                )
+                for col, single_value in n_0_list
+            ] +
+            #total unique
+            [
+                (
+                    pl.col(col_name)
+                    .n_unique()
+                    .alias(f'n_unique_{col_name}')
+                    .cast(pl.UInt16)
+                )
+                for col_name in [
+                    'addres_district_368M', 'addres_zip_823M',
+                    'addres_role_871L', 'conts_role_79M',
+                    'relatedpersons_role_762T',
+                    'empls_economicalst_849M', 
+                ]
+            ] +
+            #how many not hashed unique
+            [
+                (
+                    pl.col(col_name)
+                    .filter(
+                        (
+                            pl.col(col_name) != 
+                            (self.mapper_mask['person_2'][col_name][self.hashed_missing_label])
+                        )
+                    )
+                    .n_unique()
+                    .alias(f'n_unique_not_hashed_{col_name}')
+                    .cast(pl.UInt16)
+                )
+                for col_name in [
+                    'addres_district_368M', 'addres_zip_823M',
+                    'conts_role_79M',
+                    'empls_economicalst_849M', 'empls_employer_name_740M'
+                ]
+            ] +
+            #how many hashed
+            [
+                (
+                    pl.col(col_name)
+                    .filter(
+                        (
+                            pl.col(col_name) == 
+                            (self.mapper_mask['person_2'][col_name][self.hashed_missing_label])
+                        )
+                    )
+                    .count()
+                    .alias(f'n_unique_hashed_{col_name}')
+                    .cast(pl.UInt16)
+                )
+                for col_name in [
+                    'addres_district_368M', 'addres_zip_823M',
+                    'conts_role_79M', 'empls_economicalst_849M',
+                    'empls_employer_name_740M'
+                ]
+            ]
+        )        
         
         self.person_2 = self.person_2.group_by(
-            ['case_id']
-        ).agg(features_list)
+            'case_id', 'num_group1'
+        ).agg(pl_group_2_expression)
+        
+        date_col_list = ['date_empls_employedfrom_796D']
+        
+        column_to_split = [
+            col for col in 
+            self.person_2.columns
+            if col not in ['case_id', 'num_group1']
+        ]
+        
+        col_group_zero = [
+            col 
+            for col in column_to_split 
+            if 
+                ('_n_0_' not in col) &
+                (col not in date_col_list)
+        ]
+        
+        col_group_not_zero = [
+            col 
+            for col in column_to_split 
+            if 
+                ('_0_n_' not in col) &
+                (col not in date_col_list)
+        ]
+
+        self.person_2 = self.person_2.group_by('case_id').agg(
+            [
+                #max num group1
+                (
+                    pl.col('num_group1').max()
+                    .alias('max_num_group1')
+                    .cast(pl.UInt16)
+                )
+            ] +
+            [
+                pl.max('date_empls_employedfrom_796D').alias(f'date_empls_employedfrom_796D'),
+            ] +
+            [
+                (
+                    getattr(
+                        pl.col(col_name)
+                        .filter(pl.col('num_group1')==0),
+                        pl_expression
+                    )()
+                    .alias(f'group_0_{pl_expression}_{col_name}')
+                )
+                for pl_expression, col_name in product(
+                    ['min', 'max', 'mean'],
+                    col_group_zero
+                )
+            ] +
+            [
+                getattr(
+                    pl.col(col_name)
+                    .filter(pl.col('num_group1')!=0),
+                    pl_expression
+                )()
+                .alias(f'group_not_0_{pl_expression}_{col_name}')
+                for pl_expression, col_name in product(
+                    ['min', 'max', 'mean'],
+                    col_group_not_zero
+                )
+            ]
+        ).with_columns(
+            [
+                pl.col(col)
+                .cast(pl.Float32)
+                for col in 
+                    [
+                        f'group_0_mean_{col_name}'
+                        for col_name in col_group_zero
+                    ]+ 
+                    [
+                        f'group_not_0_mean_{col_name}'
+                        for col_name in col_group_not_zero
+                    ]
+            ]
+        )
     
     def create_applprev_1_feature(self) -> None:
         self.applprev_1 = self.applprev_1.drop('district_544M', 'profession_152M', 'postype_4733339M')
@@ -1220,7 +1585,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             self.applprev_1, 'applprev_1'
         )
         date_col_diff: list[str] = [
-            'dateactivated_425D',
+            'dateactivated_425D', 'dtlastpmt_581D', 
             'dtlastpmtallstes_3545839D', 
             'employedfrom_700D', 'firstnonzeroinstldate_307D'
         ]
@@ -1273,7 +1638,8 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
     def create_applprev_2_feature(self) -> None:
 
         categorical_columns_list = [
-            'conts_type_509L',
+            'cacccardblochreas_147M', 'conts_type_509L',
+            'credacc_cards_status_52L'
         ]
         features_list = self.add_generic_feature(self.applprev_2, 'applprev_2')
         
@@ -1305,6 +1671,14 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 chain(
                     *[
                         (
+                            [
+                                pl.col(f'not_hashed_missing_mode_cacccardblochreas_147M')
+                                .filter(filter_pl)
+                                .drop_nulls()
+                                .mode()
+                                .sort().first()
+                                .alias(f'{name_pl}_mode_not_hashed_missing_mode_cacccardblochreas_147M'),
+                            ] +
                             [
                                 pl_operator(col_name, filter_pl)
                                 .alias(f'{pl_operator.__name__}_{name_pl}_{col_name}')
@@ -1390,9 +1764,6 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             current_dataset_fe_pipeline: callable = getattr(
                 self, f'create_{dataset}_feature'
             )
-            
-            self.filter_useless_columns(dataset=dataset)
-
             current_dataset_fe_pipeline()
             if dataset != 'base_data':
                 self.create_null_feature(dataset_name=dataset)
@@ -1506,6 +1877,21 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                         )/3
                     )
                     .alias(f'tax_registry_1_num_deductionX')
+                    .cast(pl.Float32)
+                )
+            ] +
+            [
+                (
+                    pl.sum_horizontal(
+                        pl.col(
+                            [
+                                'tax_registry_a_1_number_workerX',
+                                'tax_registry_b_1_number_workerX',
+                                'tax_registry_c_1_number_workerX'
+                            ]
+                        )/3
+                    )
+                    .alias(f'tax_registry_1_number_workerX')
                     .cast(pl.Float32)
                 )
             ] +
