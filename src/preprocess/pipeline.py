@@ -113,6 +113,9 @@ class PreprocessPipeline(BasePipeline, PreprocessImport, PreprocessAddFeature, P
         
         print(f'Collecting dataset with {len(self.data.columns)} columns')
         self.data = self.data.collect()
+        
+        #sort by date decision -> no sorting during lgb metric evaluation --> speedup
+        self.data = self.data.sort('date_decision', 'WEEK_NUM')
         _ = gc.collect()
         
         print('Creating fold_info column ...')

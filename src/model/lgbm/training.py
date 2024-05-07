@@ -131,6 +131,8 @@ class LgbmTrainer(ModelTrain, LgbmInit):
             test_metric_df = test_filtered.select(
                 ["WEEK_NUM", "target"]
             ).collect().to_pandas()
+
+            assert test_metric_df['WEEK_NUM'].is_monotonic_increasing
             
             metric_lgb_list = [
                 partial(function_, test_metric_df)

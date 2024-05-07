@@ -115,7 +115,9 @@ class XgbTrainer(ModelTrain, XgbInit):
             test_metric_df = test_filtered.select(
                 ["WEEK_NUM", "target"]
             ).collect().to_pandas()
-                        
+            
+            assert test_metric_df['WEEK_NUM'].is_monotonic_increasing
+            
             print('Start training')
             model = xgb.train(
                 params=self.params_xgb,

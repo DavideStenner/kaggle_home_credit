@@ -19,7 +19,6 @@ def gini_stability(
             :, 
             ["WEEK_NUM", "target", "score"]
         ]
-        .sort_values("WEEK_NUM")
         .groupby("WEEK_NUM")[["target", "score"]]
         .apply(
             lambda x: 2*roc_auc_score(x["target"], x["score"])-1
@@ -46,7 +45,6 @@ def avg_gini_part_of_stability(
             :, 
             ["WEEK_NUM", "target", "score"]
         ]
-        .sort_values("WEEK_NUM")
         .groupby("WEEK_NUM")[["target", "score"]]
         .apply(
             lambda x: 2*roc_auc_score(x["target"], x["score"])-1
@@ -67,7 +65,6 @@ def slope_part_of_stability(
             :, 
             ["WEEK_NUM", "target", "score"]
         ]
-        .sort_values("WEEK_NUM")
         .groupby("WEEK_NUM")[["target", "score"]]
         .apply(
             lambda x: 2*roc_auc_score(x["target"], x["score"])-1
@@ -91,7 +88,6 @@ def residual_part_of_stability(
             :, 
             ["WEEK_NUM", "target", "score"]
         ]
-        .sort_values("WEEK_NUM")
         .groupby("WEEK_NUM")[["target", "score"]]
         .apply(
             lambda x: 2*roc_auc_score(x["target"], x["score"])-1

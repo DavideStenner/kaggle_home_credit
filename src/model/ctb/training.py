@@ -128,6 +128,9 @@ class CTBTrainer(ModelTrain, CTBInit):
             test_metric_df = test_filtered.select(
                 ["WEEK_NUM", "target"]
             ).collect().to_pandas()
+
+            assert train_metric_df['WEEK_NUM'].is_monotonic_increasing
+            assert test_metric_df['WEEK_NUM'].is_monotonic_increasing
             
             print('Start training')
             model = cb.CatBoostClassifier(
