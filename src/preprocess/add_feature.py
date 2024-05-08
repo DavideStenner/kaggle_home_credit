@@ -705,11 +705,6 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         
     def create_debitcard_1_feature(self) -> None:
         
-        col_to_retrieve_list: list[str] = [
-            'last180dayaveragebalance_704A', 
-            'last180dayturnover_1134A', 'last30dayturnover_651A'
-        ]
-
         list_generic_feature: list[pl.Expr] = self.add_generic_feature(
             self.debitcard_1, 'debitcard_1'
         )
@@ -718,28 +713,6 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             .sort(['case_id', 'num_group1'])
             .group_by('case_id', maintain_order=True)
             .agg(
-                #first info
-                [
-                    (
-                        pl.col(col_)
-                        .filter(pl.col(col_).is_not_null())
-                        .first()
-                        .cast(pl.Float32)
-                        .alias(f'first_not_null_{col_}')
-                    )
-                    for col_ in col_to_retrieve_list
-                ] +
-                #last info
-                [
-                    (
-                        pl.col(col_)
-                        .filter(pl.col(col_).is_not_null())
-                        .last()
-                        .cast(pl.Float32)
-                        .alias(f'last_not_null_{col_}')
-                    )
-                    for col_ in col_to_retrieve_list
-                ] +
                 list_generic_feature
             )
         )
@@ -981,17 +954,10 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 'days30_165L', 'days90_310L', 
                 'days120_123L', 'days180_256L', 'days360_512L'
             ],
-            'credit_history': [
-                'fortoday_1092L', 'forweek_528L', 'formonth_535L', 'forquarter_634L', 
-                'foryear_850L', 'for3years_504L'
-            ],
             'number_results': [
                 'firstquarter_103L', 'secondquarter_766L', 'thirdquarter_1082L',
                 'fourthquarter_440L'
             ],
-            'number_cancelations': [
-                'foryear_818L', 'for3years_584L'
-            ]
         }
         list_operator = []
         for name_feature, list_col in list_utils_col.items():
@@ -1008,19 +974,6 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 for col_1, col_2 in consecutive_pairs(list_col)
             ]
 
-        list_operator += [
-            (
-                pl.col(col_1) -
-                pl.col(col_2)
-            ).dt.total_days().cast(pl.Int32).alias(f'{col_1}_diff_{col_2}')
-            for col_1, col_2 in [
-                ['responsedate_1012D', 'assignmentdate_238D'],
-                #always 0
-                ['responsedate_4527233D', 'assignmentdate_4527235D'],
-                ['responsedate_4917613D', 'assignmentdate_4955616D']
-            ]
-        ]
-
         #ensure no duplicates
         self.static_cb_0 = self.filter_and_select_first(
             data=self.static_cb_0, filter_col=pl.lit(True),
@@ -1030,16 +983,6 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         self.static_cb_0 = self.static_cb_0.with_columns(
             list_operator
         ).with_columns(
-            #coalesce multiple inffo
-            pl.coalesce(
-                pl.col(
-                    [
-                        'responsedate_1012D_diff_assignmentdate_238D',
-                        'responsedate_4917613D_diff_assignmentdate_4955616D',
-                        'responsedate_4527233D_diff_assignmentdate_4527235D',
-                    ]
-                ).alias('coalesce_responsedate_assignmentdateX').cast(pl.Int32)
-            ),
             pl.coalesce(
                 pl.col(
                     [
@@ -1047,29 +990,6 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                     ]
                 ).alias('coalesce_responsedate_D').cast(pl.Int32)
             ),
-            pl.coalesce(
-                pl.col(
-                    [
-                        'assignmentdate_238D', 'assignmentdate_4955616D', 'assignmentdate_4527235D'
-                    ]
-                ).alias('coalesce_assignmentdate_D').cast(pl.Int32)
-            ),
-            (
-                pl.sum_horizontal(
-                    [
-                        'pmtaverage_3A', 'pmtaverage_4527227A', 
-                        'pmtaverage_4955615A'
-                    ]
-                )/3
-            ).alias('mean_pmtaverageX').cast(pl.Float32),
-            (
-                pl.sum_horizontal(
-                    [
-                        'pmtcount_4527229L', 'pmtcount_4955617L', 
-                        'pmtcount_693L', 'pmtscount_423L',
-                    ]
-                )/4
-            ).alias('mean_pmtcountX').cast(pl.UInt16),
             (
                 pl.sum_horizontal(
                     ['contractssum_5085716L', 'pmtssum_45A']
@@ -1084,9 +1004,6 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 'formonth_118L',
                 'forweek_1077L', 'formonth_206L', 'forquarter_1017L', 
                 'responsedate_1012D', 'responsedate_4527233D', 'responsedate_4917613D',
-                'assignmentdate_238D', 'assignmentdate_4527235D', 'assignmentdate_4955616D',
-                'pmtaverage_3A', 'pmtaverage_4527227A', 'pmtaverage_4955615A',
-                'pmtcount_4527229L', 'pmtcount_4955617L', 'pmtcount_693L', 'pmtscount_423L',
                 'contractssum_5085716L', 'pmtssum_45A', 'requesttype_4525192L',
             ]
         )
@@ -1275,10 +1192,9 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             'education_927M',
             'empl_employedfrom_271D',
             'empl_industry_691L', 'familystate_447L',
-            'housetype_905L', 
-            'incometype_1044T', 'isreference_387L', 'language1_981M',
+            'incometype_1044T', 'language1_981M',
             'mainoccupationinc_384A',
-            'role_1084L', 'role_993L',
+            'role_1084L',
             'safeguarantyflag_411L', 'type_25L', 'sex_738L'
         ]
         person_1 = self.filter_and_select_first(
@@ -1299,14 +1215,6 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 "a55475b1", "P33_146_175",
                 "P97_36_170",
             ],
-            'gender_992L': ['M', 'F'],
-            'housingtype_772L': [
-                'OWNED', 'PARENTAL'
-            ],
-            'maritalst_703L': [
-                'MARRIED', 
-                'SINGLE'
-            ],
             'persontype_1072L': [
                 1, 4, 5
             ],
@@ -1323,7 +1231,6 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 'CHILD', 'OTHER_RELATIVE'
             ],
             'role_1084L': ['CL', 'EM', 'PE'],
-            'role_993L': ['FULL'],
             'type_25L': [
                 'HOME_PHONE', 'PRIMARY_MOBILE', 
                 'SECONDARY_MOBILE', 'ALTERNATIVE_PHONE', 
@@ -1337,7 +1244,6 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             ).group_by('case_id').agg(
                 [
                     pl.len().alias('number_rowsX').cast(pl.UInt16),
-                    pl.col('childnum_185L').max().cast(pl.Int16),
                 ] +
                 [
                     (
@@ -1375,10 +1281,9 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                         .cast(pl.UInt16)
                     )
                     for column_name in [
-                        'gender_992L', 'housingtype_772L', 
-                        'maritalst_703L', 'persontype_1072L', 
+                        'persontype_1072L', 
                         'persontype_792L', 'relationshiptoclient_415T', 
-                        'relationshiptoclient_642T', 'role_1084L', 'role_993L', 
+                        'relationshiptoclient_642T', 'role_1084L',
                         'type_25L'
                     ]
                 ]
@@ -1394,10 +1299,9 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                     .cast(pl.UInt16)
                 )
                 for col in [
-                    'gender_992L', 'housingtype_772L', 
-                    'maritalst_703L', 'persontype_1072L', 
+                    'persontype_1072L', 
                     'persontype_792L', 'relationshiptoclient_415T', 
-                    'relationshiptoclient_642T', 'role_1084L', 'role_993L', 
+                    'relationshiptoclient_642T', 'role_1084L',
                     'type_25L'
                 ]
             ]
@@ -1494,7 +1398,6 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
 
         categorical_columns_list = [
             'cacccardblochreas_147M', 'conts_type_509L',
-            'credacc_cards_status_52L'
         ]
         features_list = self.add_generic_feature(self.applprev_2, 'applprev_2')
         
@@ -1620,6 +1523,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             current_dataset_fe_pipeline: callable = getattr(
                 self, f'create_{dataset}_feature'
             )
+            self.filter_useless_columns(dataset=dataset)
             current_dataset_fe_pipeline()
             if dataset != 'base_data':
                 self.create_null_feature(dataset_name=dataset)
