@@ -52,6 +52,10 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             col for col in categorical_columns_list
             if self.hashed_missing_label in self.mapper_mask[dataset_name][col].keys()
         ]
+        categorical_columns_without_hashed_null: list[str] = [
+            col for col in categorical_columns_list
+            if self.hashed_missing_label not in self.mapper_mask[dataset_name][col].keys()
+        ]
         #numerical expression
         base_numerical_expr_list: list[pl.Expr] = [
             (
@@ -149,69 +153,129 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         )
         
         if 'num_group2' not in data.columns:
-            first_expression_list: list[pl.Expr] = [
-                (
-                    pl.col(col)
-                    .filter(pl.col('num_group1')==0)
-                    .first()
-                    .alias(f'first_{col}')
-                    .cast(
-                        (
-                            pl.Date if col[-1] == 'D'
-                            else mapper_column_cast[col]
-                        )
+            first_expression_list: list[pl.Expr] = (
+                [
+                    (
+                        pl.col(col)
+                        .filter(pl.col('num_group1')==pl.col('num_group1').filter(pl.col(col).is_not_null()).min())
+                        .first()
+                        .alias(f'first_{col}')
+                        .cast(mapper_column_cast[col])
                     )
-                )
-                for col in categorical_columns_list + numerical_columns_list
-            ]
+                    for col in numerical_columns_list + categorical_columns_without_hashed_null
+                ] +
+                [
+                    (
+                        pl.col(col)
+                        .filter(
+                            pl.col('num_group1')==
+                            pl.col('num_group1').filter(
+                                (pl.col(col).is_not_null()) &
+                                (pl.col(col) != self.mapper_mask[dataset_name][col][self.hashed_missing_label])
+                            ).min()
+                        )
+                        .first()
+                        .alias(f'first_{col}')
+                        .cast(mapper_column_cast[col])
+                    )
+                    for col in categorical_columns_with_hashed_null
+                ]
+            )
 
-            last_expression_list: list[pl.Expr] = [
-                (
-                    pl.col(col)
-                    .filter(pl.col('num_group1')==pl.col('num_group1').filter(pl.col(col).is_not_null()).max())
-                    .last()
-                    .alias(f'last_{col}')
-                    .cast(
-                        (
-                            pl.Date if col[-1] == 'D'
-                            else mapper_column_cast[col]
-                        )
+            last_expression_list: list[pl.Expr] = (
+                [
+                    (
+                        pl.col(col)
+                        .filter(pl.col('num_group1')==pl.col('num_group1').filter(pl.col(col).is_not_null()).max())
+                        .last()
+                        .alias(f'last_{col}')
+                        .cast(mapper_column_cast[col])
                     )
-                )
-                for col in categorical_columns_list + numerical_columns_list
-            ]
+                    for col in numerical_columns_list + categorical_columns_without_hashed_null
+                ] +
+                [
+                    (
+                        pl.col(col)
+                        .filter(
+                            pl.col('num_group1')==
+                            pl.col('num_group1').filter(
+                                (pl.col(col).is_not_null()) &
+                                (pl.col(col) != self.mapper_mask[dataset_name][col][self.hashed_missing_label])
+                            ).max()
+                        )
+                        .last()
+                        .alias(f'last_{col}')
+                        .cast(mapper_column_cast[col])
+                    )
+                    for col in categorical_columns_with_hashed_null
+                ]
+            )
         else:
-            first_expression_list: list[pl.Expr] = [
-                (
-                    pl.col(col)
-                    .filter(pl.col('num_group2')==0)
-                    .first()
-                    .alias(f'first_{col}')
-                    .cast(
-                        (
-                            pl.Date if col[-1] == 'D'
-                            else mapper_column_cast[col]
+            first_expression_list: list[pl.Expr] = (
+                [
+                    (
+                        pl.col(col)
+                        .filter(
+                            pl.col('num_group2')==
+                            pl.col('num_group2').filter(pl.col(col).is_not_null()).min()
                         )
+                        .first()
+                        .alias(f'first_{col}')
+                        .cast(mapper_column_cast[col])
                     )
-                )
-                for col in categorical_columns_list + numerical_columns_list
-            ]
+                    for col in numerical_columns_list + categorical_columns_without_hashed_null
+                ] +
+                [
+                    (
+                        pl.col(col)
+                        .filter(
+                            pl.col('num_group2')==
+                            pl.col('num_group2').filter(
+                                    (pl.col(col).is_not_null()) &
+                                    (pl.col(col) != self.mapper_mask[dataset_name][col][self.hashed_missing_label])
+                            ).min()
+                        )
+                        .first()
+                        .alias(f'first_{col}')
+                        .cast(mapper_column_cast[col])
+                    )
+                    for col in categorical_columns_with_hashed_null
+                ]
+            )
+                
 
-            last_expression_list: list[pl.Expr] = [
-                (
-                    pl.col(col)
-                    .filter(pl.col('num_group2')==pl.col('num_group2').filter(pl.col(col).is_not_null()).max())
-                    .last()
-                    .alias(f'last_{col}')
-                    .cast(
-                        (
-                            pl.Date if col[-1] == 'D'
-                            else mapper_column_cast[col]
+            last_expression_list: list[pl.Expr] = (
+                [
+                    (
+                        pl.col(col)
+                        .filter(
+                            pl.col('num_group2')==
+                            pl.col('num_group2').filter(pl.col(col).is_not_null()).max()
                         )
+                        .last()
+                        .alias(f'last_{col}')
+                        .cast(mapper_column_cast[col])
                     )
-                )
-                for col in categorical_columns_list + numerical_columns_list
-            ]
+                    for col in numerical_columns_list + categorical_columns_without_hashed_null
+                ] +
+                [
+                    (
+                        pl.col(col)
+                        .filter(
+                            pl.col('num_group2')==
+                            pl.col('num_group2').filter(
+                                    (pl.col(col).is_not_null()) &
+                                    (pl.col(col) != self.mapper_mask[dataset_name][col][self.hashed_missing_label])
+                            ).max()
+                        )
+                        .last()
+                        .alias(f'last_{col}')
+                        .cast(mapper_column_cast[col])
+                    )
+                    for col in categorical_columns_with_hashed_null
+                ]
+            )
+
             
         result_expr_list: list[pl.Expr] = (
             numerical_expr_list +
@@ -1649,7 +1713,8 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         
         operation_aggregation_list: list[pl.Expr] = (
             [
-                pl.col(col_name).filter(pl.col('num_group1')==0)
+                pl.col(col_name)
+                .filter(pl.col('num_group1')==pl.col('num_group1').filter(pl.col(col_name).is_not_null()).min())
                 .first()
                 for col_name in [f'first_{col}' for col in categorical_columns_list]
             ] +
