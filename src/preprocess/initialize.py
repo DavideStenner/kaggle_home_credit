@@ -30,7 +30,7 @@ class PreprocessInit(BaseInit):
             config_dict['DEPTH_0'] + config_dict['DEPTH_1'] + config_dict['DEPTH_2']
         )
         self.numerical_aggregator: list[Callable[..., pl.Expr]] = [
-            pl.min, pl.max, pl.mean, pl.std, pl.sum
+            pl.max, pl.mean, pl.std, pl.sum
         ]
         self._initialize_empty_dataset()
         self._correct_list_date_col()
@@ -71,7 +71,7 @@ class PreprocessInit(BaseInit):
             return pl.col(col).filter(pl_filter).median()
                 
         self.numerical_filter_aggregator: list[Callable[..., pl.Expr]] = [
-            filtered_min, filtered_max, filtered_mean, filtered_std, filtered_sum
+            filtered_max, filtered_mean, filtered_std, filtered_sum
         ]
         
     def _correct_list_date_col(self):
