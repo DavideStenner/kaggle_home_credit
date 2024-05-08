@@ -154,35 +154,36 @@ def get_mapper_numerical(
     return mapper_column
 
 def get_mapper_statistic(
-        data: Union[pl.LazyFrame, pl.DataFrame],
+        data: pl.DataFrame, base_data: pl.DataFrame,
         mapper_mask_col: Mapping[str, int], missing_info_hashed: str = 'a55475b1'
     ) -> Mapping[str, int]:
 
     mapper_statistic: Mapping[str, Mapping[str, float]] = {}
     categorical_column_list: list[str] = mapper_mask_col.keys()
     
-    lazy_mode = isinstance(data, pl.LazyFrame)
-
-    for col in data.columns:
+    column_to_analyze: list[str] = data.columns
+    data = data.join(
+        base_data, 
+        on='case_id', how='left'
+    )
+    for col in column_to_analyze:
         
-        null_values = (
-            (
-                data.select(pl.col(col).is_null().mean()).collect().item()
-            )
-            if lazy_mode
-            else data.select(pl.col(col).is_null().mean()).item()
+        null_values = data.select(pl.col(col).is_null().mean()).item()
+        
+        null_values_by_week: float = (
+            data.group_by('WEEK_NUM').agg(
+                (pl.col(col).is_null().mean()==1).cast(pl.Int64)
+            ).select(pl.col(col).sum()).item()
         )
+        
         mapper_statistic[col] = {
-            'pct_null': null_values
+            'pct_null': null_values,
+            'null_values_by_week': null_values_by_week
         }
 
         if col in categorical_column_list:
             n_unique_values = (
-                (
-                    data.select(pl.col(col).n_unique()).collect().item()
-                )
-                if lazy_mode
-                else data.select(pl.col(col).n_unique()).item()
+                data.select(pl.col(col).n_unique()).item()
             )
             mapper_statistic[col].update(
                 {
@@ -190,21 +191,26 @@ def get_mapper_statistic(
                 }
             )
             if missing_info_hashed in mapper_mask_col[col].keys():
-                hashed_values = (
+                hashed_values_by_week: float = (
                     (
-                        data.select(
-                            (pl.col(col) == mapper_mask_col[col][missing_info_hashed]).mean()
-                        )
-                        .collect().item()
+                        data.group_by('WEEK_NUM').agg(
+                            (
+                                (pl.col(col) == mapper_mask_col[col][missing_info_hashed])
+                                .mean()==1
+                            ).cast(pl.Int64)
+                        ).select(pl.col(col).sum()).item()
                     )
-                    if lazy_mode
-                    else data.select(
+                )
+
+                hashed_values = (
+                    data.select(
                         (pl.col(col) == mapper_mask_col[col][missing_info_hashed]).mean()
                     ).item()
                 )
                 mapper_statistic[col].update(
                     {
                         'hashed_pct': hashed_values,
+                        'hashed_values_by_week': hashed_values_by_week
                     }
                 )
         
@@ -226,10 +232,22 @@ def get_mapping_info(
     mapper_mask_all_file = {}
     mapper_statistic_all_file = {}
     
+    base_data = (
+        read_multiple_parquet(
+            f'*/train_base*.parquet',
+            root_dir=config['PATH_ORIGINAL_DATA'], 
+            scan=True
+        )
+        .select(pl.col('case_id', 'date_decision', 'WEEK_NUM'))
+        .with_columns(pl.col('case_id').cast(pl.Int32))
+        .unique()
+        .collect()
+    )
+
     for file_name in file_name_list:
         logger.info(f'\nStarting {file_name}\n')
         data = read_multiple_parquet(
-            f'*/*_{file_name}*.parquet',
+            f'*/train_{file_name}*.parquet',
             root_dir=config['PATH_ORIGINAL_DATA'], 
             scan=False
         )
@@ -275,7 +293,9 @@ def get_mapping_info(
         )
         mapper_col_all_file[file_name] = mapper_column
         mapper_mask_all_file[file_name] = mapper_mask_col
-        mapper_statistic_all_file[file_name] = get_mapper_statistic(data=data, mapper_mask_col=mapper_mask_col)
+        mapper_statistic_all_file[file_name] = get_mapper_statistic(
+            data=data, mapper_mask_col=mapper_mask_col, base_data=base_data
+        )
 
     with open(
         os.path.join(
