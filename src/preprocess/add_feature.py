@@ -375,49 +375,42 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         )
 
     def create_credit_bureau_a_2_feature(self) -> None:
+        date_features: list[str] = [
+            'pmts_month_706T', 'pmts_year_1139T',
+            'pmts_month_158T', 'pmts_year_507T'
+        ]
         numerical_features: list[str] = [
             'collater_valueofguarantee_1124L', 'collater_valueofguarantee_876L',
             'pmts_dpd_1073P', 'pmts_dpd_303P',
             'pmts_overdue_1140A', 'pmts_overdue_1152A'
         ]
-
-        self.credit_bureau_a_2 = self.credit_bureau_a_2.select(
-            ['case_id', 'num_group1'] +
-            [
-                pl.col(col).cast(pl.Float32).alias(col)
-                for col in numerical_features
-            ]
+        categorical_features: list[str] = [
+            'subjectroles_name_541M', 'subjectroles_name_838M'
+        ]
+        self.credit_bureau_a_2 = (
+            self.credit_bureau_a_2.select(
+                ['case_id', 'num_group1', 'num_group2'] +
+                numerical_features + categorical_features
+            ).filter(
+                (
+                    pl.sum_horizontal(pl.col(numerical_features).is_null()) <= len(numerical_features)
+                ) |
+                (
+                    (pl.col('subjectroles_name_541M') == self.mapper_mask['credit_bureau_a_2']['subjectroles_name_541M'][self.hashed_missing_label]) &
+                    (pl.col('subjectroles_name_838M') == self.mapper_mask['credit_bureau_a_2']['subjectroles_name_838M'][self.hashed_missing_label])                  
+                )
+            )
+        ).with_columns(
+            pl.date(pl.col('pmts_year_1139T'), pl.col('pmts_month_706T'), 1).cast(pl.Date).alias('pmt_date_active_D'),
+            pl.date(pl.col('pmts_month_158T'), pl.col('pmts_year_507T'), 1).cast(pl.Date).alias('pmt_date_closed_D')
         )
-        
-        self.credit_bureau_a_2 = self.credit_bureau_a_2.group_by(
-            'case_id'
-        ).agg(
-            [
-                pl.col('num_group1').max()
-                .cast(pl.UInt32)
-                .alias('max_num_group1'),
-                pl.len()
-                .cast(pl.UInt32)
-                .alias('num_rowsX')
-            ] +
-            [
-                (
-                    pl.col(num_col)
-                    .max()
-                    .cast(pl.Float32)
-                    .alias(f'max_{num_col}')
-                )
-                for num_col in numerical_features
-            ] +
-            [
-                (
-                    pl.col(num_col)
-                    .min()
-                    .cast(pl.Float32)
-                    .alias(f'min_{num_col}')
-                )
-                for num_col in numerical_features
-            ]
+        list_generic_feature: list[pl.Expr] = self.add_generic_feature(
+            self.credit_bureau_a_2, 'credit_bureau_a_2'
+        )
+        self.credit_bureau_a_2 = (
+            self.credit_bureau_a_2
+            .group_by('case_id')
+            .agg(list_generic_feature)
         )
 
         
