@@ -1,12 +1,7 @@
-import warnings
-import numpy as np
 import polars as pl
 
 from typing import Union, Dict, Optional
 from itertools import product, chain
-from functools import partial
-
-from src.utils.other import change_name_with_type
 from src.base.preprocess.add_feature import BaseFeature
 from src.preprocess.initialize import PreprocessInit
 from src.utils.dtype import TYPE_MAPPING
