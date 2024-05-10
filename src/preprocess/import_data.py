@@ -47,14 +47,37 @@ class PreprocessImport(BaseImport, PreprocessInit):
             root_dir=self.config_dict['PATH_ORIGINAL_DATA'], 
             scan=True
         )
+        filter_credit_bureau_a_2: pl.Expr = (
+            #order of top > 0
+            (
+                (pl.col('pmts_dpd_303P') > 0) |
+                (pl.col('pmts_overdue_1152A') > 0) |
+                (pl.col('collater_valueofguarantee_876L') > 0) |
+                (pl.col('collater_valueofguarantee_1124L') > 0) |
+                (pl.col('pmts_overdue_1140A') > 0) |
+                (pl.col('pmts_dpd_1073P') > 0)
+            ) |
+            (
+                pl.col('subjectroles_name_541M') != 
+                self.hashed_missing_label
+            ) |
+            (
+                pl.col('subjectroles_name_838M') != 
+                self.hashed_missing_label          
+            )
+        )
         for dataset in  self.used_dataset:
+            filter_pl = (
+                filter_credit_bureau_a_2 if dataset == 'credit_bureau_a_2'
+                else None
+            )
             setattr(
                 self, 
                 dataset, 
                 read_multiple_parquet(
                     self.path_file_pattern.format(pattern_file=dataset),
                     root_dir=self.config_dict['PATH_ORIGINAL_DATA'], 
-                    scan=True
+                    scan=True, filter_pl=filter_pl
                 )
             )
         
