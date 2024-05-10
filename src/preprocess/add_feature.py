@@ -1518,12 +1518,14 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             current_dataset
         )
 
-    def create_feature(self) -> None:        
+    def create_feature(self) -> None:    
         for dataset in self.used_dataset:
             current_dataset_fe_pipeline: callable = getattr(
                 self, f'create_{dataset}_feature'
             )
+            
             self.filter_useless_columns(dataset=dataset)
+            
             current_dataset_fe_pipeline()
             if dataset != 'base_data':
                 self.create_null_feature(dataset_name=dataset)
