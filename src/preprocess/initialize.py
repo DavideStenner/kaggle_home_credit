@@ -29,8 +29,11 @@ class PreprocessInit(BaseInit):
         self.used_dataset: list[str] = (
             config_dict['DEPTH_0'] + config_dict['DEPTH_1'] + config_dict['DEPTH_2']
         )
+        def minnozero(col: str) -> pl.Expr:
+            return pl.col(col).filter(pl.col(col)!=0).min()
+            
         self.numerical_aggregator: list[Callable[..., pl.Expr]] = [
-            pl.max, pl.mean, pl.std, pl.sum
+            minnozero, pl.max, pl.mean, pl.std, pl.sum
         ]
         self._initialize_empty_dataset()
         self._correct_list_date_col()
@@ -53,7 +56,10 @@ class PreprocessInit(BaseInit):
 
     def _initialize_filter_expression(self) -> None:
         def filtered_min(col: str, pl_filter: pl.Expr) -> pl.Expr:
-            return pl.col(col).filter(pl_filter).min()
+            return pl.col(col).filter(
+                (pl.col(col)!=0) &
+                pl_filter
+            ).min()
         
         def filtered_max(col: str, pl_filter: pl.Expr) -> pl.Expr:
             return pl.col(col).filter(pl_filter).max()
@@ -71,7 +77,7 @@ class PreprocessInit(BaseInit):
             return pl.col(col).filter(pl_filter).median()
                 
         self.numerical_filter_aggregator: list[Callable[..., pl.Expr]] = [
-            filtered_max, filtered_mean, filtered_std, filtered_sum
+            filtered_min, filtered_max, filtered_mean, filtered_std, filtered_sum
         ]
         
     def _correct_list_date_col(self):
