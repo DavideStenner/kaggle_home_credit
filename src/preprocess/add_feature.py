@@ -211,8 +211,19 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                     (
                         pl.col(col)
                         .filter(
-                            pl.col('num_group2')==
-                            pl.col('num_group2').filter(pl.col(col).is_not_null()).min()
+                            (
+                                (
+                                    pl.col('num_group1').cast(pl.UInt64) * 100_000 + 
+                                    pl.col('num_group2').cast(pl.UInt64)
+                                )==
+                                (
+                                    (
+                                        pl.col('num_group1').cast(pl.UInt64) * 100_000 + 
+                                        pl.col('num_group2').cast(pl.UInt64)
+                                    )
+                                    .filter(pl.col(col).is_not_null()).min()
+                                )
+                            )
                         )
                         .first()
                         .alias(f'first_{col}')
@@ -224,11 +235,22 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                     (
                         pl.col(col)
                         .filter(
-                            pl.col('num_group2')==
-                            pl.col('num_group2').filter(
+                            (
+                                (
+                                    pl.col('num_group1').cast(pl.UInt64) * 100_000 + 
+                                    pl.col('num_group2').cast(pl.UInt64)
+                                )==
+                                (
+                                    (
+                                        pl.col('num_group1').cast(pl.UInt64) * 100_000 + 
+                                        pl.col('num_group2').cast(pl.UInt64)
+                                    )
+                                    .filter(
                                     (pl.col(col).is_not_null()) &
                                     (pl.col(col) != self.mapper_mask[dataset_name][col][self.hashed_missing_label])
-                            ).min()
+                                    ).min()
+                                )
+                            )
                         )
                         .first()
                         .alias(f'first_{col}')
@@ -244,8 +266,19 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                     (
                         pl.col(col)
                         .filter(
-                            pl.col('num_group2')==
-                            pl.col('num_group2').filter(pl.col(col).is_not_null()).max()
+                            (
+                                (
+                                    pl.col('num_group1').cast(pl.UInt64) * 100_000 + 
+                                    pl.col('num_group2').cast(pl.UInt64)
+                                )==
+                                (
+                                    (
+                                        pl.col('num_group1').cast(pl.UInt64) * 100_000 + 
+                                        pl.col('num_group2').cast(pl.UInt64)
+                                    )
+                                    .filter(pl.col(col).is_not_null()).max()
+                                )
+                            )
                         )
                         .last()
                         .alias(f'last_{col}')
@@ -257,11 +290,22 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                     (
                         pl.col(col)
                         .filter(
-                            pl.col('num_group2')==
-                            pl.col('num_group2').filter(
+                            (
+                                (
+                                    pl.col('num_group1').cast(pl.UInt64) * 100_000 + 
+                                    pl.col('num_group2').cast(pl.UInt64)
+                                )==
+                                (
+                                    (
+                                        pl.col('num_group1').cast(pl.UInt64) * 100_000 + 
+                                        pl.col('num_group2').cast(pl.UInt64)
+                                    )
+                                    .filter(
                                     (pl.col(col).is_not_null()) &
                                     (pl.col(col) != self.mapper_mask[dataset_name][col][self.hashed_missing_label])
-                            ).max()
+                                    ).max()
+                                )
+                            )
                         )
                         .last()
                         .alias(f'last_{col}')
