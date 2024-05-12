@@ -144,6 +144,11 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 )
                 for col in ['num_group1', 'num_group2']
                 if col in data.columns
+            ] +
+            [
+                pl.count()
+                .alias(f'count_all_X')
+                .cast(pl.UInt16)
             ]
         )
         
