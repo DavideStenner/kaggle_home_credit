@@ -320,7 +320,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 ]
             )
 
-            
+
         result_expr_list: list[pl.Expr] = (
             numerical_expr_list +
             categorical_expr_list +
@@ -387,20 +387,10 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 1
             ).cast(pl.Date).alias('dpdmaxdate_closed_D'),
             pl.date(
-                pl.col('dpdmaxdateyear_596T'),
-                pl.col('dpdmaxdatemonth_89T'),
-                1
-            ).cast(pl.Date).alias('dpdmaxdate_active_D'),
-            pl.date(
                 pl.col('overdueamountmaxdateyear_994T'),
                 pl.col('overdueamountmaxdatemonth_284T'),
                 1
             ).cast(pl.Date).alias('overdueamountmaxdate_closed_D'),
-            pl.date(
-                pl.col('overdueamountmaxdateyear_2T'),
-                pl.col('overdueamountmaxdatemonth_365T'),
-                1
-            ).cast(pl.Date).alias('overdueamountmaxdate_active_D')
         ).drop(
             'refreshdate_3813885D',
             'dpdmaxdatemonth_442T', 'dpdmaxdatemonth_89T',
@@ -1063,19 +1053,6 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         
         self.static_cb_0 = self.static_cb_0.with_columns(
             list_operator
-        ).with_columns(
-            pl.coalesce(
-                pl.col(
-                    [
-                        'responsedate_1012D', 'responsedate_4917613D', 'responsedate_4527233D'
-                    ]
-                ).alias('coalesce_responsedate_D').cast(pl.Int32)
-            ),
-            (
-                pl.sum_horizontal(
-                    ['contractssum_5085716L', 'pmtssum_45A']
-                )/2
-            ).alias('mean_pmtssum').cast(pl.Float32)
         ).drop(
             [
                 'birthdate_574D', 'dateofbirth_337D', 'dateofbirth_342D',
@@ -1084,8 +1061,9 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 'forweek_601L', 'forquarter_462L', 'foryear_618L', 
                 'formonth_118L',
                 'forweek_1077L', 'formonth_206L', 'forquarter_1017L', 
-                'responsedate_1012D', 'responsedate_4527233D', 'responsedate_4917613D',
-                'contractssum_5085716L', 'pmtssum_45A', 'requesttype_4525192L',
+                'pmtaverage_4955615A',
+                'pmtscount_423L',
+                'requesttype_4525192L',
             ]
         )
 
@@ -1127,10 +1105,6 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 (
                     pl.col('num_group1').max()
                     .cast(pl.UInt16).alias('num_deductionX')
-                ),
-                (
-                    pl.col('name_4527232M').n_unique()
-                    .cast(pl.UInt16).alias('number_workerX')
                 ),
                 (
                     pl.col('recorddate_4527225D').first()
@@ -1177,10 +1151,6 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 (
                     pl.col('num_group1').max()
                     .cast(pl.UInt16).alias('num_deductionX')
-                ),
-                (
-                    pl.col('name_4917606M').n_unique()
-                    .cast(pl.UInt16).alias('number_workerX')
                 ),
                 (
                     pl.col('deductiondate_4917603D').min()
@@ -1242,10 +1212,6 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                     .cast(pl.UInt16).alias('num_deductionX')
                 ),
                 (
-                    pl.col('employername_160M').n_unique()
-                    .cast(pl.UInt16).alias('number_workerX')
-                ),
-                (
                     pl.col('processingdate_168D').min()
                     .cast(pl.Date)
                     .alias('min_processingdate_168D')
@@ -1270,10 +1236,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             'case_id',
             'birth_259D', 
             'contaddr_matchlist_1032L', 'contaddr_smempladdr_334L', 
-            'education_927M',
-            'empl_employedfrom_271D',
-            'empl_industry_691L', 'familystate_447L',
-            'incometype_1044T', 'language1_981M',
+            'incometype_1044T',
             'mainoccupationinc_384A',
             'role_1084L',
             'safeguarantyflag_411L', 'type_25L', 'sex_738L'
@@ -1282,35 +1245,13 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             data=self.person_1,
             filter_col=pl.col('num_group1')==0,
             col_list=select_col_group_1
-        ).with_columns(
-            (
-                pl.col('empl_employedfrom_271D') - 
-                pl.col('birth_259D')
-            ).dt.total_days()
-            .alias('empl_employedfrom_271D_diff_birth_259D')
-            .cast(pl.Int32)
         )
 
         dict_agg_info: Dict[str, list[str]] = {
-            'education_927M': [
-                "a55475b1", "P33_146_175",
-                "P97_36_170",
-            ],
             'persontype_1072L': [
                 1, 4, 5
             ],
             'persontype_792L': [4, 5],
-            'relationshiptoclient_415T': [
-                'SPOUSE', 'OTHER_RELATIVE', 
-                'COLLEAGUE', 'GRAND_PARENT',
-                'NEIGHBOR', 'OTHER', 'PARENT',
-                'SIBLING', 'CHILD', 'FRIEND'
-            ],
-            'relationshiptoclient_642T': [
-                'SIBLING', 'SPOUSE', 'OTHER', 'COLLEAGUE', 
-                'PARENT', 'FRIEND', 'NEIGHBOR', 'GRAND_PARENT', 
-                'CHILD', 'OTHER_RELATIVE'
-            ],
             'role_1084L': ['CL', 'EM', 'PE'],
             'type_25L': [
                 'HOME_PHONE', 'PRIMARY_MOBILE', 
@@ -1363,8 +1304,8 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                     )
                     for column_name in [
                         'persontype_1072L', 
-                        'persontype_792L', 'relationshiptoclient_415T', 
-                        'relationshiptoclient_642T', 'role_1084L',
+                        'persontype_792L', 
+                        'role_1084L',
                         'type_25L'
                     ]
                 ]
@@ -1381,8 +1322,8 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 )
                 for col in [
                     'persontype_1072L', 
-                    'persontype_792L', 'relationshiptoclient_415T', 
-                    'relationshiptoclient_642T', 'role_1084L',
+                    'persontype_792L',  
+                    'role_1084L',
                     'type_25L'
                 ]
             ]
@@ -1425,7 +1366,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             self.applprev_1, 'applprev_1'
         )
         date_col_diff: list[str] = [
-            'dateactivated_425D', 'dtlastpmt_581D', 
+            'dateactivated_425D',
             'dtlastpmtallstes_3545839D', 
             'employedfrom_700D', 'firstnonzeroinstldate_307D'
         ]
@@ -1478,7 +1419,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
     def create_applprev_2_feature(self) -> None:
 
         categorical_columns_list = [
-            'cacccardblochreas_147M', 'conts_type_509L',
+            'conts_type_509L',
         ]
         features_list = self.add_generic_feature(self.applprev_2, 'applprev_2')
         
@@ -1511,14 +1452,6 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 chain(
                     *[
                         (
-                            [
-                                pl.col(f'not_hashed_missing_mode_cacccardblochreas_147M')
-                                .filter(filter_pl)
-                                .drop_nulls()
-                                .mode()
-                                .sort().first()
-                                .alias(f'{name_pl}_mode_not_hashed_missing_mode_cacccardblochreas_147M'),
-                            ] +
                             [
                                 pl_operator(col_name, filter_pl)
                                 .alias(f'{pl_operator.__name__}_{name_pl}_{col_name}')
@@ -1728,21 +1661,6 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                     pl.sum_horizontal(
                         pl.col(
                             [
-                                'tax_registry_a_1_number_workerX',
-                                'tax_registry_b_1_number_workerX',
-                                'tax_registry_c_1_number_workerX'
-                            ]
-                        )/3
-                    )
-                    .alias(f'tax_registry_1_number_workerX')
-                    .cast(pl.Float32)
-                )
-            ] +
-            [
-                (
-                    pl.sum_horizontal(
-                        pl.col(
-                            [
                                 'tax_registry_b_1_range_deductiondate_4917603D',
                                 'tax_registry_c_1_range_processingdate_168D'
                             ]
@@ -1797,10 +1715,11 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         )
 
     def filter_useless_columns(self, dataset: str) -> None:
-        self.filter_empty_columns(dataset=dataset)
-        self.filter_sparse_categorical(dataset=dataset)
-        if dataset != 'person_1':
+        if dataset not in self.config_dict['DEPTH_2']:
+            self.filter_empty_columns(dataset=dataset)
             self.filter_only_hashed_categorical(dataset=dataset)
+
+        self.filter_sparse_categorical(dataset=dataset)
         
     def filter_only_hashed_categorical(self, dataset: str) -> None:
         data: pl.LazyFrame = getattr(self, dataset)
@@ -1812,8 +1731,8 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             if col not in self.special_column_list:
                 if 'hashed_pct' in self.mapper_statistic[dataset][col].keys():
                     hashed_pct = self.mapper_statistic[dataset][col]['hashed_pct']
-                    pct_null = self.mapper_statistic[dataset][col]['pct_null']
-                    if ((hashed_pct + pct_null) > 0.5):
+
+                    if (hashed_pct > 0.7):
                         data = data.drop(col)
         
         setattr(
@@ -1841,7 +1760,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         for col in data.columns:
             if col not in self.special_column_list:
                 pct_null = self.mapper_statistic[dataset][col]['pct_null']
-                if pct_null > 0.7:
+                if (pct_null > 0.7):
                     data = data.drop(col)
         
         setattr(
