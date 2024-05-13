@@ -736,7 +736,12 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         )
         aggregation_level_group_list += (
             [
-                pl.col(col_name).first()
+                pl.col(col_name)
+                .filter(
+                    (pl.col(col_name).is_not_null()) &
+                    (pl.col(col_name) != 0)
+                )
+                .first()
                 .alias(f'first_{col_name}')
                 for col_name in numeric_columns
             ] +
@@ -757,59 +762,8 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 [
                     'case_id', 'num_group1', 'num_group2'
                 ]
-            ).group_by(by=['case_id', 'num_group1'], maintain_order=True).agg(
+            ).group_by(by=['case_id'], maintain_order=True).agg(
                 aggregation_level_group_list
-            )
-        )
-        #aggregate contract for each case id
-        self.credit_bureau_b_2 = (
-            self.credit_bureau_b_2
-            .group_by('case_id')
-            .agg(
-                [
-                    pl.col('num_group1').max().alias('num_contract_X').cast(pl.UInt32),
-                ] +
-                [
-                    pl.col(col_name).filter(pl.col('num_group1')==0).first()
-                    for col_name in [f'first_{col}' for col in numeric_columns]
-                ] +
-                [
-                    pl.col(col_name)
-                    .filter(
-                        pl.col('num_group1')==
-                        pl.col('num_group1').filter(
-                            (pl.col(col_name).is_not_null()) &
-                            (pl.col(col_name) != 0)
-                        ).max()
-                    )
-                    .last()
-                    for col_name in [f'last_{col}' for col in numeric_columns]
-                ] +
-                [
-                    pl_operation(col_name)
-                    .alias(f'{pl_operation.__name__}_over_group2_{col_name}')
-                    for pl_operation, col_name in product(
-                        self.numerical_aggregator,
-                        [
-                            col 
-                            for col in self.credit_bureau_b_2.columns 
-                            if (col not in self.special_column_list) & (col[-1]!='D')
-                        ]
-                    )
-                ] +
-                [
-                    pl_operation(col_name)
-                    .alias(f'{pl_operation.__name__}_over_group2_{col_name}')
-                    .cast(pl.Date)
-                    for pl_operation, col_name in product(
-                        self.date_aggregator + [pl.mean],
-                        [
-                            col 
-                            for col in self.credit_bureau_b_2.columns 
-                            if (col not in self.special_column_list) & (col[-1]=='D')
-                        ]
-                    )
-                ]
             )
         )
         
