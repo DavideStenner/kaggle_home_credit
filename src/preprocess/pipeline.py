@@ -56,7 +56,7 @@ class PreprocessPipeline(BasePipeline, PreprocessImport, PreprocessAddFeature, P
         self.import_all()
            
         #for debug
-        self.test_all_import()
+        self.base_data = self.base_data.head(1_000)
         
         self.data = None
         self.create_feature()
@@ -64,7 +64,8 @@ class PreprocessPipeline(BasePipeline, PreprocessImport, PreprocessAddFeature, P
         self.merge_all()
 
         self.add_additional_feature()
-
+        self.data = self.data.collect()
+        
     @property
     def feature_list(self) -> Tuple[str]:
         self.data = None
