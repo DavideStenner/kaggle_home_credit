@@ -289,7 +289,7 @@ class CTBExplainer(CTBInit):
         
         #add information about basic aggregation to see which is the best
         aggregation_list: list[str] = [
-            'min', 'max', 'mean', 'std', 'sum', 'numerical_range',
+            'minnozero', 'max', 'mean', 'std', 'sum', 'numerical_range', 
             'filtered_mean', 'filtered_min', 'filtered_max',
             'not_hashed_missing_mode', 'mode', 'first', 'last', 'n_unique',
             'count_not_missing_not_hashednull', 'count_not_missing',
