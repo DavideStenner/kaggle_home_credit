@@ -431,30 +431,120 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         categorical_features: list[str] = [
             'subjectroles_name_541M', 'subjectroles_name_838M'
         ]
+        combination_numeric_date: list[list[str]] = [
+            ['pmt_date_active_D', 'collater_valueofguarantee_1124L'],
+            ['pmt_date_active_D', 'pmts_dpd_1073P'],
+            ['pmt_date_active_D', 'pmts_overdue_1140A'],
+            ['pmt_date_closed_D', 'collater_valueofguarantee_876L'],
+            ['pmt_date_closed_D', 'pmts_dpd_303P'],
+            ['pmt_date_closed_D', 'pmts_overdue_1152A']
+        ]
         self.credit_bureau_a_2 = (
             self.credit_bureau_a_2.select(
                 ['case_id', 'num_group1', 'num_group2'] +
-                numerical_features + categorical_features
-            ).filter(
-                (
-                    pl.sum_horizontal(pl.col(numerical_features).is_null()) <= len(numerical_features)
-                ) |
-                (
-                    (pl.col('subjectroles_name_541M') == self.mapper_mask['credit_bureau_a_2']['subjectroles_name_541M'][self.hashed_missing_label]) &
-                    (pl.col('subjectroles_name_838M') == self.mapper_mask['credit_bureau_a_2']['subjectroles_name_838M'][self.hashed_missing_label])                  
+                numerical_features + categorical_features + date_features
+            ).with_columns(
+                pl.date(pl.col('pmts_year_1139T'), pl.col('pmts_month_706T'), 1).cast(pl.Date).alias('pmt_date_active_D'),
+                pl.date(pl.col('pmts_month_158T'), pl.col('pmts_year_507T'), 1).cast(pl.Date).alias('pmt_date_closed_D')
+            ).drop(date_features)
+        )
+        date_features = ['pmt_date_active_D', 'pmt_date_closed_D']
+
+        operation_aggregation_list = (
+            list(
+                chain(
+                    *[
+                        (
+                            [
+                                pl.col('num_group1')
+                                .filter(filter_pl)
+                                .count()
+                                .alias(f'{name_pl}_count_all_X')
+                                .cast(pl.UInt16)
+                            ] +
+                            #max date over feature max
+                            [
+                                pl.col(date_).filter(
+                                    (filter_pl) &
+                                    (pl.col(feature_) == pl.col(feature_).max())
+                                ).max().alias(f'{name_pl}_{date_}_{feature_}_max_D')
+                                for date_, feature_ in combination_numeric_date
+                            ] +
+                            #min date over min feature
+                            [
+                                pl.col(date_).filter(
+                                    (filter_pl) &
+                                    (pl.col(feature_) == pl.col(feature_).min())
+                                ).min().alias(f'{name_pl}_{date_}_{feature_}_min_D')
+                                for date_, feature_ in combination_numeric_date
+                            ] +
+                            #numerical aggregator
+                            [
+                                pl_operator(col_name, filter_pl)
+                                .alias(f'{pl_operator.__name__}_{name_pl}_{col_name}')
+                                for pl_operator, col_name in product(
+                                    self.numerical_filter_aggregator,
+                                    numerical_features
+                                )
+                            ] +
+                            #mode
+                            [
+                                pl.col(col)
+                                .filter(filter_pl)
+                                .mode().sort().first()
+                                .alias(f'{name_pl}_mode_{col}')
+                                for col in categorical_features
+                            ] +
+                            #no hashe mode
+                            [
+                                pl.col(col)
+                                .filter(
+                                    (filter_pl) &
+                                    (
+                                        pl.col(col)!=
+                                        self.mapper_mask['credit_bureau_a_2'][col][self.hashed_missing_label]
+                                    )
+                                )
+                                .drop_nulls().mode().sort().first()
+                                .alias(f'{name_pl}_not_hashed_missing_mode_{col}')
+                                for col in categorical_features
+                            ] +
+                            #min date
+                            [
+                                pl.col(date_col).filter(filter_pl).min()
+                                .alias(f'{name_pl}_min_{date_col}')
+                                for date_col in date_features
+                            ] +
+                            #max date
+                            [
+                                pl.col(date_col).filter(filter_pl).max()
+                                .alias(f'{name_pl}_max_{date_col}')
+                                for date_col in date_features
+                            ] +
+                            #range date
+                            [
+                                (
+                                    pl.col(date_col).filter(filter_pl).max() -
+                                    pl.col(date_col).filter(filter_pl).min()                                    
+                                ).dt.total_days()
+                                .cast(pl.UInt32)
+                                .alias(f'{name_pl}_range_{date_col}')
+                                for date_col in date_features
+                            ]
+                        )
+                        for name_pl, filter_pl in [
+                            ['group1', pl.col('num_group1')==0],
+                            ['all', pl.lit(True)]
+                        ]
+
+                    ]
                 )
             )
-        ).with_columns(
-            pl.date(pl.col('pmts_year_1139T'), pl.col('pmts_month_706T'), 1).cast(pl.Date).alias('pmt_date_active_D'),
-            pl.date(pl.col('pmts_month_158T'), pl.col('pmts_year_507T'), 1).cast(pl.Date).alias('pmt_date_closed_D')
         )
-        list_generic_feature: list[pl.Expr] = self.add_generic_feature(
-            self.credit_bureau_a_2, 'credit_bureau_a_2'
-        )
-        self.credit_bureau_a_2 = (
-            self.credit_bureau_a_2
-            .group_by('case_id')
-            .agg(list_generic_feature)
+        self.credit_bureau_a_2 = self.credit_bureau_a_2.group_by(
+            'case_id'
+        ).agg(
+            operation_aggregation_list     
         )
 
         
