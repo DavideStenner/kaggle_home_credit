@@ -7,6 +7,73 @@ from src.preprocess.initialize import PreprocessInit
 from src.utils.dtype import TYPE_MAPPING
 
 class PreprocessAddFeature(BaseFeature, PreprocessInit):
+    def add_generic_feature_over_num1(
+            self, 
+            data: Union[pl.DataFrame, pl.LazyFrame], 
+            dataset_name: str,
+            numerical_features: list[str],
+            date_features: Optional[list[str]]=None,
+        ) -> pl.Expr:
+        """
+        Generical expression to calculate mean over numerical and date diff
+
+        Args:
+            data (Union[pl.DataFrame, pl.LazyFrame]): initial dataset
+
+        Returns:
+            pl.Expr: list of expression
+        """ 
+        list_numeric_generic_feature: list[pl.Expr] = self.add_generic_feature(
+            data.select(numerical_features), dataset_name
+        )   
+        list_date_generic_feature: list[pl.Expr] = [
+            (
+                (
+                    pl.max(col_name) - pl.min(col_name)
+                ).dt.total_days()
+                .cast(pl.UInt32)
+                .alias(f'date_range_{col_name}')
+            )
+            for col_name in date_features
+        ]
+
+        aggregation_numeric_over_num1 = (
+            data
+            .group_by(
+                'case_id', 'num_group1'
+            ).agg(list_numeric_generic_feature + list_date_generic_feature)
+            .group_by(
+                'case_id'
+            ).agg(
+                pl.exclude('case_id', 'num_group1').mean()
+            )
+        )
+        #downcast float64 if necessary
+        col_list = aggregation_numeric_over_num1.columns
+        dtype_list = aggregation_numeric_over_num1.dtypes
+        col_to_float32 = [
+            col_list[i]
+            for i in range(len(col_list))
+            if dtype_list[i] == pl.Float64
+        ]
+
+        aggregation_numeric_over_num1 = aggregation_numeric_over_num1.with_columns(
+            [
+                pl.col(col).cast(pl.Float32)
+                for col in col_to_float32
+            ]
+        ).select(
+            ['case_id'] +
+            [
+                pl.col(col).alias(f'{dataset_name}_mean_over_num1_{col}')
+                for col in aggregation_numeric_over_num1.columns
+                if col != 'case_id'
+            ]
+        )
+
+        return aggregation_numeric_over_num1
+
+
     def add_generic_feature(
             self, 
             data: Union[pl.DataFrame, pl.LazyFrame], 
@@ -436,6 +503,14 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 )
             )
         )
+        
+        self.list_join_expression.append(
+            self.add_generic_feature_over_num1(
+                data=self.credit_bureau_a_2, dataset_name='credit_bureau_a_2',
+                numerical_features=numerical_features, date_features=date_features
+            )
+        )
+
         self.credit_bureau_a_2 = self.credit_bureau_a_2.group_by(
             'case_id'
         ).agg(
@@ -1441,6 +1516,16 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                     }
                 )
             )
+        
+        #ensure every other dataset has the prefix of used dataset
+        for other_dataset in self.list_join_expression:
+            dataset_other_dataset = [
+                next((dataset for dataset in self.used_dataset if dataset in col))
+                for col in other_dataset.columns
+                if col != 'case_id'
+            ]
+            assert (len(other_dataset.columns)-1) == len(dataset_other_dataset)
+            
     def drop_tax_reg_feature(self) -> None:
         """Drop tax registry a, b, c feature"""
         self.data = self.data.drop(
@@ -1588,7 +1673,6 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
     def filter_useless_columns(self, dataset: str) -> None:
         if dataset not in self.config_dict['DEPTH_2']:
             self.filter_empty_columns(dataset=dataset)
-            self.filter_only_hashed_categorical(dataset=dataset)
 
         self.filter_sparse_categorical(dataset=dataset)
         
@@ -1663,6 +1747,12 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 on=['case_id']
             )
         
+        for other_dataset in self.list_join_expression:
+            self.data = self.data.join(
+                other_dataset, how='left', 
+                on=['case_id']
+            )
+            
         n_rows_end = self._collect_item_utils(
             self.data.select(pl.len())
         )
