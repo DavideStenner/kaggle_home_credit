@@ -138,7 +138,8 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         count_expr_list: list[pl.Expr] = (
             [
                 (
-                    pl.col(col).n_unique()
+                    pl.col(col)
+                    .max()
                     .alias(f'max_{col}')
                     .cast(pl.UInt16)
                 )
@@ -157,28 +158,12 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 [
                     (
                         pl.col(col)
-                        .filter(pl.col('num_group1')==pl.col('num_group1').filter(pl.col(col).is_not_null()).min())
+                        .filter(pl.col('num_group1')==0)
                         .first()
                         .alias(f'first_{col}')
                         .cast(mapper_column_cast[col])
                     )
-                    for col in numerical_columns_list + categorical_columns_without_hashed_null
-                ] +
-                [
-                    (
-                        pl.col(col)
-                        .filter(
-                            pl.col('num_group1')==
-                            pl.col('num_group1').filter(
-                                (pl.col(col).is_not_null()) &
-                                (pl.col(col) != self.mapper_mask[dataset_name][col][self.hashed_missing_label])
-                            ).min()
-                        )
-                        .first()
-                        .alias(f'first_{col}')
-                        .cast(mapper_column_cast[col])
-                    )
-                    for col in categorical_columns_with_hashed_null
+                    for col in numerical_columns_list + categorical_columns_list
                 ]
             )
 
@@ -220,48 +205,14 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                                 (
                                     pl.col('num_group1').cast(pl.UInt64) * 100_000 + 
                                     pl.col('num_group2').cast(pl.UInt64)
-                                )==
-                                (
-                                    (
-                                        pl.col('num_group1').cast(pl.UInt64) * 100_000 + 
-                                        pl.col('num_group2').cast(pl.UInt64)
-                                    )
-                                    .filter(pl.col(col).is_not_null()).min()
-                                )
+                                )==0
                             )
                         )
                         .first()
                         .alias(f'first_{col}')
                         .cast(mapper_column_cast[col])
                     )
-                    for col in numerical_columns_list + categorical_columns_without_hashed_null
-                ] +
-                [
-                    (
-                        pl.col(col)
-                        .filter(
-                            (
-                                (
-                                    pl.col('num_group1').cast(pl.UInt64) * 100_000 + 
-                                    pl.col('num_group2').cast(pl.UInt64)
-                                )==
-                                (
-                                    (
-                                        pl.col('num_group1').cast(pl.UInt64) * 100_000 + 
-                                        pl.col('num_group2').cast(pl.UInt64)
-                                    )
-                                    .filter(
-                                    (pl.col(col).is_not_null()) &
-                                    (pl.col(col) != self.mapper_mask[dataset_name][col][self.hashed_missing_label])
-                                    ).min()
-                                )
-                            )
-                        )
-                        .first()
-                        .alias(f'first_{col}')
-                        .cast(mapper_column_cast[col])
-                    )
-                    for col in categorical_columns_with_hashed_null
+                    for col in numerical_columns_list + categorical_columns_list
                 ]
             )
                 
@@ -1291,42 +1242,8 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                         for column_name, col_value_list in dict_agg_info.items() 
                         for col_value in col_value_list
                     ]
-                ] +
-                [
-                    (
-                        pl.col(column_name)
-                        .filter(
-                            (pl.col(column_name).is_null())
-                        )
-                        .len()
-                        .alias(f'{column_name}_countnull_X')
-                        .cast(pl.UInt16)
-                    )
-                    for column_name in [
-                        'persontype_1072L', 
-                        'persontype_792L', 
-                        'role_1084L',
-                        'type_25L'
-                    ]
                 ]
             )
-        ).with_columns(
-            [
-                (
-                    (
-                        pl.col('number_rowsX') - 
-                        pl.col(f'{col}_countnull_X')
-                    )
-                    .alias(f'{col}_number_info_x')
-                    .cast(pl.UInt16)
-                )
-                for col in [
-                    'persontype_1072L', 
-                    'persontype_792L',  
-                    'role_1084L',
-                    'type_25L'
-                ]
-            ]
         )
         
         self.person_1 = (
@@ -1430,7 +1347,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         operation_aggregation_list: list[pl.Expr] = (
             [
                 pl.col(col_name)
-                .filter(pl.col('num_group1')==pl.col('num_group1').filter(pl.col(col_name).is_not_null()).min())
+                .filter(pl.col('num_group1')==0)
                 .first()
                 for col_name in [f'first_{col}' for col in categorical_columns_list]
             ] +
