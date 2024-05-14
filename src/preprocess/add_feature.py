@@ -47,10 +47,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             col for col in categorical_columns_list
             if self.hashed_missing_label in self.mapper_mask[dataset_name][col].keys()
         ]
-        categorical_columns_without_hashed_null: list[str] = [
-            col for col in categorical_columns_list
-            if self.hashed_missing_label not in self.mapper_mask[dataset_name][col].keys()
-        ]
+
         #numerical expression
         base_numerical_expr_list: list[pl.Expr] = [
             (
@@ -171,28 +168,12 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 [
                     (
                         pl.col(col)
-                        .filter(pl.col('num_group1')==pl.col('num_group1').filter(pl.col(col).is_not_null()).max())
+                        .filter(pl.col('num_group1')==pl.col('num_group1').max())
                         .last()
                         .alias(f'last_{col}')
                         .cast(mapper_column_cast[col])
                     )
-                    for col in numerical_columns_list + categorical_columns_without_hashed_null
-                ] +
-                [
-                    (
-                        pl.col(col)
-                        .filter(
-                            pl.col('num_group1')==
-                            pl.col('num_group1').filter(
-                                (pl.col(col).is_not_null()) &
-                                (pl.col(col) != self.mapper_mask[dataset_name][col][self.hashed_missing_label])
-                            ).max()
-                        )
-                        .last()
-                        .alias(f'last_{col}')
-                        .cast(mapper_column_cast[col])
-                    )
-                    for col in categorical_columns_with_hashed_null
+                    for col in numerical_columns_list + categorical_columns_list
                 ]
             )
         else:
@@ -232,7 +213,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                                         pl.col('num_group1').cast(pl.UInt64) * 100_000 + 
                                         pl.col('num_group2').cast(pl.UInt64)
                                     )
-                                    .filter(pl.col(col).is_not_null()).max()
+                                    .max()
                                 )
                             )
                         )
@@ -240,34 +221,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                         .alias(f'last_{col}')
                         .cast(mapper_column_cast[col])
                     )
-                    for col in numerical_columns_list + categorical_columns_without_hashed_null
-                ] +
-                [
-                    (
-                        pl.col(col)
-                        .filter(
-                            (
-                                (
-                                    pl.col('num_group1').cast(pl.UInt64) * 100_000 + 
-                                    pl.col('num_group2').cast(pl.UInt64)
-                                )==
-                                (
-                                    (
-                                        pl.col('num_group1').cast(pl.UInt64) * 100_000 + 
-                                        pl.col('num_group2').cast(pl.UInt64)
-                                    )
-                                    .filter(
-                                    (pl.col(col).is_not_null()) &
-                                    (pl.col(col) != self.mapper_mask[dataset_name][col][self.hashed_missing_label])
-                                    ).max()
-                                )
-                            )
-                        )
-                        .last()
-                        .alias(f'last_{col}')
-                        .cast(mapper_column_cast[col])
-                    )
-                    for col in categorical_columns_with_hashed_null
+                    for col in numerical_columns_list + categorical_columns_list
                 ]
             )
 
@@ -1353,7 +1307,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             ] +
             [
                 pl.col(col_name)
-                .filter(pl.col('num_group1')==pl.col('num_group1').filter(pl.col(col_name).is_not_null()).max())
+                .filter(pl.col('num_group1')==pl.col('num_group1').max())
                 .last()
                 for col_name in [f'last_{col}' for col in categorical_columns_list]
             ] +
