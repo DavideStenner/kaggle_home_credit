@@ -391,17 +391,38 @@ class LgbmExplainer(LgbmInit):
         plt.close(fig)
 
         #get information about top dataset on sum fe
-        feature_importances_dataset_sum = feature_importances_dataset.groupby(
+        feature_importances_dataset_count = feature_importances_dataset.groupby(
             'dataset'
         ).size().reset_index().rename(columns={0: 'count'})
         #top mean gain for each dataset
 
         fig = plt.figure(figsize=(18,8))
-        sns.barplot(data=feature_importances_dataset_sum, x='count', y='dataset')
+        sns.barplot(data=feature_importances_dataset_count, x='count', y='dataset')
         plt.title(f"Number of feature for dataset")
 
         fig.savefig(
             os.path.join(self.experiment_insight_feat_imp_path, 'dataset_number_feature.png')
+        )
+        plt.close(fig)
+        
+        #get information about 'total importance of dataset'/'number of feature'
+        feature_importances_dataset_mean_sum= feature_importances_dataset.groupby(
+            'dataset'
+        ).agg(
+            {'average': 'sum', 'feature': 'size'}
+        ).reset_index().rename(columns={'average': 'total_imp', 'feature': 'num_features'})
+        feature_importances_dataset_mean_sum['average_total_imp'] = (
+            feature_importances_dataset_mean_sum['total_imp']/
+            feature_importances_dataset_mean_sum['num_features']
+        )
+        #top mean gain for each dataset
+
+        fig = plt.figure(figsize=(18,8))
+        sns.barplot(data=feature_importances_dataset_mean_sum, x='average_total_imp', y='dataset')
+        plt.title(f"Total Importance vs # feature for dataset")
+
+        fig.savefig(
+            os.path.join(self.experiment_insight_feat_imp_path, 'dataset_total_imp_vs_num_feature.png')
         )
         plt.close(fig)
 
