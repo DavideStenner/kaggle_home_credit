@@ -161,7 +161,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                         pl.col(col)!=
                         self.mapper_mask[dataset_name][col][self.hashed_missing_label]
                     )
-                    .drop_nulls().mode().sort().first()
+                    .drop_nulls().mode().first()
                     .alias(f'not_hashed_missing_mode_{col}')
                     .cast(mapper_column_cast[col])
                 )
@@ -170,7 +170,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             [
                 (
                     pl.col(col)
-                    .drop_nulls().mode().sort().first()
+                    .drop_nulls().mode().first()
                     .alias(f'mode_{col}')
                     .cast(mapper_column_cast[col])
                 )
@@ -1409,7 +1409,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                             [
                                 pl.col(f'mode_{col}')
                                 .filter(filter_pl)
-                                .mode().sort().first()
+                                .mode().first()
                                 .alias(f'num_{name_pl}_mode_mode_{col}')
                                 for col in categorical_columns_list
                             ]
