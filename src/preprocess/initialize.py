@@ -21,7 +21,8 @@ class PreprocessInit(BaseInit):
         self.hashed_missing_label: str = "a55475b1"
         #for this dates doesn't correct to blank when negative
         self.negative_allowed_dates_date_decision: list[str] = [
-            'tax_registry_a_1_recorddate_4527225D'
+            'tax_registry_a_1_recorddate_4527225D',
+            'static_cb_0_responsedate_4527233D'
         ]
         self.mapper_mask: Dict[str, Dict[str, int]] = None
         self.mapper_dtype: Dict[str, Dict[str, str]] = None
