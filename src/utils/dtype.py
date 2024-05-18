@@ -154,7 +154,7 @@ def get_mapper_numerical(
     return mapper_column
 
 def get_mapper_statistic(
-        data: pl.DataFrame, base_data: pl.DataFrame,
+        data: pl.DataFrame, base_data: pl.DataFrame, logger: logging.Logger,
         mapper_mask_col: Mapping[str, int], missing_info_hashed: str = 'a55475b1'
     ) -> Mapping[str, int]:
 
@@ -190,6 +190,58 @@ def get_mapper_statistic(
                     'n_unique': n_unique_values,
                 }
             )
+            if n_unique_values < 300:
+                data_filtered_ = (
+                    data.filter(
+                        pl.col(col) != mapper_mask_col[col][missing_info_hashed]
+                    )
+                    if missing_info_hashed in mapper_mask_col[col].keys()
+                    else data
+                )
+
+                dropped_values = (
+                    data_filtered_.filter(pl.col(col).is_not_null())
+                    .group_by(col)
+                    .agg(pl.len())
+                    .with_columns(
+                        (pl.col('len')<1000).alias('filter_by_len')
+                    )
+                    .with_columns(
+                        pl.when(
+                            pl.col('filter_by_len')
+                        )
+                        .then(0)
+                        .otherwise(
+                            (pl.col('len'))
+                        ).alias('len_filtered')
+                    )
+                    .with_columns(
+                        (pl.col('len_filtered')/pl.sum('len_filtered'))
+                        .alias('percent')
+                    )
+                    .sort('percent', descending=True)
+                    .with_columns(pl.cum_sum('percent').alias('cumsum'))
+                    .filter(
+                        (pl.col('cumsum')>=0.995) &
+                        (pl.col('percent')<=0.005)
+                    )
+                    .with_row_index()
+                    .filter(pl.col('index')>0)
+                    .drop('index')
+                )
+                max_N: int = dropped_values.select(pl.max('len')).item()
+                
+                if dropped_values.shape[0]>0:
+                    logger.info(f'In {col} dropped values with max N: {max_N}')
+                    
+                list_dropped_col = dropped_values.select(col).to_pandas()[col].tolist()
+                
+                mapper_statistic[col].update(
+                    {
+                        'dropped_unique': list_dropped_col,
+                    }
+                )
+                
             if missing_info_hashed in mapper_mask_col[col].keys():
                 hashed_values_by_week: float = (
                     (
@@ -294,7 +346,8 @@ def get_mapping_info(
         mapper_col_all_file[file_name] = mapper_column
         mapper_mask_all_file[file_name] = mapper_mask_col
         mapper_statistic_all_file[file_name] = get_mapper_statistic(
-            data=data, mapper_mask_col=mapper_mask_col, base_data=base_data
+            data=data, mapper_mask_col=mapper_mask_col, base_data=base_data,
+            logger=logger            
         )
 
     with open(
