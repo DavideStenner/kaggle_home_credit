@@ -190,7 +190,7 @@ def get_mapper_statistic(
                     'n_unique': n_unique_values,
                 }
             )
-            if n_unique_values < 300:
+            if n_unique_values < 400:
                 data_filtered_ = (
                     data.filter(
                         pl.col(col) != mapper_mask_col[col][missing_info_hashed]
@@ -222,20 +222,19 @@ def get_mapper_statistic(
                     .sort('percent', descending=True)
                     .with_columns(pl.cum_sum('percent').alias('cumsum'))
                     .filter(
-                        (pl.col('cumsum')>=0.995) &
-                        (pl.col('percent')<=0.005)
+                        (pl.col('cumsum')>=0.995) |
+                        (pl.col('percent')<=0.01)
                     )
                     .with_row_index()
                     .filter(pl.col('index')>0)
                     .drop('index')
                 )
                 max_N: int = dropped_values.select(pl.max('len')).item()
-                
-                if dropped_values.shape[0]>0:
-                    logger.info(f'In {col} dropped values with max N: {max_N}')
-                    
                 list_dropped_col = dropped_values.select(col).to_pandas()[col].tolist()
-                
+
+                if dropped_values.shape[0]>0:
+                    logger.info(f'In {col} dropped {len(list_dropped_col)} col with max N: {max_N}')
+                                    
                 mapper_statistic[col].update(
                     {
                         'dropped_unique': list_dropped_col,
