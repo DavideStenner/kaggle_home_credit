@@ -383,7 +383,6 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
     def create_credit_bureau_a_2_feature(self) -> None:
         date_features: list[str] = [
             'pmts_month_706T', 'pmts_year_1139T',
-            'pmts_month_158T', 'pmts_year_507T'
         ]
         numerical_features: list[str] = [
             'collater_valueofguarantee_1124L', 'collater_valueofguarantee_876L',
@@ -397,9 +396,6 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             ['pmt_date_active_D', 'collater_valueofguarantee_1124L'],
             ['pmt_date_active_D', 'pmts_dpd_1073P'],
             ['pmt_date_active_D', 'pmts_overdue_1140A'],
-            ['pmt_date_closed_D', 'collater_valueofguarantee_876L'],
-            ['pmt_date_closed_D', 'pmts_dpd_303P'],
-            ['pmt_date_closed_D', 'pmts_overdue_1152A']
         ]
         self.credit_bureau_a_2 = (
             self.credit_bureau_a_2.select(
@@ -407,10 +403,9 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 numerical_features + categorical_features + date_features
             ).with_columns(
                 pl.date(pl.col('pmts_year_1139T'), pl.col('pmts_month_706T'), 1).cast(pl.Date).alias('pmt_date_active_D'),
-                pl.date(pl.col('pmts_month_158T'), pl.col('pmts_year_507T'), 1).cast(pl.Date).alias('pmt_date_closed_D')
             ).drop(date_features)
         )
-        date_features = ['pmt_date_active_D', 'pmt_date_closed_D']
+        date_features = ['pmt_date_active_D']
 
         operation_aggregation_list = (
             list(
