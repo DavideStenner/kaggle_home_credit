@@ -1665,9 +1665,29 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             ]
         )
 
+    def filter_useless_categorical_value(self, dataset: str) -> None:
+        data: pl.LazyFrame = getattr(self, dataset)
+        categorical_list_col: list[str] = [
+            col for col in self.mapper_mask[dataset].keys()
+            if col in data.columns
+        ]
+        for col in categorical_list_col:
+            if col not in self.special_column_list:
+                if 'dropped_unique' in self.mapper_statistic[dataset][col].keys():
+                    dropped_unique = self.mapper_statistic[dataset][col]['dropped_unique']
+
+                    if len(dropped_unique) > 0:
+                        data = data.with_columns(
+                            pl.when(
+                                (pl.col(col).is_in(dropped_unique))
+                            ).then(None).otherwise(pl.col(col)).alias(col)
+                        )
+        setattr(
+            self, dataset, data
+        )
+        
     def filter_useless_columns(self, dataset: str) -> None:
-        if dataset not in self.config_dict['DEPTH_2']:
-            self.filter_empty_columns(dataset=dataset)
+        if dataset == 'person_1':
 
         self.filter_sparse_categorical(dataset=dataset)
         
