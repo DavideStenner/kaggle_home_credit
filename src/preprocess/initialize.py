@@ -31,6 +31,7 @@ class PreprocessInit(BaseInit):
             config_dict['DEPTH_0'] + config_dict['DEPTH_1'] + config_dict['DEPTH_2']
         )
         self.list_join_expression: list[Union[pl.LazyFrame, pl.DataFrame]] = []
+        self.exclude_feature_list: list[str] = []
         
         def minnozero(col: str) -> pl.Expr:
             return pl.col(col).filter(pl.col(col)!=0).min()

@@ -13,13 +13,14 @@ class XgbPipeline(ModelPipeline, XgbTrainer, XgbExplainer, XgbInference):
             params_xgb: dict[str, Any],
             metric_eval: str,
             config_dict: dict[str, Any], data_columns: Tuple[str],
+            exclude_feature_list: list[str] = [],
             log_evaluation:int =1, fold_name: str = 'fold_info', 
             evaluate_stability: bool=False, evaluate_shap: bool=False
         ):
         XgbInit.__init__(
             self, experiment_name=experiment_name, params_xgb=params_xgb,
             metric_eval=metric_eval, config_dict=config_dict,
-            data_columns=data_columns,
+            data_columns=data_columns, exclude_feature_list=exclude_feature_list,
             log_evaluation=log_evaluation, fold_name=fold_name
         )
         self.evaluate_stability: bool = evaluate_stability

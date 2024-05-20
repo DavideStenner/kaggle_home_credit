@@ -8,8 +8,9 @@ from src.preprocess.import_data import PreprocessImport
 from src.preprocess.initialize import PreprocessInit
 from src.preprocess.add_feature import PreprocessAddFeature
 from src.preprocess.cv_fold import PreprocessFoldCreator
+from src.preprocess.filter_feature import PreprocessFilterFeature
 
-class PreprocessPipeline(BasePipeline, PreprocessImport, PreprocessAddFeature, PreprocessFoldCreator):
+class PreprocessPipeline(BasePipeline, PreprocessImport, PreprocessAddFeature, PreprocessFoldCreator, PreprocessFilterFeature):
 
     def __init__(self, config_dict: dict[str, Any], embarko_skip: int):
                 
@@ -122,6 +123,8 @@ class PreprocessPipeline(BasePipeline, PreprocessImport, PreprocessAddFeature, P
         print('Creating fold_info column ...')
         self.create_fold()
         self.save_data()
+        
+        self.filter_feature_by_correlation()
         
     def begin_training(self) -> None:
         self.import_all()

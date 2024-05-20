@@ -16,6 +16,7 @@ class LgbmInit(ModelInit):
             params_lgb: dict[str, Any],
             metric_eval: str,
             config_dict: dict[str, Any], data_columns: Tuple[str],
+            exclude_feature_list: list[str] = [],
             log_evaluation:int =1, fold_name: str = 'fold_info'
         ):
         
@@ -82,7 +83,7 @@ class LgbmInit(ModelInit):
         self.feature_importance_path: str = os.path.join(
             self.experiment_insight_feat_imp_path, 'feature_importances.xlsx'
         )
-        self.exclude_feature_list: list[str] = []
+        self.exclude_feature_list: list[str] = exclude_feature_list
                 
         self.get_categorical_columns(data_columns=data_columns)
         self.get_original_dataset_columns()
