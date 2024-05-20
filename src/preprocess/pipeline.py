@@ -128,6 +128,7 @@ class PreprocessPipeline(BasePipeline, PreprocessImport, PreprocessAddFeature, P
         
     def begin_training(self) -> None:
         self.import_all()
+        self.load_excluded_feature()
         
     def begin_inference(self) -> None:
         print('Beginning inference')

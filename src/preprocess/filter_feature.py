@@ -1,3 +1,5 @@
+import os
+import json
 import polars as pl
 
 from typing import Dict
@@ -17,8 +19,37 @@ class PreprocessFilterFeature(BaseCVFold, PreprocessInit):
             )
         ]
         group_list = self.get_correlated_group_features(col_list=numerical_feature_list, data=self.data)
-        self.exclude_feature_list = self.reduce_group(group_list=group_list, data=self.data)
+        excluded_feature_list = self.reduce_group(group_list=group_list, data=self.data)
+
+        self.save_excluded_feature(excluded_feature_list=excluded_feature_list)
     
+    def load_excluded_feature(self) -> list[str]:
+        with open(
+            os.path.join(
+                self.config_dict['PATH_OTHER_DATA'],
+                'excluded_feature.json'
+            ), 
+            'r'
+        ) as file:
+                excluded_feature_list = json.load(file)
+                
+        return excluded_feature_list
+    
+    def save_excluded_feature(self, excluded_feature_list: list[str]) -> None:
+        with open(
+            os.path.join(
+                self.config_dict['PATH_OTHER_DATA'],
+                'excluded_feature.json'
+            ), 
+            'w'
+        ) as file:
+                json.dump(
+                    {
+                        'feature_list': excluded_feature_list, 
+                    }, 
+                    file
+                )
+
     def reduce_group(self, group_list: list[list[str]], data:pl.DataFrame) -> list[str]:
         drop_list = []
 
