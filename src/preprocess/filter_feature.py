@@ -19,9 +19,9 @@ class PreprocessFilterFeature(BaseCVFold, PreprocessInit):
             )
         ]
         group_list = self.get_correlated_group_features(col_list=numerical_feature_list, data=self.data)
-        excluded_feature_list = self.reduce_group(group_list=group_list, data=self.data)
+        exclude_feature_list = self.reduce_group(group_list=group_list, data=self.data)
 
-        self.save_excluded_feature(excluded_feature_list=excluded_feature_list)
+        self.save_excluded_feature(exclude_feature_list=exclude_feature_list)
     
     def load_excluded_feature(self) -> list[str]:
         with open(
@@ -31,11 +31,9 @@ class PreprocessFilterFeature(BaseCVFold, PreprocessInit):
             ), 
             'r'
         ) as file:
-                excluded_feature_list = json.load(file)
+                self.exclude_feature_list = json.load(file)['feature_list']
                 
-        return excluded_feature_list
-    
-    def save_excluded_feature(self, excluded_feature_list: list[str]) -> None:
+    def save_excluded_feature(self, exclude_feature_list: list[str]) -> None:
         with open(
             os.path.join(
                 self.config_dict['PATH_OTHER_DATA'],
@@ -45,7 +43,7 @@ class PreprocessFilterFeature(BaseCVFold, PreprocessInit):
         ) as file:
                 json.dump(
                     {
-                        'feature_list': excluded_feature_list, 
+                        'feature_list': exclude_feature_list, 
                     }, 
                     file
                 )
