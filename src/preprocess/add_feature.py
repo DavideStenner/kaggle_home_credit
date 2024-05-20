@@ -1546,7 +1546,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 'credit_bureau_a_1_std_debtoverdue_47A', 'credit_bureau_a_1_std_debtoutstand_525A',
                 'credit_bureau_b_2_count_null_A', 'credit_bureau_b_2_count_null_P',
                 'credit_bureau_b_2_count_null_D', 'credit_bureau_b_2_all_count_null_X',
-                'applprev_2_filtered_std_group1_max_num_group2'
+                'applprev_2_filtered_std_group1_max_num_group2', 'person_2_first_relatedpersons_role_762T'
             ]
             if col in self.data.columns
         ]
