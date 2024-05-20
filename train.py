@@ -31,7 +31,7 @@ if __name__=='__main__':
             experiment_name=experiment_name + "_ctb",
             params_ctb=params_model,
             config_dict=config_dict, data_columns=home_credit_preprocessor.feature_list,
-    
+            exclude_feature_list=home_credit_preprocessor.exclude_feature_list,
             metric_eval='CTBGiniStability', log_evaluation=1, 
             evaluate_stability=False, evaluate_shap=False
         )
@@ -46,6 +46,7 @@ if __name__=='__main__':
             experiment_name=experiment_name + "_lgb",
             params_lgb=params_model,
             config_dict=config_dict, data_columns=home_credit_preprocessor.feature_list,
+            exclude_feature_list=home_credit_preprocessor.exclude_feature_list,
             metric_eval='gini_stability', log_evaluation=50, 
             evaluate_stability=False, evaluate_shap=False
         )
@@ -60,6 +61,7 @@ if __name__=='__main__':
             experiment_name=experiment_name + "_xgb",
             params_xgb=params_model,
             config_dict=config_dict, data_columns=home_credit_preprocessor.feature_list,
+            exclude_feature_list=home_credit_preprocessor.exclude_feature_list,
             metric_eval='gini_stability', log_evaluation=50, 
             evaluate_stability=False, evaluate_shap=False
         )
