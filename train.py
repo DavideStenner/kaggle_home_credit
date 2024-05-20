@@ -21,7 +21,22 @@ if __name__=='__main__':
         embarko_skip=4
     )
     home_credit_preprocessor.begin_training()
+
+    if (args.model == 'ctb') | (args.all_model):
+        from src.model.ctb.pipeline import CTBPipeline
+
+        params_model, experiment_name = import_params(model='ctb')
+
+        trainer = CTBPipeline(
+            experiment_name=experiment_name + "_ctb",
+            params_ctb=params_model,
+            config_dict=config_dict, data_columns=home_credit_preprocessor.feature_list,
     
+            metric_eval='CTBGiniStability', log_evaluation=1, 
+            evaluate_stability=False, evaluate_shap=False
+        )
+        trainer.train_explain()
+        
     if (args.model == 'lgb') | (args.all_model):
         from src.model.lgbm.pipeline import LgbmPipeline
 
@@ -46,20 +61,6 @@ if __name__=='__main__':
             params_xgb=params_model,
             config_dict=config_dict, data_columns=home_credit_preprocessor.feature_list,
             metric_eval='gini_stability', log_evaluation=50, 
-            evaluate_stability=False, evaluate_shap=False
-        )
-        trainer.train_explain()
-
-    if (args.model == 'ctb') | (args.all_model):
-        from src.model.ctb.pipeline import CTBPipeline
-
-        params_model, experiment_name = import_params(model='ctb')
-
-        trainer = CTBPipeline(
-            experiment_name=experiment_name + "_ctb",
-            params_ctb=params_model,
-            config_dict=config_dict, data_columns=home_credit_preprocessor.feature_list,
-            metric_eval='CTBGiniStability', log_evaluation=1, 
             evaluate_stability=False, evaluate_shap=False
         )
         trainer.train_explain()
