@@ -59,7 +59,7 @@ class PreprocessFilterFeature(BaseCVFold, PreprocessInit):
             select_col = current_group[0]
             
             for current_col in current_group:
-                col_n_unique = data.select(pl.n_unique(current_col)).collect().item()
+                col_n_unique = data.select(pl.n_unique(current_col)).item()
                 
                 if col_n_unique > max_unique:
                     max_unique = col_n_unique
