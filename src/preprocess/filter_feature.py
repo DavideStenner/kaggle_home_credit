@@ -66,7 +66,8 @@ class PreprocessFilterFeature(BaseCVFold, PreprocessInit):
                     select_col = current_col
 
             drop_list += [col for col in current_group if col != select_col]
-            
+        
+        print(f'Dropped {len(drop_list)} feature')
         return drop_list
 
     def get_correlated_group_features(
@@ -83,7 +84,8 @@ class PreprocessFilterFeature(BaseCVFold, PreprocessInit):
         }
         group_list = []
         remaining_cols = col_list
-        print(f'Starting col: {len(remaining_cols)}')
+        print(f'Using {null_pct_treshold} as null tresh and {corr_treshold} as corr tresh')
+        print(f'Starting to reduce total number of col: {len(remaining_cols)}')
         
         while remaining_cols:
             current_col = remaining_cols.pop(0)
