@@ -1209,28 +1209,48 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
     def create_person_1_feature(self) -> None:
         select_col_group_1 = [
             'case_id',
-            'birth_259D', 
-            'contaddr_matchlist_1032L', 'contaddr_smempladdr_334L', 
-            'incometype_1044T',
+            'birth_259D', 'contaddr_smempladdr_334L',
+            'education_927M',
+            'empl_employedfrom_271D',
+            'empl_industry_691L', 'familystate_447L',
+            'incometype_1044T', 'language1_981M',
             'mainoccupationinc_384A',
             'role_1084L',
-            'safeguarantyflag_411L', 'type_25L', 'sex_738L'
+            'safeguarantyflag_411L', 'type_25L', 'sex_738L',
+            'housetype_905L'
         ]
         person_1 = self.filter_and_select_first(
             data=self.person_1,
             filter_col=pl.col('num_group1')==0,
             col_list=select_col_group_1
+        ).with_columns(
+            (
+                pl.col('empl_employedfrom_271D') - 
+                pl.col('birth_259D')
+            ).dt.total_days()
+            .alias('empl_employedfrom_271D_diff_birth_259D')
+            .cast(pl.Int32)
         )
 
         dict_agg_info: Dict[str, list[str]] = {
+            'housingtype_772L': [
+                'OWNED'
+            ],
             'persontype_1072L': [
                 1, 4, 5
             ],
             'persontype_792L': [4, 5],
+            'relationshiptoclient_415T': [
+                'SPOUSE', 'PARENT',
+                'CHILD', 'FRIEND'
+            ],
+            'relationshiptoclient_642T': [
+                'COLLEAGUE', 'PARENT', 'FRIEND', 
+                'CHILD'
+            ],
             'role_1084L': ['CL', 'EM', 'PE'],
             'type_25L': [
                 'HOME_PHONE', 'PRIMARY_MOBILE', 
-                'SECONDARY_MOBILE', 'ALTERNATIVE_PHONE', 
                 'PHONE'
             ]
         }
