@@ -453,7 +453,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                             [
                                 pl.col(col)
                                 .filter(filter_pl)
-                                .mode().sort().first()
+                                .mode().first()
                                 .alias(f'{name_pl}_mode_{col}')
                                 for col in categorical_features
                             ] +
@@ -467,7 +467,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                                         self.mapper_mask['credit_bureau_a_2'][col][self.hashed_missing_label]
                                     )
                                 )
-                                .drop_nulls().mode().sort().first()
+                                .drop_nulls().mode().first()
                                 .alias(f'{name_pl}_not_hashed_missing_mode_{col}')
                                 for col in categorical_features
                             ] +
