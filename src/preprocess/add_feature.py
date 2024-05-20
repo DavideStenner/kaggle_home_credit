@@ -1688,8 +1688,13 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         
     def filter_useless_columns(self, dataset: str) -> None:
         if dataset == 'person_1':
+            pass
+        else:
+        
+            if dataset not in self.config_dict['DEPTH_2']:
+                self.filter_empty_columns(dataset=dataset)
 
-        self.filter_sparse_categorical(dataset=dataset)
+            self.filter_sparse_categorical(dataset=dataset)
         
     def filter_only_hashed_categorical(self, dataset: str) -> None:
         data: pl.LazyFrame = getattr(self, dataset)
