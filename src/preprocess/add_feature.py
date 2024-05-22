@@ -1500,6 +1500,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
             )
             
             self.filter_useless_columns(dataset=dataset)
+            self.filter_useless_categorical_value(dataset=dataset)
             
             current_dataset_fe_pipeline()
             if dataset != 'base_data':
@@ -1755,7 +1756,7 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
         for col in data.columns:
             if col not in self.special_column_list:
                 pct_null = self.mapper_statistic[dataset][col]['pct_null']
-                if (pct_null > 0.7):
+                if (pct_null > 0.95):
                     data = data.drop(col)
         
         setattr(
