@@ -721,6 +721,12 @@ class PreprocessAddFeature(BaseFeature, PreprocessInit):
                 for col_name in numeric_columns
             ] 
         )
+        self.list_join_expression.append(
+            self.add_generic_feature_over_num1(
+                data=self.credit_bureau_b_2, dataset_name='credit_bureau_b_2',
+                numerical_features=numeric_columns, date_features=['pmts_date_1107D']
+            )
+        )
         #get feature for each contract
         self.credit_bureau_b_2 = (
             self.credit_bureau_b_2.sort(
