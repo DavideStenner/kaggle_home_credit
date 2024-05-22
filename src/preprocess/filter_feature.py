@@ -18,10 +18,21 @@ class PreprocessFilterFeature(BaseCVFold, PreprocessInit):
                 ]
             )
         ]
+        excluded_empty_list = [
+            current_col
+            for current_col in numerical_feature_list
+            if self.data.select(
+                pl.col(current_col).is_not_null().sum()
+            ).item() == 0
+        ]
+        numerical_feature_list = [
+            col for col in numerical_feature_list
+            if col not in excluded_empty_list
+        ]
         group_list = self.get_correlated_group_features(col_list=numerical_feature_list, data=self.data)
         exclude_feature_list = self.reduce_group(group_list=group_list, data=self.data)
 
-        self.save_excluded_feature(exclude_feature_list=exclude_feature_list)
+        self.save_excluded_feature(exclude_feature_list=exclude_feature_list + excluded_empty_list)
     
     def load_excluded_feature(self) -> list[str]:
         with open(
