@@ -2,20 +2,49 @@ import os
 import json
 import polars as pl
 
-from typing import Dict
+from itertools import chain, product
+from typing import Dict, Tuple
 
 from src.base.preprocess.cv_fold import BaseCVFold
 from src.preprocess.initialize import PreprocessInit
 
 class PreprocessFilterFeature(BaseCVFold, PreprocessInit):
     def filter_feature_by_correlation(self) -> None:
-        numerical_feature_list = [
-            col for col in self.data.columns
-            if col not in (
-                self.config_dict['SPECIAL_COLUMNS'] + 
-                [
-                    'fold_info', 'current_fold', 'date_order_kfold'
+        print(f'Original number of col: {len(self.data.columns)}')
+        combination_info_categorical: list[Tuple[str]] = list(
+            chain(
+                *[
+                    [
+                        [dataset_, col_name]
+                        for dataset_, col_name in product(
+                            [dataset_name],
+                            col_mapper.keys()
+                        )
+                    ]
+                    for dataset_name, col_mapper in self.mapper_mask.items()
                 ]
+            )
+        )
+        numerical_feature_list = [
+            col_data for col_data in self.data.columns
+            if 
+            (
+                col_data not in (
+                    self.config_dict['SPECIAL_COLUMNS'] + 
+                    [
+                        'fold_info', 'current_fold', 'date_order_kfold'
+                    ]
+                )
+            ) &
+            (
+                not any(
+                    [
+                        (
+                            (dataset_ in col_data) & (col_name in col_data)
+                        )
+                        for (dataset_, col_name) in combination_info_categorical
+                    ]
+                )
             )
         ]
         excluded_empty_list = [
